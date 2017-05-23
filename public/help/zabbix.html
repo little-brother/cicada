@@ -1,0 +1,1123 @@
+<table class="inline">
+	<thead>
+	<tr class="row0">
+		<th class="col0 centeralign" colspan="5">  Key  </th>
+	</tr>
+	<tr class="row1">
+		<th class="col0"> </th><th class="col1 centeralign">  <strong>Description</strong>  </th><th class="col2 centeralign">  <strong>Return value</strong>  </th><th class="col3 centeralign">  <strong>Parameters</strong>  </th><th class="col4 centeralign">  <strong>Comments</strong>  </th>
+	</tr>
+	</thead>
+	<tbody><tr class="row2">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row3">
+		<th class="col0 leftalign" colspan="5">agent.hostname  </th>
+	</tr>
+	<tr class="row4">
+		<th class="col0"> </th><td class="col1 leftalign">Agent host name.  </td><td class="col2 leftalign">String  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Returns the actual value of the agent hostname from a configuration file.  </td>
+	</tr>
+	<tr class="row5">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row6">
+		<th class="col0 leftalign" colspan="5">agent.ping  </th>
+	</tr>
+	<tr class="row7">
+		<th class="col0"> </th><td class="col1 leftalign">Agent availability check.  </td><td class="col2 leftalign">Nothing - unavailable<br>
+<br>
+1 - available  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Use the <strong>nodata()</strong> trigger function to check for host unavailability.  </td>
+	</tr>
+	<tr class="row8">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row9">
+		<th class="col0 leftalign" colspan="5">agent.version  </th>
+	</tr>
+	<tr class="row10">
+		<th class="col0"> </th><td class="col1 leftalign">Version of Zabbix agent.  </td><td class="col2 leftalign">String  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Example of returned value:<br>
+1.8.2  </td>
+	</tr>
+	<tr class="row11">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row12">
+		<th class="col0 leftalign" colspan="5">kernel.maxfiles  </th>
+	</tr>
+	<tr class="row13">
+		<th class="col0"> </th><td class="col1 leftalign">Maximum number of opened files supported by <abbr title="Operating System">OS</abbr>.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">  </td>
+	</tr>
+	<tr class="row14">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row15">
+		<th class="col0 leftalign" colspan="5">kernel.maxproc  </th>
+	</tr>
+	<tr class="row16">
+		<th class="col0"> </th><td class="col1 leftalign">Maximum number of processes supported by <abbr title="Operating System">OS</abbr>.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">  </td>
+	</tr>
+	<tr class="row17">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row18">
+		<th class="col0 leftalign" colspan="5">log[file,&lt;regexp&gt;,&lt;encoding&gt;,&lt;maxlines&gt;,&lt;mode&gt;,&lt;output&gt;]  </th>
+	</tr>
+	<tr class="row19">
+		<th class="col0"> </th><td class="col1 leftalign">Log file monitoring.  </td><td class="col2 leftalign">Log  </td><td class="col3 leftalign"><strong>file</strong> - full path and name of log file<br>
+<strong>regexp</strong> - regular expression describing the required pattern<br>
+<strong>encoding</strong> - code page <span class="curid"><a href="/documentation/2.4/manual/config/items/itemtypes/zabbix_agent#available_encodings" class="wikilink1" title="manual:config:items:itemtypes:zabbix_agent">identifier</a></span><br>
+<strong>maxlines</strong> - maximum number of new lines per second the agent will send to Zabbix server or proxy. This parameter overrides the value of 'MaxLinesPerSecond' in <a href="/documentation/2.4/manual/appendix/config/zabbix_agentd" class="wikilink1" title="manual:appendix:config:zabbix_agentd">zabbix_agentd.conf</a><br>
+<strong>mode</strong> - possible values:<br>
+<em>all</em> (default), <em>skip</em> - skip processing of older data (affects only newly created items that have not returned any data yet).<br>
+<strong>output</strong> - an optional output formatting template. The <strong>\0</strong> escape sequence is replaced with the matched text while an <strong>\N</strong> (where N=1…9) escape sequence is replaced with Nth matched group (or an empty string if the N exceeds the number of captured groups).  </td><td class="col4 leftalign">The item must be configured as an <a href="/documentation/2.4/manual/appendix/items/activepassive#active_checks" class="wikilink1" title="manual:appendix:items:activepassive">active check</a>.<br>
+If file is missing or permissions do not allow access, item turns unsupported.<br>
+<br>
+If <code>output</code> is left empty - the whole line containing the matched text is returned. Note that all global regular expression types except 'Result is TRUE' always return the whole matched line and the <code>output</code> parameter is ignored.<br>
+<br>
+Content extraction using the <code>output</code> parameter takes place on the agent.<br>
+<br>
+Examples:<br>
+⇒ log[/var/log/syslog]<br>
+⇒ log[/var/log/syslog,error]<br>
+⇒ log[/home/zabbix/logs/logfile,,,100]<br>
+<br>
+The <code>output</code> parameter is supported since Zabbix 2.2.<br>
+The <code>mode</code> parameter is supported since Zabbix 2.0.<br>
+<br>
+See also additional information on <a href="/documentation/2.4/manual/config/items/itemtypes/log_items" class="wikilink1" title="manual:config:items:itemtypes:log_items">log monitoring</a>.  </td>
+	</tr>
+	<tr class="row20">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row21">
+		<th class="col0 leftalign" colspan="5">logrt[file_regexp,&lt;regexp&gt;,&lt;encoding&gt;,&lt;maxlines&gt;,&lt;mode&gt;,&lt;output&gt;]  </th>
+	</tr>
+	<tr class="row22">
+		<th class="col0"> </th><td class="col1 leftalign">Log file monitoring with log rotation support.  </td><td class="col2 leftalign">Log  </td><td class="col3 leftalign"><strong>file_regexp</strong> - absolute path to file and regexp describing the file name pattern<br>
+<strong>regexp</strong> - regular expression describing the required content pattern<br>
+<strong>encoding</strong> - code page <span class="curid"><a href="/documentation/2.4/manual/config/items/itemtypes/zabbix_agent#available_encodings" class="wikilink1" title="manual:config:items:itemtypes:zabbix_agent">identifier</a></span><br>
+<strong>maxlines</strong> - maximum number of new lines per second the agent will send to Zabbix server or proxy. This parameter overrides the value of 'MaxLinesPerSecond' in <a href="/documentation/2.4/manual/appendix/config/zabbix_agentd" class="wikilink1" title="manual:appendix:config:zabbix_agentd">zabbix_agentd.conf</a><br>
+<strong>mode</strong> - possible values:<br>
+<em>all</em> (default), <em>skip</em> - skip processing of older data (affects only newly created items that have not returned any data yet).<br>
+<strong>output</strong> - an optional output formatting template. The <strong>\0</strong> escape sequence is replaced with the matched text while an <strong>\N</strong> (where N=1…9) escape sequence is replaced with Nth matched group (or an empty string if the N exceeds the number of captured groups).  </td><td class="col4 leftalign">The item must be configured as an <a href="/documentation/2.4/manual/appendix/items/activepassive#active_checks" class="wikilink1" title="manual:appendix:items:activepassive">active check</a>.<br>
+Log rotation is based on the last modification time of files.<br>
+<br>
+If <code>output</code> is left empty - the whole line containing the matched text is returned. Note that all global regular expression types except 'Result is TRUE' always return the whole matched line and the <code>output</code> parameter is ignored.<br>
+<br>
+Content extraction using the <code>output</code> parameter takes place on the agent.<br>
+<br>
+Examples:<br>
+⇒ logrt["/home/zabbix/logs/^logfile[0-9]{1,3}$",,,100] → will match a file like "logfile1" (will not match ".logfile1")<br>
+⇒ logrt["/home/user/^logfile_.*_[0-9]{1,3}$","pattern_to_match","UTF-8",100] → will collect data from files such "logfile_abc_1" or "logfile__001".<br>
+<br>
+The <code>output</code> parameter is supported since Zabbix 2.2.<br>
+The <code>mode</code> parameter is supported since Zabbix 2.0.<br>
+<br>
+See also additional information on <a href="/documentation/2.4/manual/config/items/itemtypes/log_items" class="wikilink1" title="manual:config:items:itemtypes:log_items">log monitoring</a>.  </td>
+	</tr>
+	<tr class="row23">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row24">
+		<th class="col0 leftalign" colspan="5">net.dns[&lt;ip&gt;,name,&lt;type&gt;,&lt;timeout&gt;,&lt;count&gt;]  </th>
+	</tr>
+	<tr class="row25">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if <abbr title="Domain Name System">DNS</abbr> service is up.  </td><td class="col2 leftalign">0 - <abbr title="Domain Name System">DNS</abbr> is down (server did not respond or <abbr title="Domain Name System">DNS</abbr> resolution failed)<br>
+<br>
+1 - <abbr title="Domain Name System">DNS</abbr> is up  </td><td class="col3 leftalign"><strong>ip</strong> - IP address of <abbr title="Domain Name System">DNS</abbr> server (leave empty for the default <abbr title="Domain Name System">DNS</abbr> server, ignored on Windows)<br>
+<strong>name</strong> - <abbr title="Domain Name System">DNS</abbr> name to query<br>
+<strong>type</strong> - record type to be queried (default is <em>SOA</em>)<br>
+<strong>timeout</strong> (ignored on Windows) - timeout for the request in seconds (default is 1 second)<br>
+<strong>count</strong> (ignored on Windows) - number of tries for the request (default is 2)  </td><td class="col4">Example:<br>
+⇒ net.dns[8.8.8.8,zabbix.com,MX,2,1] <br>
+<br>
+The possible values for <code>type</code> are:<br>
+<em>ANY</em>, <em>A</em>, <em>NS</em>, <em>CNAME</em>, <em><abbr title="Megabyte">MB</abbr></em>, <em>MG</em>, <em>MR</em>, <em>PTR</em>, <em>MD</em>, <em>MF</em>, <em>MX</em>, <em>SOA</em>, <em>NULL</em>, <em>WKS</em> (except for Windows), <em>HINFO</em>, <em>MINFO</em>, <em>TXT</em>, <em>SRV</em><br>
+<br>
+Internationalized domain names are not supported, please use IDNA encoded names instead.<br>
+SRV record type is supported since Zabbix agent versions 1.8.6 (Unix) and 2.0.0 (Windows).<br>
+<br>
+Naming before Zabbix 2.0 (still supported): <em>net.tcp.dns</em></td>
+	</tr>
+	<tr class="row26">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row27">
+		<th class="col0 leftalign" colspan="5">net.dns.record[&lt;ip&gt;,name,&lt;type&gt;,&lt;timeout&gt;,&lt;count&gt;]  </th>
+	</tr>
+	<tr class="row28">
+		<th class="col0"> </th><td class="col1 leftalign">Performs a <abbr title="Domain Name System">DNS</abbr> query.  </td><td class="col2 leftalign">Character string with the required type of information  </td><td class="col3 leftalign"><strong>ip</strong> - IP address of <abbr title="Domain Name System">DNS</abbr> server (leave empty for the default <abbr title="Domain Name System">DNS</abbr> server, ignored on Windows)<br>
+<strong>name</strong> - <abbr title="Domain Name System">DNS</abbr> name to query<br>
+<strong>type</strong> - record type to be queried (default is <em>SOA</em>)<br>
+<strong>timeout</strong> (ignored on Windows) - timeout for the request in seconds (default is 1 second)<br>
+<strong>count</strong> (ignored on Windows) - number of tries for the request (default is 2)  </td><td class="col4">Example:<br>
+⇒ net.dns.record[8.8.8.8,zabbix.com,MX,2,1] <br>
+<br>
+The possible values for <code>type</code> are:<br>
+<em>ANY</em>, <em>A</em>, <em>NS</em>, <em>CNAME</em>, <em><abbr title="Megabyte">MB</abbr></em>, <em>MG</em>, <em>MR</em>, <em>PTR</em>, <em>MD</em>, <em>MF</em>, <em>MX</em>, <em>SOA</em>, <em>NULL</em>, <em>WKS</em> (except for Windows), <em>HINFO</em>, <em>MINFO</em>, <em>TXT</em>, <em>SRV</em><br>
+<br>
+Internationalized domain names are not supported, please use IDNA encoded names instead.<br>
+SRV record type is supported since Zabbix agent versions 1.8.6 (Unix) and 2.0.0 (Windows).<br>
+<br>
+Naming before Zabbix 2.0 (still supported): <em>net.tcp.dns.query</em></td>
+	</tr>
+	<tr class="row29">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row30">
+		<th class="col0 leftalign" colspan="5">net.if.collisions[if]  </th>
+	</tr>
+	<tr class="row31">
+		<th class="col0"> </th><td class="col1 leftalign">Number of out-of-window collisions.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>if</strong> - network interface name  </td><td class="col4 leftalign">  </td>
+	</tr>
+	<tr class="row32">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row33">
+		<th class="col0 leftalign" colspan="5">net.if.discovery  </th>
+	</tr>
+	<tr class="row34">
+		<th class="col0"> </th><td class="col1 leftalign">List of network interfaces. Used for low-level discovery.  </td><td class="col2 leftalign">JSON object  </td><td class="col3 leftalign">  </td><td class="col4">Supported since Zabbix agent version 2.0.<br>
+<br>
+On FreeBSD, OpenBSD and NetBSD supported since Zabbix agent version 2.2. <br>
+<br>
+Some Windows versions (for example, Server 2008) might require the latest updates installed to support non-<abbr title="American Standard Code for Information Interchange">ASCII</abbr> characters in interface names.</td>
+	</tr>
+	<tr class="row35">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row36">
+		<th class="col0 leftalign" colspan="5">net.if.in[if,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row37">
+		<th class="col0"> </th><td class="col1 leftalign">Incoming traffic statistics on network interface.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>if</strong> - network interface name (Unix); network interface full description or IPv4 address (Windows)<br>
+<strong>mode</strong> - possible values:<br>
+<em>bytes</em> - number of bytes (default)<br>
+<em>packets</em> - number of packets<br>
+<em>errors</em> - number of errors<br>
+<em>dropped</em> - number of dropped packets  </td><td class="col4 leftalign">Multi-byte interface names on Windows are supported since Zabbix agent version 1.8.6.<br>
+<br>
+Examples:<br>
+⇒ net.if.in[eth0,errors]<br>
+⇒ net.if.in[eth0]<br>
+<br>
+You may obtain network interface descriptions on Windows with net.if.discovery or net.if.list items.<br>
+<br>
+You may use this key with a <em>Delta (speed per second)</em> store value in order to get bytes per second statistics.  </td>
+	</tr>
+	<tr class="row38">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row39">
+		<th class="col0 leftalign" colspan="5">net.if.out[if,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row40">
+		<th class="col0"> </th><td class="col1 leftalign">Outgoing traffic statistics on network interface.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>if</strong> - network interface name (Unix); network interface full description or IPv4 address (Windows)<br>
+<strong>mode</strong> - possible values:<br>
+<em>bytes</em> - number of bytes (default)<br>
+<em>packets</em> - number of packets<br>
+<em>errors</em> - number of errors<br>
+<em>dropped</em> - number of dropped packets  </td><td class="col4 leftalign">Multi-byte interface names on Windows are supported since Zabbix agent 1.8.6 version.<br>
+<br>
+Examples:<br>
+⇒ net.if.out[eth0,errors]<br>
+⇒ net.if.out[eth0]<br>
+<br>
+You may obtain network interface descriptions on Windows with net.if.discovery or net.if.list items.<br>
+<br>
+You may use this key with a <em>Delta (speed per second)</em> store value in order to get bytes per second statistics.  </td>
+	</tr>
+	<tr class="row41">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row42">
+		<th class="col0 leftalign" colspan="5">net.if.total[if,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row43">
+		<th class="col0"> </th><td class="col1 leftalign">Sum of incoming and outgoing traffic statistics on network interface.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>if</strong> - network interface name (Unix); network interface full description or IPv4 address (Windows)<br>
+<strong>mode</strong> - possible values:<br>
+<em>bytes</em> - number of bytes (default)<br>
+<em>packets</em> - number of packets<br>
+<em>errors</em> - number of errors<br>
+<em>dropped</em> - number of dropped packets  </td><td class="col4 leftalign">Examples:<br>
+⇒ net.if.total[eth0,errors]<br>
+⇒ net.if.total[eth0]<br>
+<br>
+You may obtain network interface descriptions on Windows with net.if.discovery or net.if.list items.<br>
+<br>
+You may use this key with a <em>Delta (speed per second)</em> store value in order to get bytes per second statistics.<br>
+<br>
+Note that dropped packets are supported only if both net.if.in and net.if.out work for dropped packets on your platform.  </td>
+	</tr>
+	<tr class="row44">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row45">
+		<th class="col0 leftalign" colspan="5">net.tcp.listen[port]  </th>
+	</tr>
+	<tr class="row46">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if this TCP port is in LISTEN state.  </td><td class="col2 leftalign">0 - it is not in LISTEN state<br>
+<br>
+1 - it is in LISTEN state  </td><td class="col3 leftalign"><strong>port</strong> - TCP port number  </td><td class="col4 leftalign">Example:<br>
+⇒ net.tcp.listen[80]<br>
+<br>
+On Linux supported since Zabbix agent version 1.8.4  </td>
+	</tr>
+	<tr class="row47">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row48">
+		<th class="col0 leftalign" colspan="5">net.tcp.port[&lt;ip&gt;,port]  </th>
+	</tr>
+	<tr class="row49">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if it is possible to make TCP connection to specified port.  </td><td class="col2 leftalign">0 - cannot connect<br>
+<br>
+1 - can connect  </td><td class="col3 leftalign"><strong>ip</strong> - IP address (default is 127.0.0.1)<br>
+<strong>port</strong> - port number  </td><td class="col4">Example:<br>
+⇒ net.tcp.port[,80] → can be used to test availability of web server running on port 80.<br>
+<br>
+For simple TCP performance testing use net.tcp.service.perf[tcp,&lt;ip&gt;,&lt;port&gt;]<br>
+<br>
+Note that these checks may result in additional messages in system daemon logfiles (SMTP and SSH sessions being logged usually). <br>
+<br>
+Old naming: <em>check_port[*]</em></td>
+	</tr>
+	<tr class="row50">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row51">
+		<th class="col0 leftalign" colspan="5">net.tcp.service[service,&lt;ip&gt;,&lt;port&gt;]  </th>
+	</tr>
+	<tr class="row52">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if service is running and accepting TCP connections.  </td><td class="col2 leftalign">0 - service is down<br>
+<br>
+1 - service is running  </td><td class="col3 leftalign"><strong>service</strong> - either of:<br>
+<em>ssh</em>, <em>ntp</em>, <em>ldap</em>, <em>smtp</em>, <em>ftp</em>, <em>http</em>, <em>pop</em>, <em>nntp</em>, <em>imap</em>, <em>tcp</em>, <em>https</em>, <em>telnet</em> (see <a href="/documentation/2.4/manual/appendix/items/service_check_details" class="wikilink1" title="manual:appendix:items:service_check_details">details</a>)<br>
+<strong>ip</strong> - IP address (default is 127.0.0.1)<br>
+<strong>port</strong> - port number (by default standard service port number is used)  </td><td class="col4 leftalign">Example:<br>
+⇒ net.tcp.service[ftp,,45] → can be used to test the availability of <abbr title="File Transfer Protocol">FTP</abbr> server on TCP port 45.<br>
+<br>
+Note that these checks may result in additional messages in system daemon logfiles (SMTP and SSH sessions being logged usually).<br>
+<br>
+Checking of encrypted protocols (like IMAP on port 993 or POP on port 995) is currently not supported. As a workaround, please use net.tcp.port for checks like these.<br>
+<br>
+Checking of LDAP and HTTPS by Windows agent is currently not supported.<br>
+<br>
+Note that the telnet check looks for a login prompt (':' at the end).<br>
+<br>
+See also <a href="/documentation/2.4/manual/installation/known_issues#https_checks" class="wikilink1" title="manual:installation:known_issues">known issues</a> of checking HTTPS service.<br>
+<br>
+<em>https</em> and <em>telnet</em> services are supported since Zabbix 2.0.<br>
+<em>ntp</em> service only works since Zabbix 2.0.15, 2.2.10 and 2.4.6, despite being available in earlier versions.<br>
+<br>
+Old naming: <em>check_service[*]</em>  </td>
+	</tr>
+	<tr class="row53">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row54">
+		<th class="col0 leftalign" colspan="5">net.tcp.service.perf[service,&lt;ip&gt;,&lt;port&gt;]  </th>
+	</tr>
+	<tr class="row55">
+		<th class="col0"> </th><td class="col1 leftalign">Checks performance of service.  </td><td class="col2 leftalign">0 - service is down<br>
+<br>
+seconds - the number of seconds spent while connecting to the service  </td><td class="col3 leftalign"><strong>service</strong> - either of:<br>
+<em>ssh</em>, <em>ntp</em>, <em>ldap</em>, <em>smtp</em>, <em>ftp</em>, <em>http</em>, <em>pop</em>, <em>nntp</em>, <em>imap</em>, <em>tcp</em>, <em>https</em>, <em>telnet</em> (see <a href="/documentation/2.4/manual/appendix/items/service_check_details" class="wikilink1" title="manual:appendix:items:service_check_details">details</a>)<br>
+<strong>ip</strong> - IP address (default is 127.0.0.1)<br>
+<strong>port</strong> - port number (by default standard service port number is used)  </td><td class="col4 leftalign">Example:<br>
+⇒ net.tcp.service.perf[ssh] → can be used to test the speed of initial response from SSH server.<br>
+<br>
+Checking of encrypted protocols (like IMAP on port 993 or POP on port 995) is currently not supported. As a workaround, please use net.tcp.service.perf[tcp,&lt;ip&gt;,&lt;port&gt;] for checks like these.<br>
+<br>
+Checking of LDAP and HTTPS by Windows agent is currently not supported.<br>
+<br>
+Note that the telnet check looks for a login prompt (':' at the end).<br>
+<br>
+See also <a href="/documentation/2.4/manual/installation/known_issues#https_checks" class="wikilink1" title="manual:installation:known_issues">known issues</a> of checking HTTPS service.<br>
+<br>
+<em>https</em> and <em>telnet</em> services are supported since Zabbix 2.0.<br>
+<em>ntp</em> service only works since Zabbix 2.0.15, 2.2.10 and 2.4.6, despite being available in earlier versions.<br>
+<br>
+Old naming: <em>check_service_perf[*]</em>  </td>
+	</tr>
+	<tr class="row56">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row57">
+		<th class="col0 leftalign" colspan="5">net.udp.listen[port]  </th>
+	</tr>
+	<tr class="row58">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if this UDP port is in LISTEN state.  </td><td class="col2 leftalign">0 - it is not in LISTEN state<br>
+<br>
+1 - it is in LISTEN state  </td><td class="col3 leftalign"><strong>port</strong> - UDP port number  </td><td class="col4 leftalign">Example:<br>
+⇒ net.udp.listen[68]<br>
+<br>
+On Linux supported since Zabbix agent version 1.8.4  </td>
+	</tr>
+	<tr class="row59">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row60">
+		<th class="col0 leftalign" colspan="5">proc.mem[&lt;name&gt;,&lt;user&gt;,&lt;mode&gt;,&lt;cmdline&gt;]  </th>
+	</tr>
+	<tr class="row61">
+		<th class="col0"> </th><td class="col1 leftalign">Memory used by process in bytes.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>name</strong> - process name (default is <em>all processes</em>)<br>
+<strong>user</strong> - user name (default is <em>all users</em>)<br>
+<strong>mode</strong> - possible values:<br>
+<em>avg</em>, <em>max</em>, <em>min</em>, <em>sum</em> (default)<br>
+<strong>cmdline</strong> - filter by command line (it is a regular expression)  </td><td class="col4 leftalign">Examples:<br>
+⇒ proc.mem[,root] → memory used by all processes running under the “root” user<br>
+⇒ proc.mem[zabbix_server,zabbix] → memory used by all zabbix_server processes running under the zabbix user<br>
+⇒ proc.mem[,oracle,max,oracleZABBIX] → memory used by the most memory-hungry process running under oracle having oracleZABBIX in its command line.<br>
+<br>
+<em>Note</em>: When several processes use shared memory, the sum of memory used by processes may result in large, unrealistic values.  </td>
+	</tr>
+	<tr class="row62">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row63">
+		<th class="col0 leftalign" colspan="5">proc.num[&lt;name&gt;,&lt;user&gt;,&lt;state&gt;,&lt;cmdline&gt;]  </th>
+	</tr>
+	<tr class="row64">
+		<th class="col0"> </th><td class="col1 leftalign">The number of processes.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>name</strong> - process name (default is <em>all processes</em>)<br>
+<strong>user</strong> - user name (default is <em>all users</em>)<br>
+<strong>state</strong> - possible values: <em>all</em> (default), <em>run</em>, <em>sleep</em>, <em>zomb</em><br>
+<strong>cmdline</strong> - filter by command line (it is a regular expression)  </td><td class="col4 leftalign">Examples:<br>
+⇒ proc.num[,mysql] → number of processes running under the mysql user<br>
+⇒ proc.num[apache2,www-data] → number of apache2 processes running under the www-data user<br>
+⇒ proc.num[,oracle,sleep,oracleZABBIX] → number of processes in sleep state running under oracle having oracleZABBIX in its command line<br>
+<br>
+On Windows, only the <code>name</code> and <code>user</code> parameters are supported.  </td>
+	</tr>
+	<tr class="row65">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row66">
+		<th class="col0 leftalign" colspan="5">sensor[device,sensor,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row67">
+		<th class="col0" rowspan="3"> </th><td class="col1 leftalign" rowspan="3">Hardware sensor reading.  </td><td class="col2 leftalign" rowspan="3">Float  </td><td class="col3 leftalign" rowspan="3"><strong>device</strong> - device name <br>
+<strong>sensor</strong> - sensor name <br>
+<strong>mode</strong> - possible values:<br>
+<em>avg</em>, <em>max</em>, <em>min</em> (if this parameter is omitted, device and sensor are treated verbatim).  </td><td class="col4 leftalign"> Reads /proc/sys/dev/sensors on Linux 2.4.<br>
+<br>
+Example:<br>
+⇒ sensor[w83781d-i2c-0-2d,temp1]<br>
+<br>
+Prior to Zabbix 1.8.4, the <em>sensor[temp1]</em> format was used.  </td>
+	</tr>
+	<tr class="row68">
+		<td class="col0">Reads /sys/class/hwmon on Linux 2.6+.<br>
+<br>
+See a more detailed description of <a href="/documentation/2.4/manual/appendix/items/sensor" class="wikilink1" title="manual:appendix:items:sensor">sensor</a> item on Linux.</td>
+	</tr>
+	<tr class="row69">
+		<td class="col0">Reads the <em>hw.sensors</em> MIB on OpenBSD.<br>
+<br>
+Examples:<br>
+⇒ sensor[cpu0,temp0] → temperature of one CPU<br>
+⇒ sensor["cpu[0-2]$",temp,avg] → average temperature of the first three CPU's <br>
+<br>
+Supported on OpenBSD since Zabbix 1.8.4. </td>
+	</tr>
+	<tr class="row70">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row71">
+		<th class="col0 leftalign" colspan="5">system.boottime  </th>
+	</tr>
+	<tr class="row72">
+		<th class="col0"> </th><td class="col1 leftalign">System boot time.  </td><td class="col2 leftalign">Integer (Unix timestamp)  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">  </td>
+	</tr>
+	<tr class="row73">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row74">
+		<th class="col0 leftalign" colspan="5">system.cpu.discovery  </th>
+	</tr>
+	<tr class="row75">
+		<th class="col0"> </th><td class="col1 leftalign">List of detected CPUs/CPU cores. Used for low-level discovery.  </td><td class="col2 leftalign">JSON object  </td><td class="col3 leftalign">  </td><td class="col4"> Supported on all platforms since 2.4.0. </td>
+	</tr>
+	<tr class="row76">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row77">
+		<th class="col0 leftalign" colspan="5">system.cpu.intr  </th>
+	</tr>
+	<tr class="row78">
+		<th class="col0"> </th><td class="col1 leftalign">Device interrupts.  </td><td class="col2 leftalign">Integer.  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">  </td>
+	</tr>
+	<tr class="row79">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row80">
+		<th class="col0 leftalign" colspan="5">system.cpu.load[&lt;cpu&gt;,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row81">
+		<th class="col0"> </th><td class="col1"><a href="http://en.wikipedia.org/wiki/Load_(computing)" class="urlextern" title="http://en.wikipedia.org/wiki/Load_(computing)" rel="nofollow">CPU load</a>.</td><td class="col2 leftalign">Float  </td><td class="col3 leftalign"><strong>cpu</strong> - possible values:<br>
+<em>all</em> (default), <em>percpu</em> (total load divided by online CPU count)<br>
+<strong>mode</strong> - possible values:<br>
+<em>avg1</em> (one-minute average, default), <em>avg5</em>, <em>avg15</em>  </td><td class="col4 leftalign">Example:<br>
+⇒ system.cpu.load[,avg5]<br>
+<br>
+<em>percpu</em> is supported since Zabbix 2.0.0.<br>
+<br>
+Old naming: <em>system.cpu.loadX</em>  </td>
+	</tr>
+	<tr class="row82">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row83">
+		<th class="col0 leftalign" colspan="5">system.cpu.num[&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row84">
+		<th class="col0"> </th><td class="col1 leftalign">Number of CPUs.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>type</strong> - possible values:<br>
+<em>online</em> (default), <em>max</em>  </td><td class="col4 leftalign">Example:<br>
+⇒ system.cpu.num  </td>
+	</tr>
+	<tr class="row85">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row86">
+		<th class="col0 leftalign" colspan="5">system.cpu.switches  </th>
+	</tr>
+	<tr class="row87">
+		<th class="col0"> </th><td class="col1 leftalign">Count of context switches.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Old naming: <em>system[switches]</em>  </td>
+	</tr>
+	<tr class="row88">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row89">
+		<th class="col0 leftalign" colspan="5">system.cpu.util[&lt;cpu&gt;,&lt;type&gt;,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row90">
+		<th class="col0"> </th><td class="col1 leftalign">CPU utilisation in percent.  </td><td class="col2 leftalign">Float  </td><td class="col3 leftalign"><strong>cpu</strong> - <em>&lt;CPU number&gt;</em> or <em>all</em> (default)<br>
+<strong>type</strong> - possible values:<br>
+<em>idle</em>, <em>nice</em>, <em>user</em> (default), <em>system</em> (default for Windows), <em>iowait</em>, <em>interrupt</em>, <em>softirq</em>, <em>steal</em><br>
+<strong>mode</strong> - possible values:<br>
+<em>avg1</em> (one-minute average, default), <em>avg5</em>, <em>avg15</em>  </td><td class="col4 leftalign">Example:<br>
+⇒ system.cpu.util[0,user,avg5]<br>
+<br>
+Old naming: <em>system.cpu.idleX, system.cpu.niceX, system.cpu.systemX, system.cpu.userX</em>  </td>
+	</tr>
+	<tr class="row91">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row92">
+		<th class="col0 leftalign" colspan="5">system.hostname[&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row93">
+		<th class="col0"> </th><td class="col1 leftalign">System host name.  </td><td class="col2 leftalign">String  </td><td class="col3"><strong>type</strong> (Windows only, must not be used on other systems) - possible values: <em>netbios</em> (default) or <em>host</em> </td><td class="col4 leftalign"> The value is acquired by either GetComputerName() (for <strong>netbios</strong>) or gethostname() (for <strong>host</strong>) functions on Windows and by “hostname” command on other systems.<br>
+<br>
+Examples of returned values:<br>
+<em>on Linux</em>:<br>
+⇒ system.hostname → linux-w7x1<br>
+⇒ system.hostname →  www.zabbix.com<br>
+<em>on Windows</em>:<br>
+⇒ system.hostname → WIN-SERV2008-I6<br>
+⇒ system.hostname[host] → Win-Serv2008-I6LonG<br>
+<br>
+The <code>type</code> parameter for this item is supported since Zabbix <strong>1.8.6</strong>.<br>
+<br>
+See also a <a href="/documentation/2.4/manual/appendix/install/windows_agent#configuration" class="wikilink1" title="manual:appendix:install:windows_agent">more detailed description</a>.  </td>
+	</tr>
+	<tr class="row94">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row95">
+		<th class="col0 leftalign" colspan="5">system.hw.chassis[&lt;info&gt;]  </th>
+	</tr>
+	<tr class="row96">
+		<th class="col0"> </th><td class="col1 leftalign">Chassis information.  </td><td class="col2 leftalign">String  </td><td class="col3"><strong>info</strong> - possible values: <em>full</em> (default), <em>model</em>, <em>serial</em>, <em>type</em> or <em>vendor</em> </td><td class="col4">Example:<br>
+⇒ system.hw.chassis[full] → Hewlett-Packard HP Pro 3010 Small Form Factor PC CZXXXXXXXX Desktop]<br>
+<br>
+This key depends on the availability of the <a href="http://en.wikipedia.org/wiki/System_Management_BIOS" class="urlextern" title="http://en.wikipedia.org/wiki/System_Management_BIOS" rel="nofollow">SMBIOS</a> table in memory.<br>
+<br>
+<strong>Root permissions</strong> are required because the value is acquired by reading from memory.<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row97">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row98">
+		<th class="col0 leftalign" colspan="5">system.hw.cpu[&lt;cpu&gt;,&lt;info&gt;]  </th>
+	</tr>
+	<tr class="row99">
+		<th class="col0"> </th><td class="col1 leftalign">CPU information.  </td><td class="col2 leftalign">String or integer  </td><td class="col3"><strong>cpu</strong> - <em>&lt;CPU number&gt;</em> or <em>all</em> (default)<br>
+<strong>info</strong> - possible values:<br>
+<em>full</em> (default), <em>curfreq</em>, <em>maxfreq</em>, <em>model</em> or <em>vendor</em> </td><td class="col4">Example:<br>
+⇒ system.hw.cpu[0,vendor] → AuthenticAMD<br>
+<br>
+Gathers info from /proc/cpuinfo and /sys/devices/system/cpu/[cpunum]/cpufreq/cpuinfo_max_freq.<br>
+<br>
+If a CPU number and <em>curfreq</em> or <em>maxfreq</em> is specified, a numeric value is returned (Hz).<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row100">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row101">
+		<th class="col0 leftalign" colspan="5">system.hw.devices[&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row102">
+		<th class="col0"> </th><td class="col1 leftalign">Listing of PCI or USB devices.  </td><td class="col2 leftalign">Text  </td><td class="col3"><strong>type</strong> - <em>pci</em> (default) or <em>usb</em> </td><td class="col4">Example:<br>
+⇒ system.hw.devices[pci] → 00:00.0 Host bridge: Advanced Micro Devices [AMD] RS780 Host Bridge<br>
+[..]<br>
+<br>
+Returns the output of either lspci or lsusb utility (executed without any parameters)<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row103">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row104">
+		<th class="col0 leftalign" colspan="5">system.hw.macaddr[&lt;interface&gt;,&lt;format&gt;]  </th>
+	</tr>
+	<tr class="row105">
+		<th class="col0"> </th><td class="col1 leftalign">Listing of MAC addresses.  </td><td class="col2 leftalign">String  </td><td class="col3"><strong>interface</strong> - <em>all</em> (default) or a regular expression<br>
+<strong>format</strong> - <em>full</em> (default) or <em>short</em> </td><td class="col4">Lists MAC adresses of the interfaces whose name matches the given <code>interface</code> regexp (<em>all</em> lists for all interfaces).<br>
+<br>
+Example:<br>
+⇒ system.hw.macaddr["eth0$",full] → [eth0] 00:11:22:33:44:55<br>
+<br>
+If <code>format</code> is specified as <em>short</em>, interface names and identical MAC addresses are not listed.<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row106">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row107">
+		<th class="col0 leftalign" colspan="5">system.localtime[&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row108">
+		<th class="col0"> </th><td class="col1 leftalign">System time.  </td><td class="col2 leftalign">Integer - with <code>type</code> as <em>utc</em><br>
+<br>
+String - with <code>type</code> as <em>local</em>  </td><td class="col3 leftalign"><strong>type</strong> - possible values:<br>
+<em>utc</em> - (default) the time since the Epoch (00:00:00 UTC, January 1, 1970), measured in seconds.<br>
+<em>local</em> - the time in the 'yyyy-mm-dd,hh:mm:ss.nnn,+hh:mm' format<br>
+  </td><td class="col4 leftalign"> Parameters for this item are supported since Zabbix agent version 2.0.<br>
+<br>
+Example:<br>
+⇒ system.localtime[local] → create an item using this key and then use it to display host time in the <em>Clock</em> <a href="/documentation/2.4/manual/config/visualisation/screens/elements#clock" class="wikilink1" title="manual:config:visualisation:screens:elements">screen element</a>.  </td>
+	</tr>
+	<tr class="row109">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row110">
+		<th class="col0 leftalign" colspan="5">system.run[command,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row111">
+		<th class="col0"> </th><td class="col1 leftalign">Run specified command on the host.  </td><td class="col2 leftalign">Text result of the command<br>
+<br>
+1 - with <code>mode</code> as <em>nowait</em> (regardless of command result)  </td><td class="col3 leftalign"><strong>command</strong> - command for execution<br>
+<strong>mode</strong> - possible values:<br>
+<em>wait</em> - wait end of execution (default),<br>
+<em>nowait</em> - do not wait  </td><td class="col4 leftalign">Up to 512KB of data can be returned, including trailing whitespace that is truncated.<br>
+To be processed correctly, the output of the command must be text.<br>
+<br>
+Example:<br>
+⇒ system.run[ls -l /] → detailed file list of root directory.<br>
+<br>
+<em>Note</em>: To enable this functionality, <a href="/documentation/2.4/manual/appendix/config/zabbix_agentd" class="wikilink1" title="manual:appendix:config:zabbix_agentd">agent configuration file</a> must contain EnableRemoteCommands=1 option.<br>
+<em>Note</em>: The return value of the item is standard output together with standard error produced by command.<br>
+<em>Note:</em> Empty result is allowed starting with Zabbix 2.4.0.<br>
+<br>
+See also: <a href="/documentation/2.4/manual/appendix/command_execution" class="wikilink1" title="manual:appendix:command_execution">Command execution</a>.  </td>
+	</tr>
+	<tr class="row112">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row113">
+		<th class="col0 leftalign" colspan="5">system.stat[resource,&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row114">
+		<th class="col0"> </th><td class="col1 leftalign">System statistics.  </td><td class="col2 leftalign">Integer or float  </td><td class="col3 leftalign" colspan="2"><strong>ent</strong> - number of processor units this partition is entitled to receive (float)<br>
+<strong>kthr,&lt;type&gt;</strong> - information about kernel thread states:<br>
+<em>r</em> - average number of runnable kernel threads (float)<br>
+<em>b</em> - average number of kernel threads placed in the Virtual Memory Manager wait queue (float)<br>
+<strong>memory,&lt;type&gt;</strong> - information about the usage of virtual and real memory:<br>
+<em>avm</em> - active virtual pages (integer)<br>
+<em>fre</em> - size of the free list (integer)<br>
+<strong>page,&lt;type&gt;</strong> - information about page faults and paging activity:<br>
+<em>fi</em> - file page-ins per second (float)<br>
+<em>fo</em> - file page-outs per second (float)<br>
+<em>pi</em> - pages paged in from paging space (float)<br>
+<em>po</em> - pages paged out to paging space (float)<br>
+<em>fr</em> - pages freed (page replacement) (float)<br>
+<em>sr</em> - pages scanned by page-replacement algorithm (float)<br>
+<strong>faults,&lt;type&gt;</strong> - trap and interrupt rate:<br>
+<em>in</em> - device interrupts (float)<br>
+<em>sy</em> - system calls (float)<br>
+<em>cs</em> - kernel thread context switches (float)<br>
+<strong>cpu,&lt;type&gt;</strong> - breakdown of percentage usage of processor time:<br>
+<em>us</em> - user time (float)<br>
+<em>sy</em> - system time (float)<br>
+<em>id</em> - idle time (float)<br>
+<em>wa</em> - idle time during which the system had outstanding disk/NFS I/O request(s) (float)<br>
+<em>pc</em> - number of physical processors consumed (float)<br>
+<em>ec</em> - the percentage of entitled capacity consumed (float)<br>
+<em>lbusy</em> - indicates the percentage of logical processor(s) utilization that occurred while executing at the user and system level (float)<br>
+<em>app</em> - indicates the available physical processors in the shared pool (float)<br>
+<strong>disk,&lt;type&gt;</strong> - disk statistics:<br>
+<em>bps</em> - indicates the amount of data transferred (read or written) to the drive in bytes per second (integer)<br>
+<em>tps</em> - indicates the number of transfers per second that were issued to the physical disk/tape (float)<br>
+This item is supported since Zabbix <strong>1.8.1.</strong>  </td>
+	</tr>
+	<tr class="row115">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row116">
+		<th class="col0 leftalign" colspan="5">system.sw.arch  </th>
+	</tr>
+	<tr class="row117">
+		<th class="col0"> </th><td class="col1 leftalign">Software architecture information.  </td><td class="col2 leftalign">String  </td><td class="col3"> </td><td class="col4">Example:<br>
+⇒ system.sw.arch → i686<br>
+<br>
+Info is acquired from uname() function.<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row118">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row119">
+		<th class="col0 leftalign" colspan="5">system.sw.os[&lt;info&gt;]  </th>
+	</tr>
+	<tr class="row120">
+		<th class="col0"> </th><td class="col1 leftalign">Operating system information.  </td><td class="col2 leftalign">String  </td><td class="col3"><strong>info</strong> - possible values: <br>
+<em>full</em> (default), <em>short</em> or <em>name</em> </td><td class="col4">Example:<br>
+⇒ system.sw.os[short]→ Ubuntu 2.6.35-28.50-generic 2.6.35.11<br>
+<br>
+Info is acquired from (note that not all files are present in all distributions):<br>
+/proc/version (<em>full</em>)<br>
+/proc/version_signature (<em>short</em>)<br>
+/etc/issue.net (<em>name</em>)<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row121">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row122">
+		<th class="col0 leftalign" colspan="5">system.sw.packages[&lt;package&gt;,&lt;manager&gt;,&lt;format&gt;]  </th>
+	</tr>
+	<tr class="row123">
+		<th class="col0"> </th><td class="col1 leftalign">Listing of installed packages.  </td><td class="col2 leftalign">Text  </td><td class="col3"><strong>package</strong> - <em>all</em> (default) or a regular expression<br>
+<strong>manager</strong> - <em>all</em> (default) or a package manager<br>
+<strong>format</strong> - <em>full</em> (default) or <em>short</em> </td><td class="col4">Lists (alphabetically) installed packages whose name matches the given <code>package</code> regexp (<em>all</em> lists them all).<br>
+<br>
+Example:<br>
+⇒ system.sw.packages[mini,dpkg,short] → python-minimal, python2.6-minimal, ubuntu-minimal<br>
+<br>
+Supported package managers (executed command):<br>
+dpkg (dpkg --get-selections)<br>
+pkgtool (ls /var/log/packages)<br>
+rpm (rpm -qa)<br>
+pacman (pacman -Q)<br>
+<br>
+If <code>format</code> is specified as <em>full</em>, packages are grouped by package managers (each manager on a seperate line beginning with its name in square brackets).<br>
+If <code>format</code> is specified as <em>short</em>, packages are not grouped and are listed on a single line.<br>
+<br>
+Supported since Zabbix agent version 2.0. </td>
+	</tr>
+	<tr class="row124">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row125">
+		<th class="col0 leftalign" colspan="5">system.swap.in[&lt;device&gt;,&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row126">
+		<th class="col0"> </th><td class="col1 leftalign">Swap in (from device into memory) statistics.  </td><td class="col2 leftalign">Integer  </td><td class="col3"><strong>device</strong> - device used for swapping (default is <em>all</em>)<br>
+<strong>type</strong> - possible values:<br>
+<em>count</em> (number of swapins), <em>sectors</em> (sectors swapped in), <em>pages</em> (pages swapped in). See <a href="/documentation/2.4/manual/appendix/items/supported_by_platform" class="wikilink1" title="manual:appendix:items:supported_by_platform">supported by platform</a> for details on defaults.</td><td class="col4 leftalign">Example:<br>
+⇒ system.swap.in[,pages]<br>
+<br>
+The source of this information is:<br>
+/proc/swaps, /proc/partitions, /proc/stat (Linux 2.4)<br>
+/proc/swaps, /proc/diskstats, /proc/vmstat (Linux 2.6)  </td>
+	</tr>
+	<tr class="row127">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row128">
+		<th class="col0 leftalign" colspan="5">system.swap.out[&lt;device&gt;,&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row129">
+		<th class="col0"> </th><td class="col1 leftalign">Swap out (from memory onto device) statistics.  </td><td class="col2 leftalign">Integer  </td><td class="col3"><strong>device</strong> - device used for swapping (default is <em>all</em>)<br>
+<strong>type</strong> - possible values:<br>
+<em>count</em> (number of swapouts), <em>sectors</em> (sectors swapped out), <em>pages</em> (pages swapped out). See <a href="/documentation/2.4/manual/appendix/items/supported_by_platform" class="wikilink1" title="manual:appendix:items:supported_by_platform">supported by platform</a> for details on defaults.</td><td class="col4">Example:<br>
+⇒ system.swap.out[,pages]<br>
+<br>
+The source of this information is:<br>
+/proc/swaps, /proc/partitions, /proc/stat (Linux 2.4)<br>
+/proc/swaps, /proc/diskstats, /proc/vmstat (Linux 2.6) </td>
+	</tr>
+	<tr class="row130">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row131">
+		<th class="col0 leftalign" colspan="5">system.swap.size[&lt;device&gt;,&lt;type&gt;]  </th>
+	</tr>
+	<tr class="row132">
+		<th class="col0"> </th><td class="col1 leftalign">Swap space size in bytes or in percentage from total.  </td><td class="col2 leftalign">Integer - for bytes<br>
+<br>
+Float - for percentage<sup>1</sup>  </td><td class="col3 leftalign"><strong>device</strong> - device used for swapping (default is <em>all</em>)<br>
+<strong>type</strong> - possible values:<br>
+<em>free</em> (free swap space, default), <em>pfree</em> (free swap space, in percent), <em>pused</em> (used swap space, in percent), <em>total</em> (total swap space), <em>used</em> (used swap space)  </td><td class="col4 leftalign">Example:<br>
+⇒ system.swap.size[,pfree] → free swap space percentage<br>
+<br>
+If <em>device</em> is not specified Zabbix agent will only take into account swap devices (files), physical memory will be ignored. For example, on Solaris systems <em>swap -s</em> command includes a portion of physical memory and swap devices (unlike <em>swap -l</em>).<br>
+<br>
+Old naming: <em>system.swap.free</em>, <em>system.swap.total</em>  </td>
+	</tr>
+	<tr class="row133">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row134">
+		<th class="col0 leftalign" colspan="5">system.uname  </th>
+	</tr>
+	<tr class="row135">
+		<th class="col0"> </th><td class="col1 leftalign">Detailed host information.  </td><td class="col2 leftalign">String  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Example of returned value:<br>
+FreeBSD localhost 4.2-RELEASE FreeBSD 4.2-RELEASE #0: Mon Nov i386<br>
+<br>
+Since Zabbix 2.2.0, the value for this item is obtained by using the uname() system call, whereas previously it was obtained by invoking “uname -a” on Unix systems. Hence, the value of this item might differ from the output of “uname -a” and does not include additional information that “uname -a” prints based on other sources.  </td>
+	</tr>
+	<tr class="row136">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row137">
+		<th class="col0 leftalign" colspan="5">system.uptime  </th>
+	</tr>
+	<tr class="row138">
+		<th class="col0"> </th><td class="col1 leftalign">System uptime in seconds.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">In <a href="/documentation/2.4/manual/config/items/item#configuration" class="wikilink1" title="manual:config:items:item">item configuration</a>, use <strong>s</strong> or <strong>uptime</strong> units to get readable values.  </td>
+	</tr>
+	<tr class="row139">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row140">
+		<th class="col0 leftalign" colspan="5">system.users.num  </th>
+	</tr>
+	<tr class="row141">
+		<th class="col0"> </th><td class="col1 leftalign">Number of users logged in.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign">  </td><td class="col4 leftalign"><strong>who</strong> command is used on the agent side to obtain the value.  </td>
+	</tr>
+	<tr class="row142">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row143">
+		<th class="col0 leftalign" colspan="5">vfs.dev.read[&lt;device&gt;,&lt;type&gt;,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row144">
+		<th class="col0"> </th><td class="col1 leftalign">Disk read statistics.  </td><td class="col2 leftalign">Integer - with <code>type</code> in <em>sectors</em>, <em>operations</em>, <em>bytes</em><br>
+<br>
+Float - with <code>type</code> in <em>sps</em>, <em>ops</em>, <em>bps</em>  </td><td class="col3 leftalign"><strong>device</strong> - disk device (default is <em>all</em><sup>2</sup>) <br>
+<strong>type</strong> - possible values: <em>sectors</em>, <em>operations</em>, <em>bytes</em>, <em>sps</em>, <em>ops</em>, <em>bps</em><br>
+This parameter must be specified, since defaults differ under various OSes.<br>
+<em>sps</em>, <em>ops</em>, <em>bps</em> stand for: sectors, operations, bytes per second, respectively.<br>
+<strong>mode</strong> - possible values: <em>avg1</em> (one-minute average, default), <em>avg5</em>, <em>avg15</em>.<br>
+This parameter is supported only with <code>type</code> in: sps, ops, bps.  </td><td class="col4 leftalign">Default values of 'type' parameter for different OSes:<br>
+AIX - operations<br>
+FreeBSD - bps<br>
+Linux - sps<br>
+OpenBSD - operations<br>
+Solaris - bytes<br>
+<br>
+Example:<br>
+⇒ vfs.dev.read[,operations]<br>
+<br>
+<em>sps</em>, <em>ops</em> and <em>bps</em> on supported platforms used to be limited to 8 devices (7 individual and one <em>all</em>). Since Zabbix 2.0.1 this limit is 1024 devices (1023 individual and one for <em>all</em>).<br>
+<br>
+Supports LVM since Zabbix 1.8.6.<br>
+<br>
+Only relative device names could be used (for example, <strong>sda</strong>) until Zabbix 1.8.6. Since then, an optional <strong>/dev/</strong> prefix may be used (for example, <strong>/dev/sda</strong>).<br>
+<br>
+Old naming: <em>io[*]</em>  </td>
+	</tr>
+	<tr class="row145">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row146">
+		<th class="col0 leftalign" colspan="5">vfs.dev.write[&lt;device&gt;,&lt;type&gt;,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row147">
+		<th class="col0"> </th><td class="col1 leftalign">Disk write statistics.  </td><td class="col2 leftalign">Integer - with <code>type</code> in <em>sectors</em>, <em>operations</em>, <em>bytes</em><br>
+<br>
+Float - with <code>type</code> in <em>sps</em>, <em>ops</em>, <em>bps</em>  </td><td class="col3 leftalign"><strong>device</strong> - disk device (default is <em>all</em><sup>2</sup>) <br>
+<strong>type</strong> - possible values: <em>sectors</em>, <em>operations</em>, <em>bytes</em>, <em>sps</em>, <em>ops</em>, <em>bps</em><br>
+This parameter must be specified, since defaults differ under various OSes.<br>
+<em>sps</em>, <em>ops</em>, <em>bps</em> stand for: sectors, operations, bytes per second, respectively.<br>
+<strong>mode</strong> - possible values: <em>avg1</em> (one-minute average, default), <em>avg5</em>, <em>avg15</em>.<br>
+This parameter is supported only with <code>type</code> in: sps, ops, bps.  </td><td class="col4 leftalign">Default values of 'type' parameter for different OSes:<br>
+AIX - operations<br>
+FreeBSD - bps<br>
+Linux - sps<br>
+OpenBSD - operations<br>
+Solaris - bytes<br>
+<br>
+Example:<br>
+⇒ vfs.dev.write[,operations]<br>
+<br>
+<em>sps</em>, <em>ops</em> and <em>bps</em> on supported platforms used to be limited to 8 devices (7 individual and one <em>all</em>). Since Zabbix 2.0.1 this limit is 1024 (1023 individual and one for <em>all</em>).<br>
+<br>
+Supports LVM since Zabbix 1.8.6.<br>
+<br>
+Only relative device names could be used (for example, <strong>sda</strong>) until Zabbix 1.8.6. Since then, an optional <strong>/dev/</strong> prefix may be used (for example, <strong>/dev/sda</strong>).<br>
+<br>
+Old naming: <em>io[*]</em>  </td>
+	</tr>
+	<tr class="row148">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row149">
+		<th class="col0 leftalign" colspan="5">vfs.file.cksum[file]  </th>
+	</tr>
+	<tr class="row150">
+		<th class="col0"> </th><td class="col1 leftalign">File checksum, calculated by the UNIX cksum algorithm.  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>file</strong> - full path to file  </td><td class="col4">Example:<br>
+⇒ vfs.file.cksum[/etc/passwd]<br>
+<br>
+Example of returned value:<br>
+1938292000<br>
+<br>
+ Old naming: <em>cksum</em><br>
+<br>
+The file size limit depends on <a href="/documentation/2.4/manual/appendix/items/large_file_support" class="wikilink1" title="manual:appendix:items:large_file_support">large file support</a>. </td>
+	</tr>
+	<tr class="row151">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row152">
+		<th class="col0 leftalign" colspan="5">vfs.file.contents[file,&lt;encoding&gt;]  </th>
+	</tr>
+	<tr class="row153">
+		<th class="col0"> </th><td class="col1 leftalign">Retrieving contents of a file.  </td><td class="col2 leftalign">Text  </td><td class="col3 leftalign"><strong>file</strong> - full path to file<br>
+<strong>encoding</strong> - code page <span class="curid"><a href="/documentation/2.4/manual/config/items/itemtypes/zabbix_agent#available_encodings" class="wikilink1" title="manual:config:items:itemtypes:zabbix_agent">identifier</a></span>  </td><td class="col4 leftalign">Returns an empty string if the file is empty or contains LF/CR characters only.<br>
+<br>
+Example:<br>
+⇒ vfs.file.contents[/etc/passwd]<br>
+<br>
+This item is limited to files no larger than 64 Kbytes.<br>
+<br>
+Supported since Zabbix agent version 2.0.  </td>
+	</tr>
+	<tr class="row154">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row155">
+		<th class="col0 leftalign" colspan="5">vfs.file.exists[file]  </th>
+	</tr>
+	<tr class="row156">
+		<th class="col0"> </th><td class="col1 leftalign">Checks if file exists  </td><td class="col2 leftalign">0 - not found<br>
+<br>
+1 - regular file or a link (symbolic or hard) to regular file exists  </td><td class="col3 leftalign"><strong>file</strong> - full path to file  </td><td class="col4">Example:<br>
+⇒ vfs.file.exists[/tmp/application.pid]<br>
+<br>
+The return value depends on what S_ISREG POSIX macro returns.<br>
+<br>
+The file size limit depends on <a href="/documentation/2.4/manual/appendix/items/large_file_support" class="wikilink1" title="manual:appendix:items:large_file_support">large file support</a>. </td>
+	</tr>
+	<tr class="row157">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row158">
+		<th class="col0 leftalign" colspan="5">vfs.file.md5sum[file]  </th>
+	</tr>
+	<tr class="row159">
+		<th class="col0"> </th><td class="col1 leftalign">MD5 checksum of file.  </td><td class="col2 leftalign">Character string (MD5 hash of the file)  </td><td class="col3 leftalign"><strong>file</strong> - full path to file  </td><td class="col4">Example:<br>
+⇒ vfs.file.md5sum[/usr/local/etc/zabbix_agentd.conf]<br>
+<br>
+Example of returned value:<br>
+b5052decb577e0fffd622d6ddc017e82<br>
+<br>
+The file size limit (64 <abbr title="Megabyte">MB</abbr>) for this item was removed in version 1.8.6.<br>
+<br>
+The file size limit depends on <a href="/documentation/2.4/manual/appendix/items/large_file_support" class="wikilink1" title="manual:appendix:items:large_file_support">large file support</a>. </td>
+	</tr>
+	<tr class="row160">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row161">
+		<th class="col0 leftalign" colspan="5">vfs.file.regexp[file,regexp,&lt;encoding&gt;,&lt;start line&gt;,&lt;end line&gt;,&lt;output&gt;]  </th>
+	</tr>
+	<tr class="row162">
+		<th class="col0"> </th><td class="col1 leftalign">Find string in a file.  </td><td class="col2 leftalign">The line containing the matched string, or as specified by the optional <code>output</code> parameter  </td><td class="col3 leftalign"><strong>file</strong> - full path to file<br>
+<strong>regexp</strong> - GNU regular expression<br>
+<strong>encoding</strong> - code page <span class="curid"><a href="/documentation/2.4/manual/config/items/itemtypes/zabbix_agent#available_encodings" class="wikilink1" title="manual:config:items:itemtypes:zabbix_agent">identifier</a></span><br>
+<strong>start line</strong> - the number of first line to search (first line of file by default).<br>
+<strong>end line</strong> - the number of last line to search (last line of file by default).<br>
+<strong>output</strong> - an optional output formatting template. The <strong>\0</strong> escape sequence is replaced with the matched text while an <strong>\N</strong> (where N=1…9) escape sequence is replaced with Nth matched group (or an empty string if the N exceeds the number of captured groups).  </td><td class="col4">Only the first matching line is returned.<br>
+An empty string is returned if no line matched the expression.<br>
+<br>
+Content extraction using the <code>output</code> parameter takes place on the agent.<br>
+<br>
+The <code>start line</code>, <code>end line</code> and <code>output</code> parameters are supported from version 2.2.<br>
+<br>
+Examples:<br>
+⇒ vfs.file.regexp[/etc/passwd,zabbix]<br>
+⇒ vfs.file.regexp[/path/to/some/file,"([0-9]+)$",,3,5,\1]<br>
+⇒ vfs.file.regexp[/etc/passwd,^zabbix:.:([0-9]+),,,,\1] → getting the ID of user <em>zabbix</em> </td>
+	</tr>
+	<tr class="row163">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row164">
+		<th class="col0 leftalign" colspan="5">vfs.file.regmatch[file,regexp,&lt;encoding&gt;,&lt;start line&gt;,&lt;end line&gt;]  </th>
+	</tr>
+	<tr class="row165">
+		<th class="col0"> </th><td class="col1 leftalign">Find string in a file.  </td><td class="col2 leftalign">0 - match not found<br>
+<br>
+1 - found  </td><td class="col3 leftalign"><strong>file</strong> - full path to file<br>
+<strong>regexp</strong> - GNU regular expression<br>
+<strong>encoding</strong> - code page <span class="curid"><a href="/documentation/2.4/manual/config/items/itemtypes/zabbix_agent#available_encodings" class="wikilink1" title="manual:config:items:itemtypes:zabbix_agent">identifier</a></span><br>
+<strong>start line</strong> - the number of first line to search (first line of file by default).<br>
+<strong>end line</strong> - the number of last line to search (last line of file by default).  </td><td class="col4 leftalign">The <code>start line</code> and <code>end line</code> parameters are supported from version 2.2.<br>
+<br>
+Example:<br>
+⇒ vfs.file.regmatch[/var/log/app.log,error]  </td>
+	</tr>
+	<tr class="row166">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row167">
+		<th class="col0 leftalign" colspan="5">vfs.file.size[file]  </th>
+	</tr>
+	<tr class="row168">
+		<th class="col0"> </th><td class="col1 leftalign">File size (in bytes).  </td><td class="col2 leftalign">Integer  </td><td class="col3 leftalign"><strong>file</strong> - full path to file  </td><td class="col4 leftalign">The file must have read permissions for user <em>zabbix</em>.<br>
+<br>
+Example:<br>
+⇒ vfs.file.size[/var/log/syslog]<br>
+<br>
+The file size limit depends on <a href="/documentation/2.4/manual/appendix/items/large_file_support" class="wikilink1" title="manual:appendix:items:large_file_support">large file support</a>.  </td>
+	</tr>
+	<tr class="row169">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row170">
+		<th class="col0 leftalign" colspan="5">vfs.file.time[file,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row171">
+		<th class="col0"> </th><td class="col1 leftalign">File time information.  </td><td class="col2 leftalign">Integer (Unix timestamp)  </td><td class="col3 leftalign"><strong>file</strong> - full path to the file<br>
+<strong>mode</strong> - possible values:<br>
+<em>modify</em> (default) - modification time, <em>access</em> - last access time, <em>change</em> - last change time  </td><td class="col4 leftalign">Example:<br>
+⇒ vfs.file.time[/etc/passwd,modify]<br>
+<br>
+The file size limit depends on <a href="/documentation/2.4/manual/appendix/items/large_file_support" class="wikilink1" title="manual:appendix:items:large_file_support">large file support</a>.  </td>
+	</tr>
+	<tr class="row172">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row173">
+		<th class="col0 leftalign" colspan="5">vfs.fs.discovery  </th>
+	</tr>
+	<tr class="row174">
+		<th class="col0"> </th><td class="col1 leftalign">List of mounted filesystems. Used for low-level discovery.  </td><td class="col2 leftalign">JSON object  </td><td class="col3 leftalign">  </td><td class="col4 leftalign">Supported since Zabbix agent version 2.0.  </td>
+	</tr>
+	<tr class="row175">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row176">
+		<th class="col0 leftalign" colspan="5">vfs.fs.inode[fs,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row177">
+		<th class="col0"> </th><td class="col1 leftalign">Number or percentage of inodes.  </td><td class="col2 leftalign">Integer - for number<br>
+<br>
+Float - for percentage  </td><td class="col3 leftalign"><strong>fs</strong> - filesystem<br>
+<strong>mode</strong> - possible values: <br>
+<em>total</em> (default), <em>free</em>, <em>used</em>, <em>pfree </em> (free, percentage), <em>pused</em> (used, percentage)  </td><td class="col4 leftalign">Example:<br>
+⇒ vfs.fs.inode[/,pfree] <br>
+<br>
+Old naming: <em>vfs.fs.inode.free[*]</em>, <em>vfs.fs.inode.pfree[*]</em>, <em>vfs.fs.inode.total[*]</em>  </td>
+	</tr>
+	<tr class="row178">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row179">
+		<th class="col0 leftalign" colspan="5">vfs.fs.size[fs,&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row180">
+		<th class="col0"> </th><td class="col1 leftalign">Disk space in bytes or in percentage from total.  </td><td class="col2 leftalign">Integer - for bytes<br>
+<br>
+Float - for percentage  </td><td class="col3 leftalign"><strong>fs</strong> - filesystem<br>
+<strong>mode</strong> - possible values: <br>
+ <em>total</em> (default), <em>free</em>, <em>used</em>, <em>pfree</em> (free, percentage), <em>pused</em> (used, percentage)  </td><td class="col4 leftalign">In case of a mounted volume, disk space for local file system is returned.  <br>
+<br>
+Example:<br>
+⇒ vfs.fs.size[/tmp,free]<br>
+<br>
+Reserved space of a file system is taken into account and not included when using the <em>free</em> mode.<br>
+<br>
+Old naming: <em>vfs.fs.free[*]</em>, <em>vfs.fs.total[*]</em>, <em>vfs.fs.used[*]</em>, <em>vfs.fs.pfree[*]</em>, <em>vfs.fs.pused[*]</em>  </td>
+	</tr>
+	<tr class="row181">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row182">
+		<th class="col0 leftalign" colspan="5">vm.memory.size[&lt;mode&gt;]  </th>
+	</tr>
+	<tr class="row183">
+		<th class="col0"> </th><td class="col1 leftalign">Memory size in bytes or in percentage from total.  </td><td class="col2 leftalign">Integer - for bytes<br>
+<br>
+Float - for percentage  </td><td class="col3 leftalign"><strong>mode</strong> - possible values: <br>
+<em>total</em> (default), <em>active</em>, <em>anon</em>, <em>buffers</em>, <em>cached</em>, <em>exec</em>, <em>file</em>, <em>free</em>, <em>inactive</em>, <em>pinned</em>, <em>shared</em>, <em>wired</em>, <em>used</em>, <em>pused</em> (used, percentage), <em>available</em>, <em>pavailable</em> (available, percentage)  </td><td class="col4 leftalign">This item accepts three categories of parameters:<br>
+<br>
+1) <em>total</em> - total amount of memory;<br>
+2) platform-specific memory types: <em>active</em>, <em>anon</em>, <em>buffers</em>, <em>cached</em>, <em>exec</em>, <em>file</em>, <em>free</em>, <em>inactive</em>, <em>pinned</em>, <em>shared</em>, <em>wired</em>;<br>
+3) user-level estimates on how much memory is used and available: <em>used</em>, <em>pused</em>, <em>available</em>, <em>pavailable</em>.<br>
+<br>
+See a more detailed description of vm.memory.size <a href="/documentation/2.4/manual/appendix/items/vm.memory.size_params" class="wikilink1" title="manual:appendix:items:vm.memory.size_params">parameters</a>.<br>
+<br>
+Old naming: <em>vm.memory.buffers</em>, <em>vm.memory.cached</em>, <em>vm.memory.free</em>, <em>vm.memory.shared</em>, <em>vm.memory.total</em>  </td>
+	</tr>
+	<tr class="row184">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row185">
+		<th class="col0 leftalign" colspan="5">web.page.get[host,&lt;path&gt;,&lt;port&gt;]  </th>
+	</tr>
+	<tr class="row186">
+		<th class="col0"> </th><td class="col1 leftalign">Get content of web page.  </td><td class="col2 leftalign">Web page source as text  </td><td class="col3 leftalign"><strong>host</strong> - hostname<br>
+<strong>path</strong> - path to <abbr title="HyperText Markup Language">HTML</abbr> document (default is /)<br>
+<strong>port</strong> - port number (default is 80)  </td><td class="col4 leftalign">Returns an empty string on fail. <br>
+<br>
+Example:<br>
+⇒ web.page.get[www.zabbix.com,index.php,80]  </td>
+	</tr>
+	<tr class="row187">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row188">
+		<th class="col0 leftalign" colspan="5">web.page.perf[host,&lt;path&gt;,&lt;port&gt;]  </th>
+	</tr>
+	<tr class="row189">
+		<th class="col0"> </th><td class="col1 leftalign">Loading time of full web page (in seconds).  </td><td class="col2 leftalign">Float  </td><td class="col3 leftalign"><strong>host</strong> - hostname<br>
+<strong>path</strong> - path to <abbr title="HyperText Markup Language">HTML</abbr> document (default is /)<br>
+<strong>port</strong> - port number (default is 80)  </td><td class="col4">Returns 0 on fail. <br>
+<br>
+Example:<br>
+⇒ web.page.perf[www.zabbix.com,index.php,80] </td>
+	</tr>
+	<tr class="row190">
+		<td class="col0" colspan="5"> </td>
+	</tr>
+	<tr class="row191">
+		<th class="col0 leftalign" colspan="5">web.page.regexp[host,&lt;path&gt;,&lt;port&gt;,&lt;regexp&gt;,&lt;length&gt;,&lt;output&gt;]  </th>
+	</tr>
+	<tr class="row192">
+		<th class="col0"> </th><td class="col1 leftalign">Find string on a web page.  </td><td class="col2 leftalign"> The matched string, or as specified by the optional <code>output</code> parameter  </td><td class="col3 leftalign"><strong>host</strong> - hostname<br>
+<strong>path</strong> - path to <abbr title="HyperText Markup Language">HTML</abbr> document (default is /)<br>
+<strong>port</strong> - port number (default is 80)<br>
+<strong>regexp</strong> - GNU regular expression<br>
+<strong>length</strong> - maximum number of characters to return<br>
+<strong>output</strong> - an optional output formatting template. The <strong>\0</strong> escape sequence is replaced with the matched text while an <strong>\N</strong> (where N=1…9) escape sequence is replaced with Nth matched group (or an empty string if the N exceeds the number of captured groups).  </td><td class="col4 leftalign">Returns an empty string if no match was found or on fail.<br>
+<br>
+Content extraction using the <code>output</code> parameter takes place on the agent.<br>
+<br>
+The <code>output</code> parameter is supported from version 2.2. <br>
+<br>
+ Example:<br>
+⇒ web.page.regexp[www.zabbix.com,index.php,80,OK,2]  
+</td>
+	</tr>
+</tbody>
+</table>

@@ -1,0 +1,23 @@
+{
+  "name": "chupacabra",
+  "version": "0.5.0",
+  "description": "Simple monitoring",
+  "main": "index.js",
+  "keywords": [],
+  "author": {
+    "name": "little-brother",
+    "email": "lb.im@ya.ru"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/little-brother/chupacabra"
+  },
+  "license": "GPL-2.0",
+  "dependencies": {
+    "async": "^2.4.0",
+    "net-snmp": "^1.1.19",
+    "sqlite3": "^3.1.8",
+    "ws": "^2.3.1",
+	"modbus-serial": "4.5.1"
+  }
+}

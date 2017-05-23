@@ -1,0 +1,4 @@
+node_modules/
+db/
+public/templates.json
+ToDo.txt

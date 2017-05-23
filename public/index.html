@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8"/>    
+	<title>Chupacabra</title>
+	<script src = "/vendors/jquery-1.11.0.min.js"></script>
+	<script src = "/vendors/jquery.splitter.js"></script>
+	<script src = "/vendors/dygraph-combined.js"></script>
+	<script src = "/vendors/jquery.pickmeup.min.js"></script>
+	<script src = "/vendors/strftime-min.js"></script>
+
+	<script src = "/index.js"></script>
+	<link href = "/index.css" rel="stylesheet"/>
+</head>
+<body>
+
+<div id = "app">
+    <div id = "navigator">
+		<div class = "top-menu">
+			<div class="dropdown" tabindex = "0">
+				<div class = "button clickable device-add" title = "Add device">+ Add</div>	
+				<div id = "template-list" class = "content"></div>
+			</div>
+			<div id = "device-scan" title = "Discovery devices">&#9973; Scan</div>
+		</div>
+
+		<ul id = "device-list"></ul>
+	</div>
+    <div id = "page-wrapper">
+		<div id = "page"></div>
+		<div id = "page-close">&#10006;</div>
+		<div id = "dashboard">
+			<div id = "tag-list">	
+				<div id = "device-tag-list" class = "tag-list"></div>
+				<div id = "varbind-tag-list" class = "tag-list"></div>
+			</div>
+			<div id = "graph"></div>
+		</div>
+	</div>	
+	<input id = "history-period" autocomplete = "off">
+</div>
+
+<div id = "components" style = "display: none">
+	<div id = "page-device-view">
+		<div class = "top-menu">
+			<div id = "device-edit">&#9997; Edit</div>
+			<div id = "device-clone">&#9775; Clone</div>
+			<div id = "device-remove">&#10006; Remove</div>
+		</div>
+		<div id = "page-content"></div>
+	</div>	
+
+	<div id = "page-device-edit">
+		<div class = "top-menu">
+			<div id = "device-save">&#10003; Save</div>
+			<div id = "device-save-cancel">&#8709; Cancel</div>
+		</div>
+
+		<div id = "page-content">
+			<div id = "properties">
+				<input id = "id" value = "" class = "hidden">	
+				<table>
+				<tr>
+					<td>Name</td>
+					<td><input id = "name" type = "text" class = "long"> <span id = "template-save" class = "clickable" title = "Save as template. Use device name as template name.">&#128190;</span></td>
+				</tr>	
+				<tr>
+					<td>IP</td>
+					<td><input id = "ip" type = "text"></td>
+				</tr>	
+				<tr>
+					<td>MAC</td>
+					<td><input id = "mac" type = "text"></td>
+				</tr>	
+				<tr>
+					<td>Ping check</td>
+					<td><input id = "is-ping" type = "checkbox" checked></td>
+				</tr>	
+				<tr>
+					<td>Period, sec</td>
+					<td><input id = "period" type = "text" value = "60"></td>
+				</tr>	
+				<tr>
+					<td>Tags</td>
+					<td><input id = "tags" type = "text"  class = "long" placeholder = "Split tag by semicolon"></td>
+				</tr>	
+				<tr>
+					<td>Description</td>
+					<td><input id = "description" type = "text" class = "long"></td>
+				</tr>	
+				</table>			
+			</div> 
+	
+			<div id = "protocols" class="tabs"> 
+				<input type="radio" name="tab" id="tab-snmp" autocomplete = "off"><label for="tab-snmp"> SNMP</label>
+				<input type="radio" name="tab" id="tab-modbus-tcp" autocomplete = "off"><label for="tab-modbus-tcp"> Modbus TCP</label>
+				<input type="radio" name="tab" id="tab-wmi" autocomplete = "off"><label for="tab-wmi"> WMI</label>
+				<input type="radio" name="tab" id="tab-zabbix" autocomplete = "off"><label for="tab-zabbix"> Zabbix</label>
+				<input type="radio" name="tab" id="tab-http" autocomplete = "off"><label for="tab-http"> http/s</label>
+				<input type="radio" name="tab" id="tab-nmap" autocomplete = "off"><label for="tab-nmap"> Ports</label>
+	
+				<div id = "page-snmp">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>Version</td>
+							<td>
+								<select id = "version">
+									<option value = "1">1</option>
+									<option value = "2c" selected>2c</option>
+								</select>
+							</td>
+						</tr>	
+						<tr>
+							<td>Port</td>
+							<td><input type = "text" id = "port" value = "161"></td>
+						</tr>	
+						<tr>
+							<td>Community</td>
+							<td><input type = "text" id = "community" value = "public"></td>
+						</tr>
+						</table>
+					</div>
+						
+					<details url = "/help/snmp.html">
+					    <summary>Details...</summary>
+					    <div></div>
+					</details>
+				</div>
+
+				<div id = "page-modbus-tcp">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>Port</td>
+							<td><input type = "text" id = "port" value = "502"></td>
+						</tr>	
+						<tr>
+							<td>Device ID</td>
+							<td><input type = "text" id = "device_id" value = "1"></td>
+						</tr>
+						</table>
+					</div>
+				</div>
+		
+				<div id = "page-wmi">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>User</td>
+							<td><input type = "text" id = "user" value = ""></td>
+						</tr>	
+						<tr>
+							<td>Password</td>
+							<td><input type = "text" id = "password" value = ""></td>
+						</tr>
+						</table>
+					</div>
+
+					<details url = "/help/wmi.html">
+					    <summary>WMI queries</summary>
+					    <div></div>
+					</details>
+				</div>
+	
+				<div id = "page-zabbix">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>Port</td>
+							<td><input type = "text" id = "port" value = "10050"></td>
+						</tr>	
+						</table>
+					</div>
+
+					<details url = "/help/zabbix.html">
+					    <summary>Available Zabbix-agent items</summary>
+					    <div></div>
+					</details>
+				</div>
+	
+				<div id = "page-http">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>Protocol</td>
+							<td>
+								<select id = "protocol">
+									<option value = "http">http (80)</option>
+									<option value = "https">https (443)</option>
+								</select>
+							</td>
+						</tr>	
+						<tr>
+							<td>Port</td>
+							<td><input type = "text" id = "port"></td>
+						</tr>	
+						</table>
+					</div>
+
+					<details url = "/help/http.html">
+					    <summary>HTTP response status codes</summary>
+					    <div></div>
+					</details>
+				</div>
+
+				<div id = "page-nmap">
+					<div id = "protocol-params"></div>
+
+					<details url = "/help/nmap.html">
+					    <summary>Well-known ports</summary>
+					    <div></div>
+					</details>
+				</div>
+			</div>	
+		</div>
+	</div>
+
+	<div id = "page-device-scan">	
+		<div id = "page-content">
+			<div id = "range-wrapper">
+				<div>
+					<input id = "range" type = "text" value = "192.168.0.1-255">
+					<span id = "device-scan-start">Start</span>
+					<span id = "device-scan-cancel"><div id = "loader"></div> Cancel</span>
+				</div>
+				<div id = "help">
+					Use nmap ip-range definition, e.g. <b>192.168.0.1-255</b> or <b>192.168.0.0/24 127.0.0.1</b><br>
+					Scan is a long time operation. Be patient or use smaller range. 
+				</div>	
+			</div>
+			
+			<table id = "device-scan-result">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>IP</th>
+					<th>MAC</th>
+					<th>Ping</th>
+					<th>Period, sec</th>
+					<th>Tags</th>
+					<th>Description</th>
+					<th>Copy from</th>
+					<th><div class = "a add" all>All</div></th>
+				</tr>
+				<tr id = "template-row">
+					<td id = "td-name"><input id = "name" type = "text"></td>
+					<td id = "td-ip"><input id = "ip" type = "text"></td>
+					<td id = "td-mac"><input id = "mac" type = "text"></td>
+					<td id = "td-ping"><input id = "is-ping" type = "checkbox" checked></td>
+					<td id = "td-period"><input id = "period" type = "text" value = "60"></td>
+					<td id = "td-tags"><input id = "tags" type = "text"></td>
+					<td id = "td-description"><input id = "description" type = "text"></td>
+					<td id = "td-template">
+						<select id = "template">
+							<option value = "">none</option>
+						</select>
+					</td>
+					<td id = "td-add"> <div class = "a add">Add</div></td>
+				</tr>
+			<thead>	
+			<tbody></tbody>
+			</table>
+		</div>
+	</div>
+
+	<div id = "block-varbind-list-edit">
+		<table class = "varbind-list">
+		<thead>
+			<tr>
+				<th> <a id = "varbind-add"  class = "clickable" title = "Add"> + </a> Name </th>
+				<th>Address</th>
+				<th title = "Value divider"> / </th>
+				<th>Type</th>
+				<th>Value</th>
+				<th>Status conditions</th>
+				<th>Tags</th>
+				<th></th>
+			</tr>
+			<tr id = "template-row">
+				<td id = "td-name"><input id = "name" type = "text"></td>
+				<td id = "td-address"></td>
+				<td id = "td-divider"><input id = "divider" type = "text" value = "1"></td>
+				<td id = "td-value-type">
+					<select id = "value-type">	
+						<option value = "string" selected>string</option>
+						<option value = "number">number</option>
+						<option value = "datetime">datetime</option>
+						<option value = "date">date</option>
+						<option value = "time">time</option>
+						<option value = "duration">duration</option>
+						<option value = "yesno">yes/no</option>
+						<option value = "onoff">on/off</option>
+						<option value = "filesize">filesize</option>
+					</select>
+				</td>
+
+				<td id = "td-value" class = "clickable">&#10227;</td>
+
+				<td id = "td-status-conditions">
+					<div id = "condition-list"></div>
+					<div id = "condition-add" class = "a">Add</div>
+				</td>
+				<td id = "td-tags"><input id = "tags" type = "text"></td>
+				<th id = "td-remove"><span id = "varbind-remove" class = "clickable">&#10006;</span></th>
+			</tr>
+		</thead>
+		<tbody>
+		</tbody>
+		</table>
+
+	</div>
+
+	<div id = "partial-varbind-address-snmp">
+		<input id = "oid" type = "text" placeholder = "OID">
+	</div>
+
+	<div id = "partial-varbind-address-modbus-tcp">
+		<select id = "func">
+			<option value = "readCoils">0x Coil</option>
+			<option value = "readDiscreteInputs">2x Discrete input</option>
+			<option value = "readInputRegisters">3x Input register</option>
+			<option value = "readHoldingRegisters">4x Holding register</option>
+		</select>
+		
+		<input type = "text" id = "register" placeholder = "Register">
+		<br>
+		<select id = "type" value = "">
+			<option value = "" is-visible = "false"></option>
+			<option value = "readInt16">integer, 16bit</option>
+			<option value = "readUInt16">unsigned integer, 16bit</option>
+			<option value = "readInt32">integer, 32bit</option>
+			<option value = "readUInt32">unsigned integer, 32bit</option>
+			<option value = "readFloat">float, 32bit</option>
+			<option value = "readDouble">double, 64bit</option>
+		</select>
+		
+		<select id = "order" value = "" title = "Byte order">
+			<option value = "" is-visible = "false"></option>
+			<option value = "BE" title = "big-endian">BE</option>
+			<option value = "LE" title = "little-endia">LE</option>
+		</select>
+	</div>
+
+	<div id = "partial-varbind-address-wmi">
+		<input id = "alias" type = "text" placeholder = "Alias">
+		<input id = "property" type = "text" placeholder = "Property">
+	</div>
+
+	<div id = "partial-varbind-address-zabbix">
+		<input id = "item" type = "text" placeholder = "Item">
+	</div>
+
+	<div id = "partial-varbind-address-http">
+		<input id = "path" type = "text" placeholder = "Url">
+		<select id = "check" title = "Response attribute for check">
+			<option value = "code">status code</option>
+			<option value = "text">content</option>
+			<option value = "size">content length</option>
+			<option value = "time">time, ns</option>
+		</select>	
+	</div>
+
+	<div id = "partial-varbind-address-nmap">
+		<input id = "port" type = "text" placeholder = "Port">
+		<select id = "protocol" type = "text">
+			<option value = "tcp">TCP</option>
+			<option value = "udp">UDP</option>
+		</select>
+	</div>
+
+	<div id = "partial-varbind-condition" class = "status-condition">
+		If
+		<select id = "if">
+			<option value = "greater"> &#62; </option>
+			<option value = "equals"> &#61; </option>
+			<option value = "not-equals"> &#60;&#62; </option>
+			<option value = "smaller"> &#60; </option>
+			<option value = "regexp">regexp</option>
+			<option value = "change">change</option>
+			<option value = "anything">anything</option>
+			<option value = "error">error</option>
+		</select>
+		<input type = "text" id = "value">
+		then
+		<select id = "status">	
+			<option value = "1">normal</option>
+			<option value = "2">warning</option>
+			<option value = "3">critical</option>
+			<option value = "0">unknown</option>
+		</select>
+		<span id = "condition-remove" class = "clickable">&#10006;</span>
+	</div>		
+</div>
+
+</body>
+</html>
