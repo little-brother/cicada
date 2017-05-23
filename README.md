@@ -13,7 +13,9 @@ Supported protocols: ICMP, SNMP v1/2c, Modbus TCP, WMI and http/s. Also you can 
 
 Are you need more features? Try [**Little Brother**](https://github.com/little-brother/little-brother)!
 
-Try [demo](http://77.37.160.20:5000/). Remote user has read-only access.
+![Screenshots](http://little-brother.ru/images/chupacabra.gif)<br>
+Try [demo](http://77.37.160.20:5000/). Remote user has read-only access.<br>
+Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.
 
 ## Requirements
 * [**Node.js**](https://nodejs.org/en/download/) (JavaScript runtime engine)
