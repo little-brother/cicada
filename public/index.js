@@ -514,7 +514,7 @@ $(function(){
 		})
 	});
 
-	$page.on('click', '#page-device-scan .add:not([all])', function() {
+	$page.on('click', '#page-device-scan .add:not([all])', function(event, callback) {
 		var $row = $(this).closest('tr');
 		var data = {
 			name: $row.find('#name').val(),
@@ -540,12 +540,25 @@ $(function(){
 				$device_list.find('li')
 					.sort((a, b) => a.innerHTML.toLowerCase() > b.innerHTML.toLowerCase())
 					.detach().appendTo($device_list);
+				if (callback)
+					callback();
 			}
 		})
 	});
 
 	$page.on('click', '#page-device-scan .add[all]', function() {
-		$(this).closest('table').find('tbody .add').trigger('click');
+		var $devices = $(this).closest('table').find('tbody .add');
+		if ($devices.length == 0)
+			return;
+
+		function addDevice(i) {
+			if (i == $devices.length)
+				return;
+
+			$devices.eq(i).trigger('click', () => addDevice(i + 1))			
+		}
+		
+		addDevice(0);
 	});
 
 	$dashboard.on('click', '#device-tag-list input', function() {

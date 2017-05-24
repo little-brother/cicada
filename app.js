@@ -3,10 +3,11 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const qs = require('querystring');
-const child_process = require('child_process');
+const exec = require('child_process').exec;
 const WebSocket = require('ws');
 
 const Device = require('./modules/device'); 
+const nmap = require('./modules/nmap'); 
 const config = require('./config.json');
 
 let scan_processes = [];
@@ -273,7 +274,7 @@ Device.events.on('status-changed', function(device) {
 	if (!config['on-status-change'] || !config['on-status-change'].command)
 		return;
 
-	child_process.exec(eval(`\`${config['on-status-change'].command}\``), alert.options || {}, (err, stdout, stderr) => (err) ? console.error(err) : null);
+	exec(eval(`\`${config['on-status-change'].command}\``), alert.options || {}, (err, stdout, stderr) => (err) ? console.error(err) : null);
 })
 
 // nmap ping by timer
@@ -319,7 +320,7 @@ function runAutoScan(delay) {
 			let ip = r.ip;
 			let mac = r.mac;
 			let description = r.description;
-			child_process.exec(eval(`\`${params['on-detect'].command}\``), params['on-detect'].options || {}, function(err, stdout, stderr) {
+			exec(eval(`\`${params['on-detect'].command}\``), params['on-detect'].options || {}, function(err, stdout, stderr) {
 				if (err)
 					console.error(err);
 			});
@@ -330,43 +331,5 @@ function runAutoScan(delay) {
 }
 runAutoScan(true);
 
-child_process.exec('wmic /?', (err) => (err) ? console.error('wmic not found') : null)
-child_process.exec('nmap /?', (err) => (err) ? console.error('nmap not found') : null)
-
-function nmap(range, exclude, callback) {
-	let stdout = '';
-	let stderr = '';
-
-	if (!range)	
-		callback(new Error('Range is empty.'));
-
-	let r = (range || '').split('--exclude');
-	let params = ['-sn'].concat(r[0].split(' '));
-	if (!!r[1] || !!exclude) {
-		params.push('--exclude');
-		params.push([r[1], exclude].filter((e) => !!e).join(','));
-	}
-
-	let proc = child_process.spawn('nmap', params);
-	proc.stdout.on('data', (data) => stdout += data + '');
-	proc.stderr.on('data', (data) => stderr += data + '');
-	proc.on('close', (code) => {
-		if (code)		
-			return callback(new Error(code + ' ' + stderr + ' with ' + params.join(' ')));
-		
-		let result = stdout
-			.replace(/(?:\r\n|\r|\n)/g, ' ')
-			.split('Nmap scan').slice(1)
-			.map(function(row) {
-				return {
-					ip: (row.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/) || [])[0],
-					mac: (row.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/) || [])[0],
-					description: (row.match(/\(([^)]*)\)(\s|)$/) || []) [1],
-					latency: parseFloat((row.match(/Host is up \(([\d,\.]*)s latency\)/) || [])[1]),
-					alive: row.indexOf('Host is up') != -1
-				}
-			}) || [];
-		callback(null, result);	
-	});
-	return proc;
-}
+exec('wmic /?', (err) => (err) ? console.error('wmic not found') : null);
+exec('nmap /?', (err) => (err) ? console.error('nmap not found') : null);

@@ -97,7 +97,7 @@
 				<input type="radio" name="tab" id="tab-wmi" autocomplete = "off"><label for="tab-wmi"> WMI</label>
 				<input type="radio" name="tab" id="tab-zabbix" autocomplete = "off"><label for="tab-zabbix"> Zabbix</label>
 				<input type="radio" name="tab" id="tab-http" autocomplete = "off"><label for="tab-http"> http/s</label>
-				<input type="radio" name="tab" id="tab-nmap" autocomplete = "off"><label for="tab-nmap"> Ports</label>
+				<input type="radio" name="tab" id="tab-port" autocomplete = "off"><label for="tab-port"> Ports</label>
 	
 				<div id = "page-snmp">
 					<div id = "protocol-params">
@@ -204,10 +204,10 @@
 					</details>
 				</div>
 
-				<div id = "page-nmap">
+				<div id = "page-port">
 					<div id = "protocol-params"></div>
 
-					<details url = "/help/nmap.html">
+					<details url = "/help/port.html">
 					    <summary>Well-known ports</summary>
 					    <div></div>
 					</details>
@@ -221,8 +221,8 @@
 			<div id = "range-wrapper">
 				<div>
 					<input id = "range" type = "text" value = "192.168.0.1-255">
-					<span id = "device-scan-start">Start</span>
-					<span id = "device-scan-cancel"><div id = "loader"></div> Cancel</span>
+					<span id = "device-scan-start" class = "clickable">Start</span>
+					<span id = "device-scan-cancel" class = "clickable"><div id = "loader"></div> Cancel</span>
 				</div>
 				<div id = "help">
 					Use nmap ip-range definition, e.g. <b>192.168.0.1-255</b> or <b>192.168.0.0/24 127.0.0.1</b><br>
@@ -361,7 +361,7 @@
 		</select>	
 	</div>
 
-	<div id = "partial-varbind-address-nmap">
+	<div id = "partial-varbind-address-port">
 		<input id = "port" type = "text" placeholder = "Port">
 		<select id = "protocol" type = "text">
 			<option value = "tcp">TCP</option>

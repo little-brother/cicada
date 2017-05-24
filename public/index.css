@@ -95,8 +95,8 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
 
-#app #page-device-edit .varbind-list[protocol="nmap"] #td-address {width: 125px;}
-#app #page-device-edit .varbind-list[protocol="nmap"] #td-address #port {width: 65px;}
+#app #page-device-edit .varbind-list[protocol="port"] #td-address {width: 125px;}
+#app #page-device-edit .varbind-list[protocol="port"] #td-address #port {width: 65px;}
 
 #app #page-device-scan #device-scan-result {display: none;}
 #app #page-device-scan #range-wrapper {text-align: center; margin-bottom: 20px;}

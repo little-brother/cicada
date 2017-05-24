@@ -74,7 +74,7 @@ function getTagList () {
 			if (!tags[tag])
 				tags[tag] = [];
 
-			d.varbind_list.filter((v) => v.is_history).forEach((v) => tags[tag].push.apply(tags[tag], v.tag_list || []));
+			d.varbind_list.filter((v) => v.value_type == 'number').forEach((v) => tags[tag].push.apply(tags[tag], v.tag_list || []));
 		})	
 	});
 
@@ -121,7 +121,7 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 	}
 
 	function getHistory(device, callback) {
-		let varbind_list = device.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.is_history);
+		let varbind_list = device.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number');
 		if (varbind_list.length == 0)
 			return callback(null, null);
 
@@ -171,6 +171,7 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 }
 
 function Device() {
+	let d = this;
 
 	this.__type__ = 'device';
 	this.setAttributes = setAttributes;
@@ -178,7 +179,6 @@ function Device() {
 	this.delete = deleteIt;
 	this.save = save;
 
-	let d = this;
 	this.updateStatus = function () {
 		d.prev_status = d.status;
 		d.status = d.varbind_list.reduce((max, e) => Math.max(max, e.status || 0), 0);
