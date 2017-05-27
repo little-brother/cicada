@@ -374,7 +374,7 @@ function polling (delay) {
 				db.run(sql, params, (err) => (err) ? console.log(err, {sql, params}) : null);
 			}
 				
-			device.polling(device.period * 1000 || 30000)
+			device.polling(device.period * 1000 || 60000)
 		}
 	) 
 }

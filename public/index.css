@@ -52,6 +52,9 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
 #app #page-device-view #varbind-list #td-name {width: 1px; min-width: 100px;}
 #app #page-device-view #varbind-list #td-value {width: 1px; min-width: 100px;}
+#app #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
+#app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
+#app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
 #app #page-device-view #varbind-list #td-history {padding: 2px 0;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}

@@ -88,7 +88,7 @@ server.on('request', function (req, res) {
 			return d.delete((err) => send(err ? 500: 200));
 
 		if (/device\/([\d]*)\/varbind-list$/g.test(path) && req.method == 'GET')
-			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type})));
+			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
 		
 		if ((/^\/device\/([\d]*)\/varbind-history$/).test(path) && req.method == 'GET') 
 			return d.getHistory(parsePeriod(query) , (err, res) => (err) ? send(500, err.message) : json(res));
@@ -248,7 +248,7 @@ Device.events.on('values-changed', function (device, time) {
 			client.send(JSON.stringify({
 				event: 'values-changed',
 				id: device.id,
-				values: device.varbind_list.map((v) => new Object({id: v.id, value: v.value, value_type: v.value_type})),
+				values: device.varbind_list.map((v) => new Object({id: v.id, value: v.value, value_type: v.value_type, status: v.status || 0})),
 				time: time
 			}));
 		} catch(err) { }
@@ -295,7 +295,7 @@ Device.events.on('status-changed', function(device, reason) {
 	if (parent && parent.ip)
 		return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run(event) : null);
 
-	d.updateParent(function(err, parent) {
+	device.updateParent(function(err, parent) {
 		if (err) {
 			console.error(err);
 			return run(event);

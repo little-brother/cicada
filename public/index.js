@@ -59,7 +59,7 @@ $(function(){
 					$('<tr/>')
 						.attr('id', varbind.id)
 						.append($('<td id = "td-name"/>').html(varbind.name))
-						.append($('<td id = "td-value"/>').html(cast(varbind.value_type, varbind.value)))
+						.append($('<td id = "td-value"/>').html(cast(varbind.value_type, varbind.value)).attr('status', varbind.status))
 						.append($('<td id = "td-history"/>').attr('value-type', varbind.value_type))
 						.appendTo($varbind_list);
 				});
@@ -810,6 +810,7 @@ $(function(){
 		socket = new WebSocket('ws://' + location.hostname + ':' + (parseInt(location.port) + 1));
 	
 		var timer = setTimeout(function() {
+			alert('Connection broken. Reload page.');
 			console.error(new Date() + ': Notify server disconnected. Page must be reload.');
 		}, 5000);	
 	
@@ -848,7 +849,7 @@ $(function(){
 					if ($row.length == 0)
 						return;
 
-					$row.find('#td-value').html(cast(varbind.value_type, varbind.value));
+					$row.find('#td-value').html(cast(varbind.value_type, varbind.value)).attr('status', varbind.status);
 
 					if (varbind.value_type != 'number') {
 						var $table = $row.find('#td-history table');
@@ -956,10 +957,10 @@ $(function(){
 		}
 	
 		if (type == 'onoff') 
-			return ['On', 'Off'][(value) ? 0 : 1];
+			return ['On', 'Off'][parseInt(value) ? 0 : 1];
 	
 		if (type == 'yesno') 
-			return ['Yes', 'No'][(value) ? 0 : 1];
+			return ['Yes', 'No'][parseInt(value) ? 0 : 1];
 		
 		if (type == 'duration' && !isNaN(value)) {
 			var min = 6000;
