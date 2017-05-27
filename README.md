@@ -14,7 +14,7 @@ Supported protocols: ICMP, SNMP v1/2c, Modbus TCP, WMI and http/s. Also you can 
 Are you need more features? Try [**Little Brother**](https://github.com/little-brother/little-brother)!
 
 ![Screenshots](http://little-brother.ru/images/chupacabra.gif)<br>
-Try [demo](http://77.37.160.20:5000/). Remote user has read-only access.<br>
+Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
 Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.
 
 ## Requirements
@@ -43,15 +43,15 @@ Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn
 2. Add status conditions to log varbind value. It's not necessaty if value type is number.
 3. Set up device and push &#128190; to save varbind list as template.<br>
    Template will be appear in "Add device"-menu and in scan results.
-4. If device don't has varbinds then status calc by ping result. Overwise, ping result is ignored.
 
 ## Configuration (config.json)
 * **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket. 
-* **ping-period** - in seconds. By default `30`.
+* **ping-period** - in seconds. By default `60`.
 * **on-status-change** 
-  * command - Any shell command. You can use `${device.*}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true or false). By default is empty.
+  * command - Any shell command. You can use `${device.*}` and `${reason}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true/false). By default is empty.
     <br>Example: `echo %TIME% ${device.status} ${device.name} >> log.txt`
   * options - Special command [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options). By default `{}`.
+* **on-warning** and **on-critical** - similar **on-status-change**. These commands triggers when device changed status to `2` (warning) or `3` (critical).
 * **auto-scan** - Define params of process to check network on new devices. If `on-detect` is not set then auto-scan is off.
   * **period** - in seconds. By default `300`.
   * **range** - use nmap range format e.g. `192.168.0.1-255`. Already registered IP will be ignored.

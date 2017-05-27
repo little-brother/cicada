@@ -1,8 +1,8 @@
 {
   "name": "chupacabra",
-  "version": "0.5.1",
-  "description": "Simple monitoring",
-  "main": "index.js",
+  "version": "0.6.0",
+  "description": "Simple network monitoring",
+  "main": "app.js",
   "keywords": [],
   "author": {
     "name": "little-brother",

@@ -40,6 +40,9 @@ exports.getValues = function(opts, address_list, callback) {
 
 			let address = address_list[i].oid; 
 			session.get([address], function(err, rows){
+				if (err && err instanceof snmp.RequestTimedOutError && i == 0)
+					return callback(err);
+
 				res[i] = {
 					value: (err) ? err.message : parseValue(rows[0].value, rows[0].type, address_list[i].hint),
 					isError: !!(err)

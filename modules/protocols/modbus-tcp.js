@@ -50,6 +50,12 @@ exports.getValues = function(opts, address_list, callback) {
 			}
 
 			client[address.func](address.register - 1, regCount[address.type] || 1, function(err, data) {
+				if (i == 0 && !!err && err.message == 'Port Not Open') {
+					clearTimeout(timer);
+					client.close();
+					return callback(err);
+				}
+
 				res[i] = {
 					value: err ? (err.message || err): data.buffer[address.type + address.order] ? data.buffer[address.type + address.order]() : data.buffer.readInt8(), 
 					isError: !!err

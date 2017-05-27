@@ -19,6 +19,9 @@ input[type="text"] {border: 1px solid #bbb;}
 
 #app {background: url(logo.png) center no-repeat; width: 100%}
 #app #navigator {width: 200px; height: 100%;}
+#app #navigator[status="1"] {background: #f6fff6}
+#app #navigator[status="2"] {background: #fffff6}
+#app #navigator[status="3"] {background: #fff6f6}
 #app #page-wrapper {background: #fff; height: 100%;}
 #app #page-content {padding: 20px;}
 #app #dashboard {display: none;}
@@ -57,11 +60,13 @@ input[type="text"] {border: 1px solid #bbb;}
 
 
 #app #page-device-edit label.has-varbind {background: #f5f5ff;}
+#app #page-device-edit #properties table {display: inline; margin-right: 40px;}
 #app #page-device-edit #properties {margin-bottom: 20px;}
-#app #page-device-edit #properties input {margin-left: 20px;}
-#app #page-device-edit #properties input.long {width: 360px;}
-#app #page-device-edit #properties input.long {width: 360px;}
-#app #page-device-edit #protocol-params input, 
+#app #page-device-edit #properties input[type = "text"] {margin-left: 20px;}
+#app #page-device-edit #properties input[type = "text"].long {width: 360px;}
+#app #page-device-edit #properties input[type = "text"].long {width: 360px;}
+#app #page-device-edit #properties #period {width: 40px; margin: 0; text-align: center;}
+#app #page-device-edit #protocol-params input[type = "text"], 
 #app #page-device-edit #protocol-params select {margin-left: 20px;}
 #app #page-device-edit #protocol-params table {margin-bottom: 10px;}
 #app #page-device-edit details {margin-top: 20px; margin-left: 5px;}

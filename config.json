@@ -1,12 +1,12 @@
 {
 	"port": 5000,
-	"ping-period": 30,
+	"ping-period": 60,
 	"on-status-change": {
 		"command": "",
 		"options": {}
 	},
 	"auto-scan": {
-		"period": 30,
+		"period": 300,
 		"range": "192.168.0.1-255",
 		"on-detect": {
 			"command": "",

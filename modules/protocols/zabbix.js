@@ -38,6 +38,9 @@ exports.getValues = function(opts, address_list, callback) {
 		socket.on('error', (err) => error = err);
 		socket.on('data', (data) => buffer = Buffer.concat([buffer, data]));
 		socket.on('close', function () {
+			if (error && i == 0 && error.code == 'ECONNREFUSED')
+				return callback(new Error('ECONNREFUSED'));
+	
 			let value = error || parseData(buffer);
 			let isError = value instanceof Error;		
 			res[i] = {value: (isError) ?  value.message : value, isError};	

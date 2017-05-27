@@ -22,6 +22,7 @@ $(function(){
 		success: function (devices) {
 			devices.forEach(setDevice);
 
+			updateNavigatorStatus();
 			updateDashboard();
 		}
 	});
@@ -173,8 +174,9 @@ $(function(){
 					$component.find('#mac').val(device.mac);
 					$component.find('#period').val(device.period);
 					$component.find('#description').val(device.description);
-					$component.find('#is-ping')[device.is_ping ? 'attr' : 'removeAttr']('checked', true);
-		
+					$component.find('#is-pinged')[device.is_pinged ? 'attr' : 'removeAttr']('checked', true);
+					$component.find('#check-parent-at-failure')[!!device.parent_id ? 'attr' : 'removeAttr']('checked', true);
+					$component.find('#force-status-to').val(device.force_status_to || 3);
 				} else {
 					$component.find('#id').attr('cloned', device.id);
 					$component.find('#name').val(device.name + ' clone');
@@ -198,7 +200,7 @@ $(function(){
 	});
 
 	$page.on('change', '#page-device-edit .varbind-list #if', function() {
-		$(this).attr('if', this.value)
+		$(this).attr('if', this.value);
 	});
 
 	$page.on('change', '#page-device-edit .varbind-list input', function() {
@@ -206,7 +208,6 @@ $(function(){
 	});
 
 	function setVarbindList($component, varbind_list) {
-		console.log($component)
 		var $vb_table = $components.find('#block-varbind-list-edit .varbind-list');
 
 		$component.find('#protocols div[id^="page-"]').each(function(i, e) {
@@ -304,7 +305,9 @@ $(function(){
 			period: $props.find('#period').val(),
 			mac: $props.find('#mac').val(),
 			tags: $props.find('#tags').val(),
-			is_ping: $props.find('#is-ping:checked').length
+			is_pinged: $props.find('#is-pinged:checked').length,
+			parent_id: $props.find('#check-parent-at-failure:checked').length,
+			force_status_to:  $props.find('#force-status-to').val()
 		};
 
 		var protocol_params = {};
@@ -520,7 +523,7 @@ $(function(){
 			name: $row.find('#name').val(),
 			ip: $row.find('#ip').val(),
 			mac: $row.find('#mac').val(),
-			is_ping: $row.find('#is-ping:checked').length,
+			is_pinged: $row.find('#is-pinged:checked').length,
 			period: $row.find('#period').val(),
 			tags: $row.find('#tags').val(),
 			description: $row.find('#description').val()
@@ -588,7 +591,9 @@ $(function(){
 
 	$dashboard.on('click', '#varbind-tag-list input', function() {
 		$dashboard.find('#varbind-tag-list input:checked:not(#' + this.id + ')').removeAttr('checked');
-		$dashboard.trigger('update-graph', {tag: this.checked && this.id});
+		var $selector = $dashboard.find('#history-range-selector');
+		var period = $selector.length > 0 ?  ($selector.data('pickmeup-options') || {}).date : null;
+		$dashboard.trigger('update-graph', {tag: this.checked && this.id, period: period});
 	});
 
 	$dashboard.on('update-graph', function(event, data) {
@@ -606,6 +611,9 @@ $(function(){
 				tags: $dashboard.find('#device-tag-list input:checked').map(function () { return this.id}).get().join(';')
 			},
 			success: function(res) {
+				if (!res || !res.rows.length)
+					return alert('No data');
+
 				res.rows.forEach((row) => row[0] = new Date(row[0]));
 
 				var opts = {
@@ -765,6 +773,10 @@ $(function(){
 		})
 	}
 
+	function updateNavigatorStatus() {
+		$app.find('#navigator').attr('status', Math.max.apply(null, $device_list.find('li').map((i, e) => e.getAttribute('status') || 0))); 
+	}
+
 	function updateTemplates() {
 		var error = (msg) => alert('Failed load templates: ' + msg)
 		$.ajax({
@@ -819,8 +831,10 @@ $(function(){
 			var packet = JSON.parse(event.data);
 
 			// console.log(packet)
-			if (packet.event == 'status-updated')
-				$device_list.find('li#' + packet.id).attr('status', packet.status);
+			if (packet.event == 'status-updated') {
+				$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
+				updateNavigatorStatus();
+			}
 
 			if (packet.event == 'values-changed') {
 				var $varbind_list = $page.find('#varbind-list');

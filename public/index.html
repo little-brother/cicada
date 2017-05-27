@@ -73,14 +73,6 @@
 					<td><input id = "mac" type = "text"></td>
 				</tr>	
 				<tr>
-					<td>Ping check</td>
-					<td><input id = "is-ping" type = "checkbox" checked></td>
-				</tr>	
-				<tr>
-					<td>Period, sec</td>
-					<td><input id = "period" type = "text" value = "60"></td>
-				</tr>	
-				<tr>
 					<td>Tags</td>
 					<td><input id = "tags" type = "text"  class = "long" placeholder = "Split tag by semicolon"></td>
 				</tr>	
@@ -89,6 +81,27 @@
 					<td><input id = "description" type = "text" class = "long"></td>
 				</tr>	
 				</table>			
+				<table>
+				<tr>
+					<td><input id = "is-pinged" type = "checkbox" checked> Ping check</td>
+				</tr>
+				<tr>
+					<td>On polling error force status to 
+						<select id="force-status-to">
+							<option value = "3">critical</option>
+							<option value = "2">warning</option>
+							<option value = "1">normal</option>
+							<option value = "0">unknown</option>
+						</select>
+					</td>
+				</tr>	
+				<tr>
+					<td><input id = "check-parent-at-failure" type = "checkbox"> Don't trigger alarm if parent is down</td>
+				</tr>	
+				<tr>
+					<td>Polling period, sec <input id = "period" type = "text" value = "60"></td>
+				</tr>	
+				</table>
 			</div> 
 	
 			<div id = "protocols" class="tabs"> 
@@ -247,7 +260,7 @@
 					<td id = "td-name"><input id = "name" type = "text"></td>
 					<td id = "td-ip"><input id = "ip" type = "text"></td>
 					<td id = "td-mac"><input id = "mac" type = "text"></td>
-					<td id = "td-ping"><input id = "is-ping" type = "checkbox" checked></td>
+					<td id = "td-ping"><input id = "is-pinged" type = "checkbox" checked></td>
 					<td id = "td-period"><input id = "period" type = "text" value = "60"></td>
 					<td id = "td-tags"><input id = "tags" type = "text"></td>
 					<td id = "td-description"><input id = "description" type = "text"></td>

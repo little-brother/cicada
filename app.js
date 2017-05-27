@@ -51,7 +51,7 @@ server.on('request', function (req, res) {
 	if (path == '/device' && req.method == 'GET') {
 		return json(Device.getList().map(function (d) {
 			let obj = {};
-			['id', 'name', 'description', 'tag_list', 'status', 'mac', 'ip', 'is_ping'].forEach((prop) => obj[prop] = d[prop]);
+			['id', 'name', 'description', 'tag_list', 'status', 'mac', 'ip', 'is_pinged', 'parent_id', 'force_status_to'].forEach((prop) => obj[prop] = d[prop]);
 			return obj;	
 		}));
 	}
@@ -150,7 +150,7 @@ server.on('request', function (req, res) {
 	}
 
 	if (path == '/scan' && req.method == 'GET') {
-		let proc = nmap(query.range, Device.getIpList().join(','), function(err, result) {
+		let proc = nmap.ping(query.range, Device.getIpList().join(','), function(err, result) {
 			if (err)
 				return send(500, err.message);
 
@@ -270,30 +270,59 @@ Device.events.on('status-updated', function(device) {
 	});
 });
 
-Device.events.on('status-changed', function(device) {
-	if (!config['on-status-change'] || !config['on-status-change'].command)
+Device.events.on('status-changed', function(device, reason) {
+	function run(event) {
+		if (!config[event] || !config[event].command)
+			return;
+
+		try {
+			exec(eval(`\`${config[event].command}\``), config[event].options || {}, (err, stdout, stderr) => (err) ? console.error(err) : null);
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
+	run('on-status-change');
+
+	let event = (device.status == 2) ? 'on-warning' : (device.status == 3) ? 'on-critical' : null;
+	if (!event)
 		return;
 
-	exec(eval(`\`${config['on-status-change'].command}\``), alert.options || {}, (err, stdout, stderr) => (err) ? console.error(err) : null);
+	if (!device.parent_id)
+		return run(event);
+
+	let parent = Device.get(device.parent_id);
+	if (parent && parent.ip)
+		return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run(event) : null);
+
+	d.updateParent(function(err, parent) {
+		if (err) {
+			console.error(err);
+			return run(event);
+		}
+
+		if (parent)
+			return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run(event) : null);
+	})
 })
 
 // nmap ping by timer
 function runPing (delay) {
 	if (delay)
-		return setTimeout(runPing, config['ping-period'] * 1000 || 30000);
+		return setTimeout(runPing, config['ping-period'] * 1000 || 60000);
 
 	let ips = Device.getIpList(true).join(' ');
 	if (!ips) 
 		return runPing(true);
 
-	nmap(ips, null, function(err, result) {
+	nmap.ping(ips, null, function(err, result) {
 		if (err) {
 			console.error(err.message);
 			runPing(true);
 			return;
 		}
 
-		Device.updateLatencies(result, function(err) {
+		Device.updateLatencies(result, function (err) {
 			if (err)
 				console.error(err.message);
 			
@@ -312,7 +341,7 @@ function runAutoScan(delay) {
 	if (delay)
 		return setTimeout(runAutoScan, params.period * 1000 || 30000);
 
-	nmap(params.range, Device.getIpList().join(','), function(err, result) {
+	nmap.ping(params.range, Device.getIpList().join(','), function(err, result) {
 		if (err)
 			console.error('Auto-scan: ' + err.message);
 
@@ -320,10 +349,11 @@ function runAutoScan(delay) {
 			let ip = r.ip;
 			let mac = r.mac;
 			let description = r.description;
-			exec(eval(`\`${params['on-detect'].command}\``), params['on-detect'].options || {}, function(err, stdout, stderr) {
-				if (err)
-					console.error(err);
-			});
+			try {
+				exec(eval(`\`${params['on-detect'].command}\``), params['on-detect'].options || {}, (err, stdout, stderr) => (err) ? console.error(err.message) : null);
+			} catch (err) {
+				console.error(err);
+			}
 		});
 
 		runAutoScan(true);

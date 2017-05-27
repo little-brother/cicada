@@ -30,10 +30,6 @@ exports.getValues = function(opts, address_list, callback) {
 		return res.filter((row) => !!row.length).map((row) => row.join(' ')).join('\n');
 	}
 
-	function parseError(error) {
-		return error.replace(/^([\s\S]*)ERROR:/g, '').replace(/^([\s\S]*)Description = /g, '').trim();
-	}
-
 	function getValue(i) {
 		if (i == address_list.length) 
 			return callback(null, res);
@@ -43,9 +39,16 @@ exports.getValues = function(opts, address_list, callback) {
 		let command = `wmic ${auth} /node:${host} ${address_list[i].alias} get ${address_list[i].property} /format:value`; 
 
 		exec(command, {timeout: opts.timeout * 1000 || 0}, function(err, stdout, stderr) {
+			let isErrorAlias = !!err && err.message.indexOf('Alias not found') != -1;
+			let isErrorQuery = !!err && err.message.indexOf('Invalid query') != -1;
+			let isErrorTimeout = !!err && err.killed;
+
+			if (i == 0 && err && !(isErrorAlias || isErrorQuery))
+				return callback(isErrorTimeout ? new Error('Timeout') : err);
+
 			res[i] = {
-				value: (err) ?  err.killed && 'Timeout' || parseError(stderr) : parseValue(stdout, address_list[i].property),
-				isError: !!(err)
+				value: isErrorAlias ? 'Alias not found' : isErrorQuery ? 'Invalid query' : parseValue(stdout, address_list[i].property),
+				isError: isErrorAlias || isErrorQuery
 			};
 
 			getValue(i + 1);				
