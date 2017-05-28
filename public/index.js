@@ -757,11 +757,13 @@ $(function(){
 		var min, max;
 		rows.forEach(function (row) {
 			for (var i = 1; i < row.length; i++) {
-				min = (min == undefined || !isNaN(row[i]) && min > row[i]) ? row[i] : min;
-				max = (max == undefined || !isNaN(row[i]) && max < row[i]) ? row[i] : max;
+				var val = parseFloat(row[i]);
+				min = (min == undefined && !isNaN(val) || !isNaN(val) && !isNaN(min) && min > val) ? val : min;
+				max = (max == undefined && !isNaN(val) || !isNaN(val) && !isNaN(max) && max < val) ? val : max;
 			}
 		})
-		return [min , max];
+		var gap = (max - min) * 0.1;
+		return [min - gap, max + gap];
 	}
 
 	function highlightProtocolTabs () {
@@ -872,11 +874,12 @@ $(function(){
 							var data = graph.file_;
 							var range = graph.user_attrs_.valueRange;
 	
-							if (!isNaN(val)) 
-								range = [range[0] > val ? val : range[0], range[1] < val ? val : range[1]];
-	
 							data = data.filter((e) => e[0].getTime() + hour > packet.time);
 							data.push([time, val || varbind.value]);
+
+							if (!isNaN(val) && (val < range[0] || val > range[1])) 
+								range = getRange(data);
+
 							graph.updateOptions({file: data, valueRange: range});
 						}
 					}
