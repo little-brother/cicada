@@ -19,9 +19,9 @@ input[type="text"] {border: 1px solid #bbb;}
 
 #app {background: url(logo.png) center no-repeat; width: 100%}
 #app #navigator {width: 200px; height: 100%;}
-#app #navigator[status="1"] {background: #f6fff6}
-#app #navigator[status="2"] {background: #fffff6}
-#app #navigator[status="3"] {background: #fff6f6}
+#app #navigator[status="1"] {background: rgba(200,255,200,0.5)}
+#app #navigator[status="2"] {background: rgba(255,255,200,0.5)}
+#app #navigator[status="3"] {background: rgba(255,200,200,0.5)}
 #app #page-wrapper {background: #fff; height: 100%;}
 #app #page-content {padding: 20px;}
 #app #dashboard {display: none;}
@@ -56,7 +56,7 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
 #app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
 #app #page-device-view #varbind-list #td-history {padding: 2px 0;}
-#app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px;}
+#app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
 #app #page-device-view #varbind-list[period]:after {content: 'Automatic updating of charts and tables is disabled after selecting the period! Reopen device page to enable updating.'; margin-top: 20px; color: red; position: absolute;}
