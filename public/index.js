@@ -691,6 +691,8 @@ $(function(){
 
 	function updateDashboard () {
 		deleteGraph('dashboard');
+
+		$dashboard.find('.history-period').val('').pickmeup('clear');
 		
 		function addTag($target, tag, data) {
 			var id = tag.replace('/ /g', '-');
