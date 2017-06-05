@@ -11,11 +11,11 @@ Supported protocols: ICMP, SNMP v1/2c, Modbus TCP, WMI and http/s. Also you can 
 * Alerts when device change status by user conditions
 * Alert on new device in network
 
+Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
+Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.<br>
 Are you need more features? Try [**Little Brother**](https://github.com/little-brother/little-brother)!
 
-![Screenshots](http://little-brother.ru/images/chupacabra.gif)<br>
-Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
-Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.
+![Screenshots](http://little-brother.ru/images/chupacabra2.gif)<br>
 
 ## Requirements
 * [**Node.js**](https://nodejs.org/en/download/) (JavaScript runtime engine)

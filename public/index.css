@@ -57,6 +57,7 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
 
 #app #page-device-view .history-period-block {right: 40px; top: 5px;} 
+#app #page-device-view .top-menu ~ .history-period-block {right: 40px; top: 30px;} 
 #app #page-device-view #varbind-list {width: 100%}
 #app #page-device-view #varbind-list td {padding: 2px 5px;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
