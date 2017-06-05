@@ -14,15 +14,11 @@ exports.hide = function (id, callback) {
 	db.run('update alerts set is_hidden = 1 where id = ?', id, callback);
 }
 
-exports.add = function(status, device_id, reason, callback) {
-	let time = new Date().getTime();
+exports.add = function(time, status, device_id, reason, callback) {
 	db.run('insert into alerts (time, status, device_id, reason, is_hidden) values (?, ?, ?, ?, ?)',
 		[time, status, device_id, reason, 0],
 		function (err) {
-			if (err)
-				return callback(err);
-			
-			callback(null, {id: this.lastID, status, device_id, reason, is_hidden: 0});
+			callback(err, this.lastID);
 		}
 	)
 }

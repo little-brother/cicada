@@ -123,8 +123,11 @@ server.on('request', function (req, res) {
 				Alert.getSummary(function (err, res) {
 					if (err) 
 						return send(500, err.message); 
-
-					alert_summary = res; 
+					
+					alert_summary = res;
+					let packet =  {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical};
+					broadcast(packet);
+					 
 					send(200);
 				});
 			})
@@ -295,7 +298,15 @@ Device.events.on('status-changed', function(device, reason) {
 
 	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical}
 	broadcast(packet);
-	Alert.add(device.status, device.id, reason, (err) => (err) ? console.error(err.message) : null);
+
+	let time = new Date().getTime();
+	Alert.add(time, device.status, device.id, reason, function (err, id) {
+		if (err) 
+			return console.error(err.message)
+
+		let packet = {event: 'alert-info', id, time, reason, status: device.status, device_name: device.name, device_id: device.id};
+		broadcast(packet, (client) => !client.device_id);
+	});
 });
 
 Device.events.on('status-changed', function(device, reason) {
