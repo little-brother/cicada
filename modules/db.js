@@ -8,6 +8,8 @@ db.serialize(function() {
 	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, divider text, value_type text, updated integer)');
 	db.run('attach database \"./db/history.sqlite\" as history');
 	db.run('create table if not exists history.latencies (\"time\" integer primary key) without rowid');
+	db.run('create table if not exists history.alerts (id integer primary key autoincrement not null unique, \"time\" integer, status integer, device_id integer, reason text, is_hidden integer)');
+	db.run('create index if not exists history.idx_alerts on alerts (is_hidden)');
 });
 
 db.upsert = function (obj, columns, callback) {

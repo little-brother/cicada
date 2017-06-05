@@ -25,6 +25,10 @@
 		</div>
 
 		<ul id = "device-list"></ul>
+		<div id = "alert-block">
+			<span id = "warning">--</span>
+			<span id = "critical">--</span>
+		</div>
 	</div>
     <div id = "page-wrapper">
 		<div id = "page"></div>
@@ -34,18 +38,41 @@
 				<div id = "device-tag-list" class = "tag-list"></div>
 				<div id = "varbind-tag-list" class = "tag-list"></div>
 			</div>
-			<div id = "graph"></div>
+			<div class = "history-period-block">
+				<input class = "history-period" autocomplete = "off">
+				<span class = "history-period-value">Last hour</span>
+			</div>
+			<div id = "graph-block">
+				<div id = "graph"></div>
+			</div>
 		</div>
-	</div>	
-	<input id = "history-period" autocomplete = "off">
+	</div>
 </div>
 
 <div id = "components" style = "display: none">
+	<div id = "page-alert-list-view">
+		<table id = "alert-list">
+		<thead>
+			<tr id = "template-row">
+				<td id = "td-status">&#9785;</td>
+				<td id = "td-datetime"></td>
+				<td id = "td-device"></td>
+				<td id = "td-reason"></td>
+				<td id = "td-hide" title = "Hide alert from list">Hide</td>
+			</tr>	
+		</thead>
+		</table>	
+	</div>
+
 	<div id = "page-device-view">
 		<div class = "top-menu">
 			<div id = "device-edit">&#9997; Edit</div>
 			<div id = "device-clone">&#9775; Clone</div>
 			<div id = "device-remove">&#10006; Remove</div>
+		</div>
+		<div class = "history-period-block">
+			<input class = "history-period" autocomplete = "off">
+			<span class = "history-period-value" title = "Automatic update is disabled if period is not last hour">Last hour</span>
 		</div>
 		<div id = "page-content"></div>
 	</div>	

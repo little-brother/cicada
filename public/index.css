@@ -11,17 +11,24 @@ input[type="text"] {border: 1px solid #bbb;}
 .top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff;}
 .top-menu > div {display: inline-block; cursor: pointer; border-bottom: 1px dashed #eef; margin-left: 10px;}
 
-#history-period {visibility: hidden; position: absolute; display: inline-block; width: 0;}
-#history-range-selector {z-index: 11; position: absolute; color: #fff; background: #000; border-radius: 50%; cursor: pointer; text-align: center; height: 18px; width: 18px; line-height: 15px;}
+.history-period {visibility: hidden; position: absolute; display: none;}
+.history-period-value {cursor: pointer;}
+.history-period-block {position: absolute; right: 20px; padding: 5px 10px; border-radius: 5px; background: #cfc; display: none;}
 
 .top-menu #template-list #template-remove {float: right; position: relative; top: -3px;}
 .top-menu #template-list:empty {display: none !important;}
 
 #app {background: url(logo.png) center no-repeat; width: 100%}
-#app #navigator {width: 200px; height: 100%;}
+#app #navigator {width: 200px; height: 100%; position: relative;}
 #app #navigator[status="1"] {background: rgba(200,255,200,0.5)}
 #app #navigator[status="2"] {background: rgba(255,255,200,0.5)}
 #app #navigator[status="3"] {background: rgba(255,200,200,0.5)}
+#app #navigator #device-list {margin-bottom: 40px}
+#app #navigator #alert-block {cursor: pointer; border: 1px solid #eee; font-size: 24px; line-height: 40px; bottom: 0; height: 40px; position: absolute; left: 0; right: 0; text-align: center; background: #fff}
+#app #navigator #alert-block span:before {display: inline-block; content: '\002639'; margin: 0 5px; font-weight: bold;}
+#app #navigator #alert-block #warning:before {color: gold}
+#app #navigator #alert-block #critical:before {color: #f00}
+
 #app #page-wrapper {background: #fff; height: 100%;}
 #app #page-content {padding: 20px;}
 #app #dashboard {display: none;}
@@ -35,7 +42,9 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #dashboard .tag-list input {display: none}
 #app #dashboard .tag-list input:checked + label {background:#eee;}
 #app #dashboard #device-tag-list {border-bottom: 1px solid #eee}
-#app #dashboard #graph {display: block; margin-top: 20px;}
+#app #dashboard .history-period-block {margin-top: -10px;} 
+#app #dashboard #graph-block {padding: 20px;}
+#app #dashboard #graph {display: block;}
 
 #app #device-list {list-style: none;}
 #app #device-list li {cursor: pointer; margin: 3px 0; padding: 3px; padding-left: 10px;}
@@ -47,11 +56,12 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #device-list li #ip {margin-left: 15px; font-size: 10px; display: inline-block;}
 #app #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
 
+#app #page-device-view .history-period-block {right: 40px; top: 5px;} 
 #app #page-device-view #varbind-list {width: 100%}
 #app #page-device-view #varbind-list td {padding: 2px 5px;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
 #app #page-device-view #varbind-list #td-name {width: 1px; min-width: 100px;}
-#app #page-device-view #varbind-list #td-value {width: 1px; min-width: 100px;}
+#app #page-device-view #varbind-list #td-value {width: 1px; min-width: 100px; text-align: center; font-weight: bold;}
 #app #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
 #app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
 #app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
@@ -59,8 +69,6 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
-#app #page-device-view #varbind-list[period]:after {content: 'Automatic updating of charts and tables is disabled after selecting the period! Reopen device page to enable updating.'; margin-top: 20px; color: red; position: absolute;}
-
 
 #app #page-device-edit label.has-varbind {background: #f5f5ff;}
 #app #page-device-edit #properties table {display: inline; margin-right: 40px;}
@@ -125,6 +133,16 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-scan #device-scan-result td > input,
 #app #page-device-scan #device-scan-result td > select {width: 100%;}
 #app #page-device-scan #device-scan-result tbody #td-add {text-align: center;}
+
+#app #page-alert-list-view #alert-list {width: 100%; padding: 20px;}
+#app #page-alert-list-view #alert-list td {padding: 0 5px;}
+#app #page-alert-list-view #alert-list #td-status {width: 25px; font-size: 24px; font-weight: bold;}
+#app #page-alert-list-view #alert-list #td-datetime {width: 120px; font-size: 10px;}
+#app #page-alert-list-view #alert-list #td-device {width: 200px; cursor: pointer;}
+#app #page-alert-list-view #alert-list #td-hide {width: 40px; cursor: pointer;}
+#app #page-alert-list-view #alert-list tr:hover {background-color: #eff;}
+#app #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
+#app #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
 
 
 .dropdown {position: relative;}

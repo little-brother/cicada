@@ -19,7 +19,7 @@ function cacheAll (callback) {
 			if (err)
 				return callback(err);
 			results[1].forEach((r) => (new Varbind(r)).cache());
-			results[0].forEach((r) => (new Device()).setAttributes(r).cache().updateChildren().updateStatus());
+			results[0].forEach((r) => (new Device()).setAttributes(r).cache().updateVarbindList().updateStatus());
 			callback();
 		}
 	)
@@ -194,7 +194,7 @@ function Device() {
 
 	Object.defineProperty(this, 'is_status', {get: () => d.varbind_list.some((v) => v.is_status)});
 
-	this.updateChildren = function() {
+	this.updateVarbindList = function() {
 		d.varbind_list = mixin.get('varbind').getList().filter((v) => v.device_id == d.id) || [];
 		return d;
 	}
@@ -472,7 +472,7 @@ function save (callback) {
 
 		delete_varbind_ids.forEach((id) => Varbind.get(id).cache('CLEAR'));
 		varbind_list.forEach((v) => v.cache());
-		device.updateChildren();
+		device.updateVarbindList();
 		device.prev_status = 0;
 		device.status = 0;
 

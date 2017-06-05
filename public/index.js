@@ -10,8 +10,10 @@ $(function(){
 
 	$app.splitter({orientation: 'horizontal', limit: 200});
 
-	if (window.location.hostname != '127.0.0.1' && window.location.hostname != 'localhost')
+	if (window.location.hostname != '127.0.0.1' && window.location.hostname != 'localhost') {
 		$('.top-menu').remove();
+		$components.find('#page-alert-list-view #alert-list #td-hide').remove();
+	}
 	else
 		updateTemplates();
 
@@ -21,7 +23,7 @@ $(function(){
 		dataType: 'json',
 		success: function (devices) {
 			devices.forEach(setDevice);
-
+			setHistoryPeriodSelector($dashboard);
 			updateNavigatorStatus();
 			updateDashboard();
 		}
@@ -53,6 +55,11 @@ $(function(){
 
 				if (!varbind_list.length) 
 					return $component.find('#page-content').html('There are no varbinds.');
+
+				if (varbind_list.some((v) => v.is_history)) {
+					setHistoryPeriodSelector($component);
+					$component.find('.history-period-block').show();
+				}
 
 				var $varbind_list = $('<table/>').attr('id', 'varbind-list').attr('device-id', device_id).data('varbind-list', varbind_list);
 				$.each(varbind_list, function (i, varbind) {
@@ -98,7 +105,7 @@ $(function(){
 					var $cell = $varbind_list.find('tr#' + varbind.id + ' #td-history').empty().attr('is-number', varbind.value_type == 'number');
 
 					if (varbind.value_type != 'number') {
-						createRangeSelector().appendTo($cell);
+						//createRangeSelector().appendTo($cell);
 
 						var packed = []
 						data.map(function (e, j, arr) {
@@ -131,12 +138,11 @@ $(function(){
 						valueRange: getRange(data),
 						labels: ['time', 'value'],
 						highlightCircleSize: 2,					
-						height: 100,
+						height: 120,
 						axes: {
 							x: {valueFormatter: (ms) => cast('datetime', ms)}
 						},
-						drawPoints: true,
-						plugins : [Dygraph.Plugins.RangeSelector]
+						drawPoints: true
 					};
 				
 					graphs[varbind.id] = new Dygraph($cell.get(0), data, opts);
@@ -155,7 +161,7 @@ $(function(){
 		$component.appendTo($page);				
 	});
 
-	$app.on('click', '#page-close, .device-add, #device-scan', function() {
+	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block', function() {
 		$device_list.find('li.active').removeClass('active');
 	});
 
@@ -437,6 +443,40 @@ $(function(){
 		})
 	});
 
+	$app.on('click', '#navigator #alert-block', function() {
+		if ($page.find('#alert-list').length) 
+			return $page.empty();
+
+		$.ajax({
+			method: 'GET',
+			url: '/alert',
+			dataType: 'json',
+			success: function (alerts) {
+				$page.empty();
+				var $component = $components.find('#page-alert-list-view').clone(true, true);				
+				var $table = $component.find('#alert-list');
+				$.each(alerts, (i, alert) => addAlertListTableRow($table, alert));
+				$component.appendTo($page);	
+			}
+		})
+	});
+
+	$page.on('click', '#alert-list #td-device', function () {
+		var $e = $(this);
+		$device_list.find('li#' + $e.attr('device-id')).trigger('click');
+	});
+
+	$page.on('click', '#alert-list #td-hide', function () {
+		var $e = $(this).closest('tr');
+		$.ajax({
+			method: 'POST',
+			url: '/alert/' + $e.attr('id') + '/hide',
+			dataType: 'text',
+			success: () => $e.remove()
+		})
+	});
+
+
 	$app.on('click', '.top-menu #device-scan', function() {
 		$page.empty();
 		var $page_scan = $components.find('#page-device-scan').clone().appendTo($page);
@@ -569,7 +609,14 @@ $(function(){
 		var $varbind_tag_list = $dashboard.find('#varbind-tag-list');
 		var $checked_list = $device_tag_list.find('input:checked:not(#All)');
 
-		$varbind_tag_list.find('input:checked').trigger('click');
+		var $period = $dashboard.find('.history-period-block');
+		$period.hide();
+		$period.find('.history-period').val('').pickmeup('clear');
+		$period.find('.history-period-value').html('Last hour');
+
+		var time = new Date();
+		$varbind_tag_list.find('input:checked').removeAttr('checked');
+		$dashboard.trigger('update-graph');
 
 		if (this.id == 'All' || $checked_list.length == 0) {
 			$device_tag_list.find('input:not(#All)').attr('checked', false).prop('checked', false);
@@ -591,15 +638,17 @@ $(function(){
 
 	$dashboard.on('click', '#varbind-tag-list input', function() {
 		$dashboard.find('#varbind-tag-list input:checked:not(#' + this.id + ')').removeAttr('checked');
-		var $selector = $dashboard.find('#history-range-selector');
-		var period = $selector.length > 0 ?  ($selector.data('pickmeup-options') || {}).date : null;
+		$dashboard.find('.history-period-block').show();
+		var period = $dashboard.find('.history-period').pickmeup('get_date') || null;
+		if (period && period.length > 0) 
+			period = [period[0].getTime(), period[1].getTime()];
 		$dashboard.trigger('update-graph', {tag: this.checked && this.id, period: period});
 	});
 
 	$dashboard.on('update-graph', function(event, data) {
 		deleteGraph('dashboard');
 
-		if (!data.tag)
+		if (!data || !data.tag)
 			return;
 
 		$.ajax({
@@ -625,8 +674,7 @@ $(function(){
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)}
 					},
-					drawPoints: true,
-					plugins : [Dygraph.Plugins.RangeSelector]
+					drawPoints: true
 				};
 			
 				graphs.dashboard = new Dygraph($dashboard.find('#graph').get(0), res.rows, opts);
@@ -670,60 +718,36 @@ $(function(){
 		});
 	}
 
-
-	var $history_period = $('#history-period').pickmeup({
-		hide_on_select: true, 
-		mode: 'range',
-		show: function () {
-			$(this).removeAttr('changed');
-		},
-		change: function () {
-			$(this).attr('changed', true);
-		}, 
-		hide: function(e) {
-			if (!this.hasAttribute('changed'))
-				return;
-
-			var period = $(this).data('pickmeup-options').date;
-			return (!$page.html()) ? 
-				$dashboard.trigger('update-graph', {tag: $dashboard.find('#varbind-tag-list input:checked').attr('id'), period: period}) :
-				$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-graphs', {period: period});
-		}
-	});
+	function setHistoryPeriodSelector($where) { 
+		$where.find('.history-period').pickmeup({
+			hide_on_select: true, 
+			mode: 'range',
+			show: function () {
+				$(this).removeAttr('changed');
+			},
+			change: function () {
+				$(this).attr('changed', true);
+			}, 
+			hide: function(e) {
+				if (!this.hasAttribute('changed'))
+					return;
+	
+				var $e = $(this);
+				var period = $e.data('pickmeup-options').date;
+				$e.closest('.history-period-block').find('.history-period-value').html($e.pickmeup('get_date', true).join(' - '));
+	
+				return (!$page.html()) ? 
+					$dashboard.trigger('update-graph', {tag: $dashboard.find('#varbind-tag-list input:checked').attr('id'), period: period}) :
+					$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-graphs', {period: period});
+			}
+		});
+	}
 
 	function createHistoryTableRow (e, value_type) {
 		return $('<tr/>')
 			.append($('<td>').html(cast('datetime', e.from) + ' - ' + cast('datetime', e.to)))
-			.append($('<td>').html(cast(value_type, e.value)))
+			.append($('<td>').html(cast(value_type, e.value)));
 	}
-
-	function createRangeSelector() {
-		return $('<div/>')
-			.attr('id', 'history-range-selector')	
-			.html('&#8596;')
-			.attr('title', 'Select range')
-			.click(function (event) {
-				var offset = $(this).offset();
-				$history_period.css({'top': offset.top, 'left': offset.left}).pickmeup('show');
-			});
-	}
-
-	Dygraph.Plugins.RangeSelector = (function() {
-		function RangeSelector () {
-			this.toString = () => 'Range Selector';
-			this.activate = (g) => new Object({willDrawChart: this.addRange});
-			this.addRange = function (e) {
-				var $graph = $(e.dygraph.graphDiv);
-				if ($graph.find('#history-range-selector').length)
-					return;
-	
-				createRangeSelector().css('left', e.dygraph.plotter_.area.x + 3).appendTo($graph);
-			};
-		}
-	
-		return RangeSelector;
-	})();
-
 
 	$page.on('change', '.varbind-list[protocol="modbus-tcp"] #func', function() {
 		var row = $(this).closest('#td-address');
@@ -734,6 +758,14 @@ $(function(){
 			row.find('#type').val('readInt16').attr('value', 'readInt16');
 			row.find('#order').val('BE').attr('value', 'BE');
 		}
+	});
+
+	$app.on('click', '.history-period-value', function() {
+		var $e = $(this);
+		var position = $e.position();
+		$e.closest('.history-period-block').find('.history-period')
+			.css({top: position.top, left: position.left - 200 + $e.width(), display: 'block'})
+			.pickmeup('show');
 	});
 
 	function setDevice(device) {
@@ -777,6 +809,15 @@ $(function(){
 
 	function updateNavigatorStatus() {
 		$app.find('#navigator').attr('status', Math.max.apply(null, $device_list.find('li').map((i, e) => e.getAttribute('status') || 0))); 
+	}
+
+	function addAlertListTableRow($table, alert) {
+		$row = $table.find('#template-row').clone();
+		$row.attr('id', alert.id).attr('status', alert.status);
+		$row.find('#td-datetime').html(cast('datetime', alert.time));
+		$row.find('#td-device').attr('device-id', alert.device_id).html(alert.device_name);
+		$row.find('#td-reason').html(alert.reason);		
+		$row.prependTo($table);
 	}
 
 	function updateTemplates() {
@@ -837,6 +878,20 @@ $(function(){
 			if (packet.event == 'status-updated') {
 				$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
 				updateNavigatorStatus();
+			}
+
+			if (packet.event == 'alert-summary') {
+				var $alert_block = $app.find('#navigator #alert-block');
+				$alert_block.find('#warning').html(packet.warning);
+				$alert_block.find('#critical').html(packet.critical);
+			}
+
+			if (packet.event == 'alert-info') {
+				var $table = $page.find('#alert-list');
+				if (!$table.length)
+					return;
+
+				addAlertListTableRow($table, packet);
 			}
 
 			if (packet.event == 'values-changed') {
@@ -903,7 +958,6 @@ $(function(){
 	});
 	
 	$(document).ajaxComplete(function(event, req, settings) {
-
 		$('#app').css('cursor', 'initial');
 
 		if (req.status != 200)
@@ -916,7 +970,7 @@ $(function(){
 			return updateDashboard();
 
 		if (/^\/device\/([\d]*)\/varbind-history$/.test(settings.url)) 
-			$history_period.pickmeup('set_date', new Date());
+			$app.find('#device-history-period').pickmeup('set_date', new Date());
 
 		if (settings.url.indexOf('/template/') == 0 && (settings.method == 'POST' || settings.method == 'DELETE'))	
 			updateTemplates();
@@ -955,7 +1009,6 @@ $(function(){
 	
 		if (type == 'filesize' && !isNaN(value)) {
 			var i = Math.floor(Math.log(value) / Math.log(1024));
-	
 			return (value / Math.pow(1024, i)).toFixed(2) * 1 + ['B', 'kB', 'MB', 'GB', 'TB'][i];		
 		}
 	

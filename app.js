@@ -7,10 +7,12 @@ const exec = require('child_process').exec;
 const WebSocket = require('ws');
 
 const Device = require('./modules/device'); 
+const Alert = require('./modules/alert'); 
 const nmap = require('./modules/nmap'); 
 const config = require('./config.json');
 
 let scan_processes = [];
+let alert_summary  = {warning: 0, critical: 0};
 
 let server = http.createServer();
 server.on('request', function (req, res) {
@@ -18,7 +20,7 @@ server.on('request', function (req, res) {
 		const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
 		res.setHeader('Content-type', mimes[mime] || 'text/plain');
 		res.statusCode = code;
-		if (!(typeof(data) == 'string' || data instanceof Buffer))
+		if (!(typeof(data) == 'string' || data instanceof Buffer || data == undefined))
 			data = data + '';
 		res.end(data);
 	}
@@ -88,7 +90,7 @@ server.on('request', function (req, res) {
 			return d.delete((err) => send(err ? 500: 200));
 
 		if (/device\/([\d]*)\/varbind-list$/g.test(path) && req.method == 'GET')
-			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
+			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0, is_history: v.is_history})));
 		
 		if ((/^\/device\/([\d]*)\/varbind-history$/).test(path) && req.method == 'GET') 
 			return d.getHistory(parsePeriod(query) , (err, res) => (err) ? send(500, err.message) : json(res));
@@ -106,6 +108,28 @@ server.on('request', function (req, res) {
 			json(res);
 		})
 		return;
+	}
+
+	if (path.indexOf('/alert') == 0) {
+		if (path == '/alert' && req.method == 'GET')
+			return Alert.getList((err, res) => (err) ? send(500, err.message) : json(res));
+
+		if (/alert\/([\d]*)\/hide/g.test(path) && req.method == 'POST') {
+			let id = parseInt(path.substring(7));
+			Alert.hide(id, function (err) {
+				if (err)
+					return send(500, err.message);
+
+				Alert.getSummary(function (err, res) {
+					if (err) 
+						return send(500, err.message); 
+
+					alert_summary = res; 
+					send(200);
+				});
+			})
+			return;
+		}
 	}
 
 	if (path.indexOf('/template/') == 0 && req.method == 'POST') {
@@ -214,6 +238,8 @@ Device.cache(function (err) {
 	Device.getList().forEach((device) => device.polling());
 });
 
+Alert.getSummary((err, res) => err ? console.error(err.message) : alert_summary = res);
+
 // Web notifier by socket 
 let	wss = new WebSocket.Server({ 
 	port: parseInt(config.port || 5000) + 1,
@@ -224,50 +250,52 @@ wss.on('connection', function connection(ws) {
 	ws.on('message', function (msg) { 
 		ws.device_id = (/device\/([\d]*)/g).test(msg) ? parseInt(msg.substring(8)) : 0;
 	});
+	
+	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical}
+	ws.send(JSON.stringify(packet));
 });
 
-setInterval(function () {
+function broadcast(packet, filter) {
 	if (!wss || !wss.clients)
 		return;
-	// send ping to keep connection alive 
+
 	wss.clients.forEach(function(client) {
-		if (client.readyState == WebSocket.OPEN)
-			client.ping('ping');
+		if (filter && !filter(client))
+			return;
+		
+		try {
+			if (packet)	
+				client.send(JSON.stringify(packet));
+			else
+				client.ping('ping');	
+		} catch (err) {}
 	})
-}, 10000);	
+}
+
+setInterval(function () {
+	broadcast(null, (client) => client.readyState == WebSocket.OPEN)
+}, 10000);
 
 Device.events.on('values-changed', function (device, time) {
-	if (!wss || !wss.clients)
-		return;
-
-	wss.clients.forEach(function(client) {
-		if (client.device_id != device.id)
-			return;
-
-		try {
-			client.send(JSON.stringify({
-				event: 'values-changed',
-				id: device.id,
-				values: device.varbind_list.map((v) => new Object({id: v.id, value: v.value, value_type: v.value_type, status: v.status || 0})),
-				time: time
-			}));
-		} catch(err) { }
-	});
-})
+	let values = device.varbind_list.map((v) => new Object({id: v.id, value: v.value, value_type: v.value_type, status: v.status || 0}));
+	let packet = {event: 'values-changed', id: device.id, values, time}
+	broadcast(packet, (client) => client.device_id == device.id);	
+});
 
 Device.events.on('status-updated', function(device) {
-	if (!wss || !wss.clients)
+	let packet = {event: 'status-updated', id: device.id, status: device.status}
+	broadcast(packet);
+});
+
+Device.events.on('status-changed', function(device, reason) {
+	if (device.status != 2 && device.status != 3)
 		return;
 
-	wss.clients.forEach(function(client) {
-		try {
-			client.send(JSON.stringify({
-				event: 'status-updated',
-				id: device.id,
-				status: device.status	
-			}));
-		} catch(err) { }
-	});
+	alert_summary[device.status == 2 ? 'warning' : 'critical']++;
+
+	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical}
+	broadcast(packet);
+	Alert.add(device.status, device.id, reason, (err) => (err) ? console.error(err.message) : null);
 });
 
 Device.events.on('status-changed', function(device, reason) {
