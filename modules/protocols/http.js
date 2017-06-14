@@ -13,6 +13,8 @@ exports.getValues = function (opts, address_list, callback) {
 		port: parseInt(opts.port) || opts.protocol == 'https' && 443 || 80,
 		method: 'GET'
 	};	
+	if (opts.user)
+		options.auth = [opts.user, opts.password].join(':');
 
 	if (options.hostname.indexOf('http://') == 0 || options.hostname.indexOf('https://') == 0)
 		return callback(new Error('Don\'t specify the protocol in the hostname.'));

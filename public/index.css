@@ -43,7 +43,7 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #dashboard .tag-list input:checked + label {background:#eee;}
 #app #dashboard #device-tag-list {border-bottom: 1px solid #eee}
 #app #dashboard .history-period-block {margin-top: -10px;} 
-#app #dashboard #graph-block {padding: 20px;}
+#app #dashboard #graph-block {padding: 30px;}
 #app #dashboard #graph {display: block;}
 
 #app #device-list {list-style: none;}
@@ -56,9 +56,9 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #device-list li #ip {margin-left: 15px; font-size: 10px; display: inline-block;}
 #app #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
 
-#app #page-device-view .history-period-block {right: 40px; top: 5px;} 
-#app #page-device-view .top-menu ~ .history-period-block {right: 40px; top: 30px;} 
-#app #page-device-view #varbind-list {width: 100%}
+#app #page-device-view .history-period-block {top: 5px; right: 40px;} 
+#app #page-device-view .top-menu ~ .history-period-block {top: 40px; right: 20px;} 
+#app #page-device-view #varbind-list {width: 100%; margin-top: 20px;}
 #app #page-device-view #varbind-list td {padding: 2px 5px;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
 #app #page-device-view #varbind-list #td-name {width: 1px; min-width: 100px;}

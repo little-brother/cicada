@@ -670,7 +670,7 @@ $(function(){
 					labels: res.columns,
 					valueRange: getRange(res.rows),
 					highlightCircleSize: 2,					
-					height: $app.height() - $dashboard.find('#tag-list').height() - 40,
+					height: $app.height() - $dashboard.find('#tag-list').height() - 60,
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)}
 					},
