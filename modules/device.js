@@ -574,8 +574,21 @@ function Varbind (data) {
 	this.tags = this.tag_list.join(';');	
 }
 
-// divider is a "number" or "number + char" 
+// divider is a "number" or "number + char" or "number + r + regexp"
 function applyDivider (value, divider) {
+	if (isNaN(value) && isNaN(divider)) {
+		value = value + '';
+		divider = divider + '';
+		let pos = divider.indexOf('r');
+
+		if (pos == -1 || value.indexOf('ERR') == 0)		
+			return value;
+
+		let re = new RegExp(divider.substring(pos + 1));
+		let val = (value + '').match(re);
+		return val && val[1]? applyDivider(val[1], parseFloat(divider)) : '';
+	}	
+
 	if (!value || isNaN(value) || !divider) 
 		return value;
 
