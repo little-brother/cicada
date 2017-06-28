@@ -8,7 +8,7 @@ input[type="text"] {border: 1px solid #bbb;}
 .dygraph-legend {width: initial !important; right: 0 !important; left: initial !important;}
 .dygraph-legend > span {display: block;}
 
-.top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff;}
+.top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff; display: none;}
 .top-menu > div {display: inline-block; cursor: pointer; border-bottom: 1px dashed #eef; margin-left: 10px;}
 
 .history-period {visibility: hidden; position: absolute; display: none;}
@@ -86,6 +86,7 @@ input[type="text"] {border: 1px solid #bbb;}
 #app #page-device-edit details table {width: 100%}
 #app #page-device-edit details table tr:hover {background-color: #eff;}
 
+#app #page-device-edit .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
 #app #page-device-edit .varbind-list #td-status-conditions #if[if="change"] ~ #value,
 #app #page-device-edit .varbind-list #td-status-conditions #if[if="anything"] ~ #value,
 #app #page-device-edit .varbind-list #td-status-conditions #if[if="error"] ~ #value {display:none}

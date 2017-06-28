@@ -45,7 +45,10 @@ Are you need more features? Try [**Little Brother**](https://github.com/little-b
    Template will be appear in "Add device"-menu and in scan results.
 
 ## Configuration (config.json)
-* **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket. 
+* **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket.
+* **access** - define access by ips.
+  *edit* (array) - allowed edit from those ips. By default is `["127.0.0.1", "::ffff:127.0.0.1", "localhost"]`.
+  *view* (array) - allowed view from those ips. By default is `any`. 
 * **ping-period** - in seconds. By default `60`.
 * **on-status-change** 
   * command - Any shell command. You can use `${device.*}` and `${reason}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true/false). By default is empty.

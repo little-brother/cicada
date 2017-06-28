@@ -10,13 +10,6 @@ $(function(){
 
 	$app.splitter({orientation: 'horizontal', limit: 200});
 
-	if (window.location.hostname != '127.0.0.1' && window.location.hostname != 'localhost') {
-		$('.top-menu').remove();
-		$components.find('#page-alert-list-view #alert-list #td-hide').remove();
-	}
-	else
-		updateTemplates();
-
 	$.ajax({
 		method: 'GET',
 		url: '/device',
@@ -876,16 +869,28 @@ $(function(){
 		socket.onmessage = function(event) {
 			var packet = JSON.parse(event.data);
 
-			// console.log(packet)
+			if (packet.event == 'access') {
+				if (packet.access == 'view')
+					$components.find('#page-alert-list-view #alert-list #td-hide').remove();
+
+				if (packet.access == 'edit') {
+					$('.top-menu').show();
+					updateTemplates();
+				}
+				return;
+			}
+			
 			if (packet.event == 'status-updated') {
 				$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
 				updateNavigatorStatus();
+				return;	
 			}
 
 			if (packet.event == 'alert-summary') {
 				var $alert_block = $app.find('#navigator #alert-block');
 				$alert_block.find('#warning').html(packet.warning);
 				$alert_block.find('#critical').html(packet.critical);
+				return;
 			}
 
 			if (packet.event == 'alert-info') {
@@ -894,6 +899,7 @@ $(function(){
 					return;
 
 				addAlertListTableRow($table, packet);
+				return;
 			}
 
 			if (packet.event == 'values-changed') {

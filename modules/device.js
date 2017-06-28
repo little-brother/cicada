@@ -522,6 +522,7 @@ const checkCondition = {
 	'equals' : (v, v1) => v == v1,
 	'not-equals' : (v, v1) => v != v1,
 	'smaller' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) < parseFloat(v1),
+	'empty' : (v) => !v,
 	'change' : (v, prev) => prev != undefined && v != undefined && prev != v,
 	'regexp' : (v, v1) => (new RegExp(v1)).test(v),
 	'anything' : (v, v1) => true,

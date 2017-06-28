@@ -30,10 +30,10 @@ server.on('request', function (req, res) {
 	}
 
 	function parseBody(callback) {
-        let body = '';
-        req.on('data', (data) => body += data);
-        req.on('end', () => callback(qs.parse(body)))
-    }
+		let body = '';
+		req.on('data', (data) => body += data);
+		req.on('end', () => callback(qs.parse(body)))
+	}
 
 	function parsePeriod(query) {
 		let time = new Date().getTime();
@@ -44,11 +44,10 @@ server.on('request', function (req, res) {
 	let xhr = req.headers['x-requested-with'] == 'XMLHttpRequest';
 	let path = url.parse(req.url).pathname;
 	let query = qs.parse(req.url.replace(/^.*\?/, ''));
-	
-	let host = req.headers.host || req.headers.hostname;
-	let port = server.address().port;	
-	if (host != `localhost:${port}` && host != `127.0.0.1:${port}` && req.method != 'GET')
-		return send(401, 'Remote access is read-only mode.');
+
+	let access = getAccess(req.connection.remoteAddress);
+	if (access == 'none' || req.method != 'GET' && access != 'edit')
+		return send(401, 'Access denied');
 
 	if (path == '/device' && req.method == 'GET') {
 		return json(Device.getList().map(function (d) {
@@ -228,7 +227,16 @@ server.on('request', function (req, res) {
 	});
 });
 const port = config.port || 5000;
-server.listen(port, () => console.log(`Chupacabra running on port ${port}...`));		
+server.listen(port, () => console.log(`Chupacabra running on port ${port}...`));	
+
+function getAccess(ip) {
+	let edit = config && config.access && config.access.edit instanceof Array && config.access.edit || ['127.0.0.1', '::ffff:127.0.0.1', 'localhost'];
+	let view = config && config.access && config.access.view instanceof Array && config.access.view;
+
+	return (edit.indexOf(ip) != -1) ? 'edit' :
+		(!view || view.indexOf(ip) != -1) ? 'view' : 
+		'none';
+}
 
 // Init cache and run polling
 Device.cache(function (err) {
@@ -249,12 +257,17 @@ let	wss = new WebSocket.Server({
 	clientTracking: true
 });
 
-wss.on('connection', function connection(ws) {
+wss.on('connection', function (ws, req) {
 	ws.on('message', function (msg) { 
 		ws.device_id = (/device\/([\d]*)/g).test(msg) ? parseInt(msg.substring(8)) : 0;
 	});
 	
-	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical}
+	let packet;
+	packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical};
+	ws.send(JSON.stringify(packet));
+
+	let ip = !req ? ws._socket.address().address : req.connection.remoteAddress;
+	packet = {event: 'access', access: getAccess(ip)};
 	ws.send(JSON.stringify(packet));
 });
 
@@ -296,7 +309,7 @@ Device.events.on('status-changed', function(device, reason) {
 
 	alert_summary[device.status == 2 ? 'warning' : 'critical']++;
 
-	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical}
+	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical};
 	broadcast(packet);
 
 	let time = new Date().getTime();

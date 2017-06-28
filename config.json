@@ -1,5 +1,9 @@
 {
 	"port": 5000,
+	"access": {
+		"edit": ["localhost", "127.0.0.1", "::ffff:127.0.0.1"],
+		"view": "any"
+	},
 	"ping-period": 60,
 	"on-status-change": {
 		"command": "",

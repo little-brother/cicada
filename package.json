@@ -1,6 +1,6 @@
 {
   "name": "chupacabra",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Simple network monitoring",
   "main": "app.js",
   "keywords": [],
@@ -15,9 +15,9 @@
   "license": "GPL-2.0",
   "dependencies": {
     "async": "^2.4.0",
+    "modbus-serial": "4.5.1",
     "net-snmp": "^1.1.19",
     "sqlite3": "^3.1.8",
-    "ws": "^2.3.1",
-	"modbus-serial": "4.5.1"
+    "ws": "^2.3.1"
   }
 }
