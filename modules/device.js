@@ -628,9 +628,15 @@ function applyDivider (value, divider) {
 		if (pos == -1 || value.indexOf('ERR') == 0)		
 			return value;
 
-		let re = new RegExp(divider.substring(pos + 1));
-		let val = (value + '').match(re);
-		return val && val[1]? applyDivider(val[1], parseFloat(divider)) : '';
+		let re, error, val;
+		try {
+			re = new RegExp(divider.substring(pos + 1));
+			val = (value + '').match(re);
+		} catch (err) {
+			error = err;
+		}
+		
+		return (error) ? error.message : val && val[1] ? applyDivider(val[1], parseFloat(divider)) : '';
 	}	
 
 	if (!value || isNaN(value) || !divider) 
