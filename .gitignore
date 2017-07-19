@@ -1,4 +1,4 @@
 node_modules/
 db/
-public/templates.json
+templates/
 ToDo.txt

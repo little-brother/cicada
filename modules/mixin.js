@@ -16,7 +16,6 @@ module.exports = {
 			return cache.unset(this.__type__, this.id);
 
 		return cache.set(this.__type__, this);
-	},
-	
+	}
 }
 

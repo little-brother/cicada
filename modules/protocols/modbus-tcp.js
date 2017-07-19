@@ -40,13 +40,13 @@ exports.getValues = function(opts, address_list, callback) {
 				return onEnd();
 
 			let address = address_list[i]; 
-			if (!client[address.func] || !!isNaN(address.register) || address.register < 1) {
+			if (!address.func || !client[address.func] || !!isNaN(address.register) || address.register < 1) {
 				res[i] = {
 					value: 'BAD_PARAMS', 
 					isError: true
 				};
 
-				getValue(i +1);
+				return getValue(i +1);
 			}
 
 			client[address.func](address.register - 1, regCount[address.type] || 1, function(err, data) {

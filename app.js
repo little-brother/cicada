@@ -40,6 +40,12 @@ server.on('request', function (req, res) {
 		let q = {from: parseInt(query.from), to: parseInt(query.to)};
 		return (!q.from) ? [time - 1000 * 3600, time] : [q.from, (q.to || q.from) + 1000 * 3600 * 24];	
 	}
+
+	function onDone (err, data) {
+		return err ? send(500, err.message) : 
+			data instanceof Object ? json(data) : 
+			send(200, data);
+	}
 	
 	let xhr = req.headers['x-requested-with'] == 'XMLHttpRequest';
 	let path = url.parse(req.url).pathname;
@@ -64,12 +70,7 @@ server.on('request', function (req, res) {
 				return send(404, 'Bad device id: ' + id);
 
 			d.setAttributes(body);
-			d.save(function(err, id) {
-				if (err)
-					return send(500, err.message);
-			
-				send(200, id);
-			})
+			d.save(onDone);
 		})
 		return;
 	}
@@ -86,13 +87,16 @@ server.on('request', function (req, res) {
 			return json(d);	
 
 		if (/device\/([\d]*)$/g.test(path) && req.method == 'DELETE')
-			return d.delete((err) => send(err ? 500: 200));
+			return d.delete(onDone);
 
 		if (/device\/([\d]*)\/varbind-list$/g.test(path) && req.method == 'GET')
-			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0, is_history: v.is_history})));
+			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
 		
 		if ((/^\/device\/([\d]*)\/varbind-history$/).test(path) && req.method == 'GET') 
-			return d.getHistory(parsePeriod(query) , (err, res) => (err) ? send(500, err.message) : json(res));
+			return d.getHistory(parsePeriod(query), onDone);
+
+		if ((/^\/device\/([\d]*)\/varbind-changes$/).test(path) && req.method == 'GET') 
+			return d.getChanges(parsePeriod(query), onDone);
 	}
 
 	if (path == '/tag' && req.method == 'GET') 
@@ -100,18 +104,12 @@ server.on('request', function (req, res) {
 	
 	if (path.indexOf('/tag/') == 0 && req.method == 'GET') {
 		let tag = path.substring(5);
-		Device.getHistoryByTag(tag, query.tags, parsePeriod(query), function(err, res) {
-			if (err)
-				return send(500, err.message);
-
-			json(res);
-		})
-		return;
+		return Device.getHistoryByTag(tag, query.tags, parsePeriod(query), onDone);
 	}
 
 	if (path.indexOf('/alert') == 0) {
 		if (path == '/alert' && req.method == 'GET')
-			return Alert.getList((err, res) => (err) ? send(500, err.message) : json(res));
+			return Alert.getList(onDone);
 
 		if (/alert\/([\d]*)\/hide/g.test(path) && req.method == 'POST') {
 			let id = parseInt(path.substring(7));
@@ -134,54 +132,31 @@ server.on('request', function (req, res) {
 		}
 	}
 
-	if (path.indexOf('/template/') == 0 && req.method == 'POST') {
-		parseBody(function (body) {
-			fs.readFile('./public/templates.json', {encoding: 'utf-8'}, function(err, data) {
-				if (err && err.code != 'ENOENT')
+	if (path.indexOf('/template') == 0) {
+		if (path == '/template' && req.method == 'GET') {
+			fs.readdir('./templates', function (err, files) {
+				if (err)
 					return send(500, err.message);
-	
-				let templates, template, error;
-				try {
-					err = null;
-					templates = JSON.parse(data || '{}');
-					template = JSON.parse(body.varbind_list);
-				} catch (err) {
-					return send(500, err.message);
-				}
 
-				templates[qs.unescape(path.substring(10))] = template;
-				fs.writeFile('./public/templates.json', JSON.stringify(templates, 1, '\t'), {encoding: 'utf-8'}, (err) => (err) ? send(500, err.message) : send(200, 'OK'));
-			})
-		})
-		return;
-	}
+				let res = files.filter((file) => file.substr(-5) == '.json').map((file) => file.slice(0, -5));
+				json(res);
+			});
+			return;	
+		}
 
-	if (path.indexOf('/template/') == 0 && req.method == 'DELETE') {
-		fs.readFile('./public/templates.json', {encoding: 'utf-8'}, function(err, data) {
-			if (err)
-				return send(500, err.message);
-			
-			let templates, template;
-			try {
-				templates = JSON.parse(data || '{}');
-				template = qs.unescape(path.substring(10));
-			} catch (err) {
-				return send(500, err.message);
-			}
+		let template = './templates/' + qs.unescape(path.substring(10)) + '.json';
+		if (req.method == 'GET') 
+			return fs.readFile(template, {encoding: 'utf-8'}, onDone);
 
-			delete templates[template];
-			fs.writeFile('./public/templates.json', JSON.stringify(templates, 1, '\t'), {encoding: 'utf-8'}, (err) => (err) ? send(500, err.message) : send(200, 'OK'));
-		})
-		return;
+		if (req.method == 'POST')
+			return parseBody((body) => fs.writeFile(template, body.varbind_list, {encoding: 'utf-8'}, onDone));
+
+		if (req.method == 'DELETE')
+			return fs.unlink(template, onDone);
 	}
 
 	if (path == '/scan' && req.method == 'GET') {
-		let proc = nmap.ping(query.range, Device.getIpList().join(','), function(err, result) {
-			if (err)
-				return send(500, err.message);
-
-			json(result);
-		});
+		let proc = nmap.ping(query.range, Device.getIpList().join(','), onDone);
 		scan_processes.push(proc);	
 		return;	
 	}
@@ -198,7 +173,7 @@ server.on('request', function (req, res) {
 		scan_processes = [];
 
 		if (path == '/scan/cancel' && req.method == 'GET')
-			return send(200, 'OK');
+			return send(200);
 	}
 
 	if (path == '/value' && req.method == 'GET') {
@@ -293,7 +268,7 @@ setInterval(function () {
 }, 10000);
 
 Device.events.on('values-changed', function (device, time) {
-	let values = device.varbind_list.map((v) => new Object({id: v.id, value: v.value, value_type: v.value_type, status: v.status || 0}));
+	let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, status: v.status || 0}));
 	let packet = {event: 'values-changed', id: device.id, values, time}
 	broadcast(packet, (client) => client.device_id == device.id);	
 });
@@ -361,7 +336,7 @@ Device.events.on('status-changed', function(device, reason) {
 // nmap ping by timer
 function runPing (delay) {
 	if (delay)
-		return setTimeout(runPing, config['ping-period'] * 1000 || 60000);
+		return setTimeout(runPing, config['ping-period'] * 1000 || 300000);
 
 	let ips = Device.getIpList(true).join(' ');
 	if (!ips) 
@@ -391,7 +366,7 @@ function runAutoScan(delay) {
 		return;
 
 	if (delay)
-		return setTimeout(runAutoScan, params.period * 1000 || 30000);
+		return setTimeout(runAutoScan, params.period * 1000 || 300000);
 
 	nmap.ping(params.range, Device.getIpList().join(','), function(err, result) {
 		if (err)

@@ -1,6 +1,6 @@
 {
   "name": "chupacabra",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Simple network monitoring",
   "main": "app.js",
   "keywords": [],

@@ -26,7 +26,7 @@ $(function(){
 		$page.empty();
 	});
 
-	$app.on('click', '#device-list li', function(e) {
+	$app.on('click', '#device-list li', function(e, data) {
 		$page.empty();
 
 		var $e = $(this);
@@ -46,13 +46,11 @@ $(function(){
 				$device_list.find('li.active').removeClass('active');
 				$device_list.find('li#' + device_id).addClass('active');
 
-				if (!varbind_list.length) 
+				if (!varbind_list.length)
 					return $component.find('#page-content').html('There are no varbinds.');
 
-				if (varbind_list.some((v) => v.is_history)) {
-					setHistoryPeriodSelector($component);
-					$component.find('.history-period-block').show();
-				}
+				$selector = setHistoryPeriodSelector($component);
+				$component.find('.history-period-block').show();
 
 				var $varbind_list = $('<table/>').attr('id', 'varbind-list').attr('device-id', device_id).data('varbind-list', varbind_list);
 				$.each(varbind_list, function (i, varbind) {
@@ -65,67 +63,47 @@ $(function(){
 				});
 				$varbind_list.appendTo($component.find('#page-content'));
 
-				$varbind_list.trigger('update-graphs');
+				if (data && data.period) {
+					return $selector.pickmeup('set_date', [new Date(data.period[0]), new Date(data.period[1])]).attr('changed', true).pickmeup('hide');
+				}
+
+				$varbind_list.trigger('update-data');
 			}
 		});
 	});
 
-	$page.on('update-graphs', '#page-device-view #varbind-list', function (event, data) {
+	$page.on('update-data', '#page-device-view #varbind-list', function (event, data) {
 		var $varbind_list = $(this);
 		var varbind_list = $varbind_list.data('varbind-list');
+		var from = data && data.period && data.period[0]; 
+		var to = data && data.period && data.period[1];
 
+		var $cells = {};
+		varbind_list.forEach(function (varbind) {
+			$cells[varbind.id] = $varbind_list.find('tr#' + varbind.id + ' #td-history').empty().attr('is-number', varbind.value_type == 'number');
+			if (varbind.value_type != 'number')
+				$('<table/>').appendTo($cells[varbind.id]);
+		});
+			
 		$.ajax({
 			method: 'GET',
 			url: '/device/' + $varbind_list.attr('device-id') + '/varbind-history',
-			data: {
-				from: data && data.period && data.period[0],
-				to: data && data.period && data.period[1]
-			},	
+			data: {from, to},	
 			success: function (res) {
 				if (!res.rows.length)
 					return;
 
-				$.each(varbind_list, function(i, varbind) {
-					var idx = res.columns.indexOf('varbind' + varbind.id)
+				$.each(varbind_list.filter((varbind) => varbind.value_type == 'number'), function(i, varbind) {
+					var idx = res.columns.indexOf('varbind' + varbind.id);
 					if (idx == -1)
 						return;
 
 					deleteGraph(varbind.id);
-					var data = res.rows.map((row) => [(varbind.value_type == 'number') ? new Date(row[0]) : row[0], row[idx]]);
+					var data = res.rows.map((row) => [new Date(row[0]), row[idx]]);
 					if (data.length == 0)
 						return;
 
-					var $cell = $varbind_list.find('tr#' + varbind.id + ' #td-history').empty().attr('is-number', varbind.value_type == 'number');
-
-					if (varbind.value_type != 'number') {
-						//createRangeSelector().appendTo($cell);
-
-						var packed = []
-						data.map(function (e, j, arr) {
-							return {
-								time: e[0],
-								value: e[1],
-								prev: arr[j - 1] && arr[j - 1][1] == e[1],
-								next: arr[j + 1] && arr[j + 1][1] == e[1]
-							}
-						}).filter((e) => !e.prev || !e.next).forEach(function(e, j, arr) {
-							if (!e.prev && !e.next)
-								packed.push({from: e.time, to: e.time, value: e.value});
-
-							if (!e.prev && e.next)
-								packed.push({from: e.time, to: arr[j + 1].time, value: e.value});	
-						});
-						var $table = $('<table/>');
-						if (packed.length > 0) {
-							packed.forEach((e) => createHistoryTableRow(e, varbind.value_type).appendTo($table));
-							$table.data('last-event', packed[packed.length - 1]);
-						}
-						
-						
-						$table.appendTo($cell);	
-						return;
-					}
-
+					var alerts = res.alerts[varbind.id];
 					var opts = {
 						animatedZooms: true,
 						valueRange: getRange(data),
@@ -135,23 +113,65 @@ $(function(){
 						axes: {
 							x: {valueFormatter: (ms) => cast('datetime', ms)}
 						},
-						drawPoints: true
+						drawPoints: true,
+						drawPointCallback: function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row) {
+							var status = alerts[g.getValue(row, 0)];
+							if (!status)	
+								return;
+							drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+						}
 					};
 				
-					graphs[varbind.id] = new Dygraph($cell.get(0), data, opts);
+					graphs[varbind.id] = new Dygraph($cells[varbind.id].get(0), data, opts);
+					graphs[varbind.id].alerts = alerts;
 				})
 			}
-		})		
-	})
+		});
+
+		$.ajax({
+			method: 'GET',
+			url: '/device/' + $varbind_list.attr('device-id') + '/varbind-changes',
+			data: {from, to},	
+			success: function (res) { 
+				if (!res.length)
+					return;
+
+				var changes = {};
+				res.forEach(function(row) {
+					var varbind_id = row[2];
+					if (!changes[varbind_id])
+						changes[varbind_id]	= [];
+
+					changes[varbind_id].push({from: row[0], to: row[1], prev_value: row[3], value: row[4], status: row[5]});
+				});
+	
+				for (var varbind_id in changes) {
+					var history = changes[varbind_id];
+					var value_type = varbind_list.find((varbind) => varbind_id == varbind.id).value_type; 
+					history.sort((a, b) => a.from - b.from);
+					var $table = $cells[varbind_id].find('table');
+					history.forEach((row) => createHistoryTableRow(row, value_type).appendTo($table));
+				}
+			}
+		});
+	});
 
 	$app.on('click', '.top-menu .device-add', function() {
-		var $e = $(this);
+		var $e = $(this); name
+		var template_name = $e.attr('name');
+
+		if (!!template_name && !templates[template_name])
+			return updateTemplateInfo(template_name, () => $e.trigger('click'));
+
 		$page.empty();
 		var $component = $components.find('#page-device-edit').clone(true, true);
-		setVarbindList($component, $e.data('template') || []);
+		
+		setVarbindList($component,  templates[template_name] || []);
 
 		$component.find('#protocols input:radio:first').prop('checked', true);
-		$component.appendTo($page);				
+		$component.find('#properties #template').val(template_name);
+		$component.appendTo($page);
+		highlightProtocolTabs();				
 	});
 
 	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block', function() {
@@ -171,14 +191,17 @@ $(function(){
 					$component.find('#name').val(device.name);
 					$component.find('#ip').val(device.ip);
 					$component.find('#mac').val(device.mac);
-					$component.find('#period').val(device.period);
+					$component.find('#period').val(device.period || 60);
+					$component.find('#timeout').val(device.timeout || 3);
 					$component.find('#description').val(device.description);
 					$component.find('#is-pinged')[device.is_pinged ? 'attr' : 'removeAttr']('checked', true);
 					$component.find('#check-parent-at-failure')[!!device.parent_id ? 'attr' : 'removeAttr']('checked', true);
 					$component.find('#force-status-to').val(device.force_status_to || 3);
+					$component.find('#template').val(device.template);
 				} else {
 					$component.find('#id').attr('cloned', device.id);
 					$component.find('#name').val(device.name + ' clone');
+					$component.find('#template').val(device.template);
 				}
 				$component.find('#tags').val(device.tags);
 		
@@ -214,7 +237,7 @@ $(function(){
 			var protocol = e.id.substring(5);
 			var $varbind_list = $vb_table.clone().attr('protocol', protocol);
 			var $template_row = $varbind_list.find('#template-row');
-			$template_row.find('#td-address').html($components.find('#partial-varbind-address-' + protocol).html());
+			$template_row.find('#td-address #address').html($components.find('#partial-varbind-address-' + protocol).html());
 			
 			$.each(varbind_list, function(i, varbind) {
 				if (varbind.protocol != protocol)
@@ -222,8 +245,18 @@ $(function(){
 
 				var $row = $template_row.clone(true, true).removeAttr('id');
 				$row.attr('id', varbind.id);
-				$row.find('#name').val(varbind.name);	
-				$.each(varbind.address || {}, (key, value) => $row.find('#td-address #' + key).val(value).attr('value', value));
+				$row.find('#name').val(varbind.name);
+
+				var $td_address = $row.find('#td-address');
+				var isExpression = !!varbind.address && !!varbind.address.expression
+				var $address = $td_address.find('#address').toggle(!isExpression);
+				var $expression = $td_address.find('#expression').toggle(isExpression);
+				if (isExpression) {
+					$expression.val(varbind.address.expression).show();
+				} else {
+					$.each(varbind.address || {}, (key, value) => $address.find('#' + key).val(value).attr('value', value));
+				}	
+				
 				$row.find('#divider').val(varbind.divider);
 				$row.find('#value-type').val(varbind.value_type || 'string');
 				$cond_template_row = $components.find('#partial-varbind-condition');
@@ -262,9 +295,13 @@ $(function(){
 				}
 				
 				var address = {};
-				$row.find('#td-address').find('input, select').each(function() {
-					address[this.id] = this.value;	
-				});
+				var $td_address = $row.find('#td-address');
+				var $expression = $td_address.find('#expression:visible');
+				if ($expression.length > 0) {
+					address.expression = $expression.val();
+				} else {
+					$.each($td_address.find('#address').find('input, select'), (i, e) => address[e.id] = e.value);
+				};
 				
 				var status_conditions = [];
 				$row.find('#td-status-conditions .status-condition').each(function() {
@@ -302,11 +339,13 @@ $(function(){
 			description: $props.find('#description').val(),
 			ip: $props.find('#ip').val(),
 			period: $props.find('#period').val(),
+			timeout: $props.find('#timeout').val(),
 			mac: $props.find('#mac').val(),
 			tags: $props.find('#tags').val(),
 			is_pinged: $props.find('#is-pinged:checked').length,
 			parent_id: $props.find('#check-parent-at-failure:checked').length,
-			force_status_to:  $props.find('#force-status-to').val()
+			force_status_to:  $props.find('#force-status-to').val(),
+			template: $props.find('#template').val()
 		};
 
 		var protocol_params = {};
@@ -348,13 +387,14 @@ $(function(){
 		if (templates[name] && !confirm('Overwrite?'))
 			return;
 
+		var varbind_list = getVarbindList(true);
 		$.ajax({
 			method: 'POST',
 			url: '/template/' + name,
 			data: {
-				varbind_list: JSON.stringify(getVarbindList(true))
+				varbind_list: JSON.stringify(varbind_list, 1, '\t')
 			},
-			success: (res) => console.log(res)
+			success: (res) => templates[name] = varbind_list
 		});
 	});
 
@@ -362,11 +402,14 @@ $(function(){
 		event.stopPropagation();
 
 		var $e = $(this).closest('div[name]');
-
+		var name = $e.attr('name');
 		$.ajax({
 			method: 'DELETE',
-			url: '/template/' + $e.attr('name'),
-			success: () => $e.remove()
+			url: '/template/' + name,
+			success: function () {
+				$e.remove();
+				delete templates[name]; 
+			}
 		});
 	});
 
@@ -398,7 +441,7 @@ $(function(){
 			divider: $row.find('#divider').val()
 		}
 		$row.closest('div[id^="page-"]').find('#protocol-params').find('input, select').each((i, param) => data.protocol_params[param.id] = param.value);
-		$row.find('#td-address').find('input, select').each((i, param) => data.address[param.id] = param.value);
+		$row.find('#td-address').find('input:visible, select:visible').each((i, param) => data.address[param.id] = param.value);
 	
 		$.ajax({
 			method: 'GET',
@@ -454,9 +497,16 @@ $(function(){
 		})
 	});
 
-	$page.on('click', '#alert-list #td-device', function () {
-		var $e = $(this);
-		$device_list.find('li#' + $e.attr('device-id')).trigger('click');
+	$page.on('click', '#alert-list #td-datetime, #alert-list #td-device', function () {
+		var $e = $(this).closest('tr');
+		var time = new Date(parseInt($e.attr('time')));
+		time.setHours(0);
+		time.setMinutes(0);
+		time.setSeconds(0);
+		time.setMilliseconds(0);
+		time = time.getTime();	
+	
+		$device_list.find('li#' + $e.attr('device-id')).trigger('click', {period: [time, time]});
 	});
 
 	$page.on('click', '#alert-list #td-hide', function () {
@@ -469,7 +519,6 @@ $(function(){
 		})
 	});
 
-
 	$app.on('click', '.top-menu #device-scan', function() {
 		$page.empty();
 		var $page_scan = $components.find('#page-device-scan').clone().appendTo($page);
@@ -478,16 +527,7 @@ $(function(){
 
 		$template = $page_scan.find('#template-row select#template');
 		$template.find('option:not([value=""])').remove();
-		$.each(templates, function (name, data) {
-			$('<option/>').val(name).html(name).appendTo($template);
-			$.each(data || [], function(i, varbind) {
-				if (varbind.address)
-					varbind.json_address = JSON.stringify(varbind.address);
-				if (varbind.status_conditions)
-					varbind.json_status_conditions = JSON.stringify(varbind.status_conditions);
-			})
-		});		
-
+		$.each(templates, (name) => $('<option/>').val(name).html(name).appendTo($template));
 	});
 
 	function toggleScanButton(start) {
@@ -552,6 +592,12 @@ $(function(){
 
 	$page.on('click', '#page-device-scan .add:not([all])', function(event, callback) {
 		var $row = $(this).closest('tr');
+	
+		var template_name = $row.find('#template').val();
+		var template = templates[template_name];
+		if (!template)	
+			return updateTemplateInfo(template_name, () => $(this).trigger('click'));
+	
 		var data = {
 			name: $row.find('#name').val(),
 			ip: $row.find('#ip').val(),
@@ -559,11 +605,10 @@ $(function(){
 			is_pinged: $row.find('#is-pinged:checked').length,
 			period: $row.find('#period').val(),
 			tags: $row.find('#tags').val(),
-			description: $row.find('#description').val()
+			description: $row.find('#description').val(),
+			json_varbind_list: JSON.stringify(template),
+			template: template_name
 		}
-		var template = $row.find('#template').val();
-		if (template)
-			data.json_varbind_list = JSON.stringify(templates[template]);
 
 		$.ajax({
 			method: 'POST',
@@ -588,10 +633,8 @@ $(function(){
 			return;
 
 		function addDevice(i) {
-			if (i == $devices.length)
-				return;
-
-			$devices.eq(i).trigger('click', () => addDevice(i + 1))			
+			if (i != $devices.length)
+				$devices.eq(i).trigger('click', () => addDevice(i + 1))			
 		}
 		
 		addDevice(0);
@@ -667,8 +710,20 @@ $(function(){
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)}
 					},
-					drawPoints: true
+					drawPoints: true					
 				};
+
+				if (res.ids) {
+					var names = {};
+					res.columns.forEach((name, i) => names[name] = res.ids[i - 1]);
+					opts.drawPointCallback = function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row, idx) {
+						var varbind_id = names[seriesName];
+						var status = res.alerts[varbind_id] && res.alerts[varbind_id][g.getValue(row, 0)];
+						if (!status)	
+							return;
+						drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+					}
+				}
 			
 				graphs.dashboard = new Dygraph($dashboard.find('#graph').get(0), res.rows, opts);
 			}
@@ -714,7 +769,7 @@ $(function(){
 	}
 
 	function setHistoryPeriodSelector($where) { 
-		$where.find('.history-period').pickmeup({
+		return $where.find('.history-period').pickmeup({
 			hide_on_select: true, 
 			mode: 'range',
 			show: function () {
@@ -733,16 +788,26 @@ $(function(){
 	
 				return (!$page.html()) ? 
 					$dashboard.trigger('update-graph', {tag: $dashboard.find('#varbind-tag-list input:checked').attr('id'), period: period}) :
-					$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-graphs', {period: period});
+					$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-data', {period: period});
 			}
 		});
 	}
 
 	function createHistoryTableRow (e, value_type) {
+		var period = (value_type != 'duration') ? cast('datetime', e.from) + ' - ' + cast('datetime', e.to) : cast('datetime', e.from);
+		var value = (value_type != 'duration') ? cast(value_type, e.value) : cast(value_type, e.prev_value || 'N/A') + ' > ' + cast(value_type, e.value);
+
 		return $('<tr/>')
-			.append($('<td>').html(cast('datetime', e.from) + ' - ' + cast('datetime', e.to)))
-			.append($('<td>').html(cast(value_type, e.value)));
+			.attr('status', e.status)
+			.data('event', e)
+			.append($('<td>').html(period))
+			.append($('<td>').html(value));
 	}
+
+	$page.on('dblclick', '.varbind-list #td-address', function() {
+		var $e = $(this);
+		$e.children().toggle();
+	});
 
 	$page.on('change', '.varbind-list[protocol="modbus-tcp"] #func', function() {
 		var row = $(this).closest('#td-address');
@@ -808,9 +873,9 @@ $(function(){
 
 	function addAlertListTableRow($table, alert) {
 		$row = $table.find('#template-row').clone();
-		$row.attr('id', alert.id).attr('status', alert.status);
+		$row.attr('id', alert.id).attr('status', alert.status).attr('time', alert.time).attr('device-id', alert.device_id);
 		$row.find('#td-datetime').html(cast('datetime', alert.time));
-		$row.find('#td-device').attr('device-id', alert.device_id).html(alert.device_name);
+		$row.find('#td-device').html(alert.device_name);
 		$row.find('#td-reason').html(alert.reason);		
 		$row.prependTo($table);
 	}
@@ -819,28 +884,38 @@ $(function(){
 		var error = (msg) => alert('Failed load templates: ' + msg)
 		$.ajax({
 			method: 'GET',
-			url: '/templates.json',
-			dataType: 'text',
+			url: '/template',
+			dataType: 'json',
 			error: (jqXHR, textStatus, errorThrown) => error(textStatus),
-			success: function (data) {
-				try {
-					templates = JSON.parse(data || '{}');
-				} catch (err) {
-					return error(err.message);
-				}
-
+			success: function (template_list) {
 				var $list = $app.find('#template-list').empty();
-				$.each(templates, function (name, data) {
+				template_list.forEach(function (name) {
 					$('<div/>')
 						.addClass('device-add')
 						.attr('name', name)
 						.html(name)
-						.data('template', data)
 						.append($('<span/>').attr('id', 'template-remove').attr('title', 'Remove template').html('&#10006;'))
 						.appendTo($list);
+					templates[name] = false;
 				});	
 			}
 		});		
+	}
+
+	function updateTemplateInfo(name, callback) {
+		$.ajax({
+			method: 'GET',
+			url: '/template/' + name,
+			dataType: 'json',
+			success: function (res) {
+				templates[name] = res || [];
+				templates[name].forEach(function(varbind) {
+					varbind.json_address = JSON.stringify(varbind.address || {});
+					varbind.json_status_conditions = JSON.stringify(varbind.status_conditions || []);					
+				})
+				callback();
+			}
+		});			
 	}
 
 	var socket;
@@ -874,7 +949,7 @@ $(function(){
 					$components.find('#page-alert-list-view #alert-list #td-hide').remove();
 
 				if (packet.access == 'edit') {
-					$('.top-menu').show();
+					$('.top-menu').attr('admin', true);
 					updateTemplates();
 				}
 				return;
@@ -914,37 +989,58 @@ $(function(){
 					if ($row.length == 0)
 						return;
 
-					$row.find('#td-value').html(cast(varbind.value_type, varbind.value)).attr('status', varbind.status);
+					$row.find('#td-value')
+						.html(cast(varbind.value_type, varbind.value))
+						.attr('status', varbind.status)
+						.attr('title', cast('datetime', packet.time));
 
-					if (varbind.value_type != 'number') {
-						var $table = $row.find('#td-history table');
-						if ($table.length == 0)
-							return;
-						
-						var last_event = $table.data('last-event') || {from: packet.time, to: packet.time, value: varbind.value};
-						var isChange = last_event.value != varbind.value;
-
-						if (!isChange)
-							$table.find('tr:last').remove();
-
-						var event = {from: (isChange) ? last_event.from : last_event.to, to: packet.time, value: varbind.value};	
-						createHistoryTableRow(event, varbind.value_type).appendTo($table);
-						$table.data('last-event', event);
-					} else {
+					if (varbind.value_type == 'number') {
 						var val = parseFloat(varbind.value);
 						var graph = graphs[varbind.id];
-						if (graph) {
-							var data = graph.file_;
-							var range = graph.user_attrs_.valueRange;
-	
-							data = data.filter((e) => e[0].getTime() + hour > packet.time);
-							data.push([time, val || varbind.value]);
+						if (!graph)
+							return;
 
-							if (!isNaN(val) && (val < range[0] || val > range[1])) 
-								range = getRange(data);
+						var data = graph.file_;
+						var range = graph.user_attrs_.valueRange;
 
-							graph.updateOptions({file: data, valueRange: range});
-						}
+						data = data.filter((e) => e[0].getTime() + hour > packet.time);
+						data.push([time, val || varbind.value]);
+
+						if (varbind.status == 2 || varbind.status == 3)
+							graph.alerts[packet.time] = varbind.status;
+
+						if (!isNaN(val) && (val < range[0] || val > range[1])) 
+							range = getRange(data);
+
+						graph.updateOptions({file: data, valueRange: range});
+						return;
+					}
+
+					var $table = $row.find('#td-history table');
+					if ($table.length == 0)
+						return;
+
+					var $last = $table.find('tr:last');
+					var event = {from: packet.time, to: packet.time, prev_value: varbind.prev_value, value: varbind.value};
+					var last_event = $last.data('event');
+
+					if (varbind.value_type != 'duration' && varbind.value_type != 'number') {
+						if ($last.length) {
+							$last.remove();
+							last_event.to = packet.time - 1;
+							createHistoryTableRow(last_event, varbind.value_type).appendTo($table);
+						} 
+
+						if (!$last.length || varbind.value != last_event.value)	
+							createHistoryTableRow(event, varbind.value_type).appendTo($table);
+					}
+
+					if (varbind.value_type == 'duration') {
+						if ($last.length && (!isNaN(last_event.value) && !isNaN(event.value) && event.value - last_event.value > 0))
+							return;	
+						
+						if ($last.length && last_event.value != event.value || !$last.length)
+							createHistoryTableRow(last_event, varbind.value_type).appendTo($table);
 					}
 				})
 			}	
@@ -961,7 +1057,7 @@ $(function(){
 	$.ajaxSetup({
 		error: function(jqXHR, textStatus, errorThrown) {
 			console.log(jqXHR, textStatus, errorThrown);
-			alert(jqXHR.responseText);
+			alert(jqXHR.responseText || errorThrown);
 		}
 	});
 	
@@ -987,6 +1083,15 @@ $(function(){
 	$(document).ajaxStart(function() {
 		$('#app').css('cursor', 'wait');
 	});
+
+	function drawCircle(ctx, x, y, color, size) {
+		ctx.beginPath();
+		ctx.fillStyle = color;
+		ctx.strokeStyle = color;
+		ctx.arc(x, y, size || 1, 0, 2 * Math.PI, false);
+		ctx.fill();
+		ctx.stroke();
+	}
 
 	function cast(type, value, args) {
 		type = (type + '').toLowerCase();

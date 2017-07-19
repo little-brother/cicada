@@ -1,0 +1,77 @@
+
+<p>Sections vary depending on the operating system.You can run <code>check_mk_agent test</code> on client machine to get supported sections.<p> 
+<p>Below some sections with description and pattern example.</p>
+
+<ul style = "margin-left: 20px; margin-top: 10px;">
+	<li>
+		<b>check_mk</b> - agent version and parameters.<br>
+		<div title = "Example of section data
+ 
+Version: 1.4.0i2
+BuildDate: Nov  3 2016
+AgentOS: windows
+Hostname: PumbaPC
+Architecture: 64bit
+WorkingDirectory: c:\Program Files\check_mk
+...
+">
+			Version: <code>Version: (.*)</code><br>
+			OS: <code>AgentOS: (.*)</code>
+		</div>
+	</li>
+	<li>
+		<b>uptime</b> - system uptime.<br>
+		<div title = "Example of section data 
+
+29367
+">
+			Uptime: <code>(.*)</code>
+		</div> 	
+	</li>
+	<li>
+		<b>df</b> - size and usage of all fixed disks.<br>
+		<div title = "Example of section data 
+
+C:\ NTFS 102398276 40526184 61872092 40 C:\
+D:\ NTFS 874361720 501724020 372637700 58 D:\
+...
+">	
+			Total size of disk C, kb: <code>^C:(?:[\D]*)([\d]*)</code><br>
+			Usage size of disk C, kb: <code>^C:(?:[\D]*)(?:[\d]*) ([\d]*)</code>
+		</div>
+	</li>
+	<li><b>ps:*</b> - All running processes</li>
+	<li>
+		<b>services</b> - all running and stopped services
+		<div title = "Example of section data
+
+Audiosrv running/auto Windows Audio
+...
+Check_MK_Agent running/demand Check_MK_Agent
+clr_optimization_v2.0.50727_32 stopped/demand Microsoft .NET Framework NGEN v2.0.50727_X86
+...
+">	
+			Check-mk agent status: <code>Check_MK_Agent (running|stopped)</code>
+		</div>	
+	</li>
+	<li>
+		<b>mem</b> - usage of RAM and the page file.
+		<div title = "Example of section data
+
+MemTotal:      2882040 kB
+MemFree:       1204656 kB
+SwapTotal:     2880324 kB
+SwapFree:      2099916 kB
+PageTotal:     5762364 kB
+PageFree:      3304572 kB
+VirtualTotal:  2097024 kB
+VirtualFree:   2042784 kB
+">	
+			Free memory, kB: <code>MemFree(?:[\D]*)([\d]*)</code>
+		</div>
+	</li>
+	<li><b>winperf_if</b>, <b>winperf_phydisk</b>, <b>winperf_processor</b> - Windows specific</li>
+	<li><b>fileinfo:*</b></li>
+	<li><b>logwatch</b> - eventlogs found in the system</li>
+
+</ul>
