@@ -397,23 +397,21 @@ Device.prototype.polling = function (delay) {
 			Device.events.emit('values-changed', device, time);
 
 			let isError = errors.every((e) => e instanceof Error)
-			if (isError || device.is_status) {
-				if (isError) {
-					device.prev_status = device.status;
-					device.status = device.force_status_to;
-				} else {
-					device.updateStatus();
-				}	 
+			if (isError) {
+				device.prev_status = device.status;
+				device.status = device.force_status_to;
+			} else {
+				device.updateStatus();
+			}	 
 
-				Device.events.emit('status-updated', device);
+			Device.events.emit('status-updated', device);
 
-				if (device.prev_status != device.status) {
-					let reason = isError ? 
-						errors.map((e) => e.message).join(';') :
-						device.varbind_list.filter((v) => v.is_status && v.status == device.status).map((v) => v.name + ': ' + v.value).join(';');
-					Device.events.emit('status-changed', device, reason);
-				}
-			} 
+			if (device.prev_status != device.status) {
+				let reason = isError ? 
+					errors.map((e) => e.message).join(';') :
+					device.varbind_list.filter((v) => v.is_status && v.status == device.status).map((v) => v.name + ': ' + v.value).join(';');
+				Device.events.emit('status-changed', device, reason);
+			}
 	
 			let query_list = [];
 			let params_list = [];

@@ -20,12 +20,22 @@ exports.getValues = function(opts, address_list, callback) {
 
 		let data = {};
 		let section = '';
+		let subset = '';
 		lines.forEach(function (line) {
-			if (line.indexOf('<<<') == -1)
-				return data[section].push(line);
-				
-			section = line.slice(3, -3);
-			data[section] = [];
+			let is_section = line.indexOf('<<<') != -1;
+			let is_subset = line.indexOf('[[[') != -1;
+			if (!is_section && !is_subset)
+				return data[section + subset].push(line);
+			
+			if (is_section) {
+				section = line.slice(3, -3);
+				subset = '';
+			} 
+
+			if (is_subset)
+				subset = line;	 
+
+			data[section + subset] = [];
 		});
 
 		let pattern_list = address_list.map(function (address) {
@@ -41,12 +51,13 @@ exports.getValues = function(opts, address_list, callback) {
 			if (!data[address.section])
 				return {value: 'Unsupported', isError: true};
 
+			let pattern = pattern_list[idx];
+			if (!address.pattern || !pattern)	
+				return {value: data[address.section].join('\n'), isError: false};
+
 			let value;
 			for (let i = 0; i < data[address.section].length; i++) {
-				if (!pattern_list[idx])	
-					continue;
-
-				value = value || (data[address.section][i].match(pattern_list[idx]) || [])[1];
+				value = value || (data[address.section][i].match(pattern) || [])[1];
 				if (!isNaN(value) || !!value)
 					break;
 			}

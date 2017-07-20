@@ -1067,8 +1067,10 @@ $(function(){
 		if (req.status != 200)
 			return;
 
-		if (settings.url == '/device' && settings.method == 'POST')
+		if (settings.url == '/device' && settings.method == 'POST') {
+			updateNavigatorStatus();
 			return updateDashboard();
+		}
 
 		if (settings.url.indexOf('/device/') == 0 && settings.method == 'DELETE')
 			return updateDashboard();
