@@ -3,7 +3,7 @@ const EventEmitter = require('events').EventEmitter;
 const async = require('async');
 const db = require('./db');
 const mixin = require('./mixin');
-const protocols = require('./protocols');
+const protocols = require('../protocols');
 const nmap = require('./nmap');
 
 let timers = {};
@@ -78,11 +78,11 @@ function getTagList () {
 			if (!tags[tag])
 				tags[tag] = [];
 
-			d.varbind_list.filter((v) => v.value_type == 'number').forEach((v) => tags[tag].push.apply(tags[tag], v.tag_list || []));
+			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => tags[tag].push.apply(tags[tag], v.tag_list || []));
 		})
 
 		if (d.tag_list.length == 0)
-			d.varbind_list.filter((v) => v.value_type == 'number').forEach((v) => tags.All.push.apply(tags.All, v.tag_list || []));
+			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => tags.All.push.apply(tags.All, v.tag_list || []));
 	});
 
 	for (let tag in tags)
@@ -127,7 +127,7 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 	}
 
 	function getHistory(device, callback) {
-		let varbind_list = device.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number');
+		let varbind_list = device.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number' && !v.is_temporary);
 		if (varbind_list.length == 0)
 			return callback(null, null);
 
@@ -185,11 +185,28 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 }
 
 function getValue(opts, callback) {
-	if (!opts.protocol || !protocols[opts.protocol])
-		return callback(new Error('Unsupported protocol'));
-
 	if (!opts.address)	
 		return callback(new Error('Address is empty'));
+
+	if (opts.protocol == 'expression') {
+
+		let device = Device.get(opts.device_id);
+		if (!device)	
+			return callback(new Error('Bad device id'));
+
+		let res;
+		try {
+			let expressionCode = generateExpressionCode(device, opts.address && opts.address.expression);	
+			res = eval(expressionCode);
+			res = applyDivider(res, opts.divider);
+		} catch (err) {
+			res = 'ERR: ' + err.message;
+		}
+		return callback(null, res);
+	}	 
+
+	if (!opts.protocol || !protocols[opts.protocol])
+		return callback(new Error('Unsupported protocol'));
 
 	protocols[opts.protocol].getValues(opts.protocol_params, [opts.address], function(err, res) {
 		callback(null, (err) ? 'ERR: ' + err.message : applyDivider(res[0].value, opts.divider));
@@ -211,10 +228,12 @@ Device.prototype.setAttributes = function (data) {
 	if (this.id) 
 		this.id = parseInt(this.id);
 
+	['name', 'ip', 'mac', 'description'].forEach((prop) => this[prop] = (this[prop] || '').trim());
 	this.timeout = parseInt(this.timeout) || 3;
 
 	try {
-		this.protocols = JSON.parse(data.json_protocols);
+		this.protocols = JSON.parse(data.json_protocols) || {};
+		delete this.protocols.expression;
 		for (let protocol in this.protocols)
 			this.protocols[protocol].timeout = this.timeout;
 	} catch (err) {
@@ -248,7 +267,7 @@ Device.prototype.updateVarbindList = function () {
 
 Device.prototype.getHistory = function (period, callback) {
 	let device = this;
-	let varbind_list = device.varbind_list.filter((v) => v.value_type == 'number');
+	let varbind_list = device.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary);
 
 	if (varbind_list.length == 0)
 		return callback(null, {columns:[], rows: [], alerts: {}});
@@ -289,7 +308,7 @@ Device.prototype.getChanges = function (period, callback) {
 	let device = this;
 	let from = period[0];
 	let to = period[1];
-	let ids = device.varbind_list.filter((v) => v.value_type != 'number').map((v) => v.id).join(', ');
+	let ids = device.varbind_list.filter((v) => v.value_type != 'number' && !v.is_temporary).map((v) => v.id).join(', ');
 
 	db.all(
 		`select start_date, end_date, varbind_id, prev_value, value, status from changes.device${device.id} where varbind_id in (${ids}) and (
@@ -355,7 +374,7 @@ Device.prototype.polling = function (delay) {
 	let errors = [];
 	async.eachOfSeries(protocols, function(protocol, protocol_name, callback) {
 			let opts = device.protocols[protocol_name];
-			let varbind_list = device.varbind_list.filter((v) => v.protocol == protocol_name && !v.is_expression);
+			let varbind_list = device.varbind_list.filter((v) => v.protocol == protocol_name);
 			let address_list = varbind_list.map((v) => v.address);
 
 			if (address_list.length == 0 || !opts)
@@ -364,37 +383,43 @@ Device.prototype.polling = function (delay) {
 			opts.ip = device.ip;	
 			protocol.getValues(opts, address_list, function(err, res) {
 				errors.push(err);
-				varbind_list.forEach((v, i) => values[v.id] = (err) ? err.message : res[i]);
+				varbind_list.forEach((v, i) => values[v.id] = (err) ? {isError: true, value: err.message} : res[i]);
 				callback();
 			})
 		}, 
-		function (err) {	
-			device.varbind_list.filter((v) => !v.is_expression && values[v.id] !== undefined).forEach(function(v) {
-				let value = values[v.id].value;
-				let isError = values[v.id].isError;
+		function (err) {
+			device.varbind_list
+				.filter((v) => values[v.id] !== undefined)
+				.forEach(function(v) {
+					let value = values[v.id].value;
+					let isError = values[v.id].isError;
+	
+					value = (isError) ? 'ERR: ' + value : applyDivider (value, v.divider);
+					v.prev_value = v.value;
+					v.value = value;
+					v.updateStatus();
+				});
 
-				value = (isError) ? 'ERR: ' + value : applyDivider (value, v.divider);
-				v.prev_value = v.value;
-				v.value = value;
-				v.updateStatus();
-			});
+			device.varbind_list
+				.filter((v) => v.is_expression)
+				.forEach(function(v) {
+					let value = v.calcExpressionValue();
+					value = (value instanceof Error) ? 'ERR: ' + value.message : applyDivider (value, v.divider);
+					v.prev_value = v.value;
+					v.value = value;
+					v.updateStatus();
+				});
 
-			device.varbind_list.filter((v) => v.is_expression).forEach(function(v) {
-				let value = v.calcExpressionValue();
-				value = (value instanceof Error) ? 'ERR: ' + value.message : applyDivider (value, v.divider);
-				v.prev_value = v.value;
-				v.value = value;
-				v.updateStatus();
-			})
-
-			device.varbind_list.filter((v) => v.value != v.prev_value || v.status != v.prev_status).forEach(function (v) {
-				let sql = 'update varbinds set value = ?, prev_value = ? where id = ?'; 
-				let params = [v.value, v.prev_value, v.id];
-				db.run(sql, params, (err) => (err) ? console.log(__filename, err, {sql, params}) : null);
-			});
+			device.varbind_list
+				.filter((v) => !v.is_temporary && (v.value != v.prev_value || v.status != v.prev_status))
+				.forEach(function (v) {
+					let sql = 'update varbinds set value = ?, prev_value = ? where id = ?'; 
+					let params = [v.value, v.prev_value, v.id];
+					db.run(sql, params, (err) => (err) ? console.log(__filename, err, {sql, params}) : null);
+				});
 
 			let time = new Date().getTime();
-			Device.events.emit('values-changed', device, time);
+			Device.events.emit('values-updated', device, time);
 
 			let isError = errors.every((e) => e instanceof Error)
 			if (isError) {
@@ -420,7 +445,7 @@ Device.prototype.polling = function (delay) {
 			let columns = ['time'];
 			let params = [time];
 			device.varbind_list
-				.filter((v) => v.value_type == 'number' && (!!v.value || v.value === 0))
+				.filter((v) => !v.is_temporary && v.value_type == 'number' && (!!v.value || v.value === 0))
 				.forEach(function(v) {
 					columns.push(`varbind${v.id}`);
 					params.push(`${v.value}`);
@@ -435,7 +460,7 @@ Device.prototype.polling = function (delay) {
 
 			// Other types
 			device.varbind_list
-				.filter((v) => v.value_type != 'number' && v.prev_value != v.value)
+				.filter((v) => !v.is_temporary && v.value_type != 'number' && v.prev_value != v.value)
 				.forEach(function(v) {
 					if (v.value_type == 'duration' && !isNaN(v.prev_value) && !isNaN(v.value) && (v.value - v.prev_value) > 0)
 						return;
@@ -592,12 +617,10 @@ function Varbind (data) {
 		this.id = parseInt(this.id);
 
 	this.__type__ = 'varbind';
-	Object.defineProperty(this, 'is_expression', {get() {return this.address && !!this.address.expression}});
-	Object.defineProperty(this, 'is_status', {get() {return this.status_conditions.length > 0}});
-
 	this.cache = mixin.cache;
 	if (!this.value_type)
-		this.value_type = 'string';	
+		this.value_type = 'string';
+	this.name = this.name + '';
 
 	for (let f of ['status_conditions', 'address']) {
 		try {
@@ -611,9 +634,11 @@ function Varbind (data) {
 	this.tag_list = !!this.tags ? this.tags.toString().split(';').map((t) => t.trim()).filter((t, idx, tags) => tags.indexOf(t) == idx) : [];
 	this.tags = this.tag_list.join(';');
 
-	if (this.is_expression)	{ 
+	Object.defineProperty(this, 'is_status', {get: () => (this.status_conditions || []).length > 0});
+	Object.defineProperty(this, 'is_temporary', {get: () =>  this.name[0] == '$'});
+	Object.defineProperty(this, 'is_expression', {get: () => this.protocol == 'expression'});
+	if (this.is_expression)
 		this.expressionCode = '';
-	}	
 }
 
 // divider is a "number" or "number + char" or "number + r + regexp"
@@ -679,26 +704,27 @@ Varbind.prototype.updateStatus = function() {
 	}
 }
 
-Varbind.prototype.generateExpressionCode = function() {
-	let device = this.getParent();
-	let varbind = this;	
-	
-	if (!varbind.is_expression)
+function generateExpressionCode (curr_device, expression) {
+	if (!expression)
 		return '';
 
-	let expr = (varbind.address.expression || '').replace(/\n| /g, '');
-	expr = expr.replace(/\$(\w*)/g, function(matched) {
-		let name = matched.substring(1);
-		let list = device.varbind_list.filter((v) => v.name  == matched || v.name == name).map((v) => v.id);
-		return (list.length == 0) ? 'null' : `Varbind.get(${list[0]}).value`;
- 	});		
+	let expr = (expression + '').replace(/\n/g, '');
+	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3) {
+		let names = (p2 || p3 || '').split('=>').map((name) => (name || '').trim());
+		let device = (names.length == 1) ? curr_device : Device.getList().find((d) => d.name == names[0]) || {varbind_list: []};
+		let varbind_name = (names.length == 1) ? names[0] : names[1];
 
- 	varbind.expressionCode = expr;
+		let varbind_id = (device.varbind_list.find((v) => v.name == varbind_name) || null).id;
+		
+		return (!varbind_id) ? 'null' : `Varbind.get(${varbind_id}).value`;
+ 	});
+
+ 	return expr;
 }
 
 Varbind.prototype.calcExpressionValue = function () {
 	if (!this.expressionCode)
-		this.generateExpressionCode();	
+		this.expressionCode = generateExpressionCode(this.getParent(), this.address && this.address.expression);	
 
 	let result;
 	try {

@@ -44,11 +44,9 @@ Are you need more features? Try [**Little Brother**](https://github.com/little-b
 1. Set value type of varbind as number to view history on chart.
 2. If value type of varbind is a number then log each values into `history.sqlite` file.<br> 
    Otherwise log only changes into `changes.sqlite`.	
-3. Double click on varbind address toggle to calculated mode.<br>
-   Example: `($CPU + $GPU)/2` get average of CPU (name) and GPU (name) varbinds.<br>
-   Warning: supported only english words without spaces as varbind names.<br>
-4. Set up device and push &#128190; to save varbind list as template.<br>
+3. Set up device and push &#128190; to save varbind list as template.<br>
    Template will be appear in "Add device"-menu and in scan results.
+4. Start varbind name from `$` to create temporary (unlogged and hidden) varbind.
 
 ## Configuration (config.json)
 * **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket.
@@ -57,10 +55,24 @@ Are you need more features? Try [**Little Brother**](https://github.com/little-b
   * **view** (array) - allowed view from those ips. By default is `any`. 
 * **ping-period** - in seconds. By default `300`.
 * **on-status-change** 
-  * command - Any shell command. You can use `${device.*}` and `${reason}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true/false). By default is empty.
+  * **command** - Any shell command. You can use `${device.*}` and `${reason}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true/false). By default is empty.
     <br>Example: `echo %TIME% ${device.status} ${device.name} >> log.txt`
-  * options - Special command [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options). By default `{}`.
+  * **options** - Special command [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options). By default `{}`.
 * **on-warning** and **on-critical** - similar **on-status-change**. These commands triggers when device changed status to `2` (warning) or `3` (critical).
+* **publisher** - send data to external server e.g. [`Graphite`](https://graphiteapp.org/) or publish on local tcp-port.
+  * **host** - server host. If host is not set then application open local tcp-port and publish data to its.
+  * **port** - by default `2003`. Or `5002` if host is empty.	
+  * **pattern** - Output row pattern. By default `${device.name}/{varbind.name} ${varbind.value} $time`.
+  * **delimiter** - row delimiter. By default is `\r\n`
+  * **only-numeric** - publish only `numeric` varbinds. By default `false`.	
+* **catchers** - array of event catcher. Each catcher is daemon who catch incoming message. Application parse daemon log, extract sender ip by pattern and force device polling with this ip.
+    * **command** - the command to run, e.g. `snmptrapd`
+    * **args** - list of string arguments, eg `["-A", "-n", "-f", "-Lo"]`
+    * **options** - optional [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) for command.
+    * **regexp** - regexp pattern to get ip address. You can use `\\[(.*?)\\]` to parse snmp trap like below
+    ```
+    2017-01-23 23:35:11 UDP: [127.0.0.1]:56632->[0.0.0.0]:0 [UDP: [127.0.0.1]:56632->[0.0.0.0]:0]:DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (3002705848) 347 days, 12:50:58.48 SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::org.3.3.3.3.3.3    iso.2.2.2.2.2.2 = STRING: "Aliens opened the door"
+    ```
 * **auto-scan** - Define params of process to check network on new devices. If `on-detect` is not set then auto-scan is off.
   * **period** - in seconds. By default `600`.
   * **range** - use nmap range format e.g. `192.168.0.1-255`. Already registered IP will be ignored.

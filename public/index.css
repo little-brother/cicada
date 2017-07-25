@@ -88,6 +88,7 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-edit #protocol-params select {margin-left: 20px;}
 #app #page-device-edit #protocol-params table {margin-bottom: 10px;}
 #app #page-device-edit details {margin-top: 20px; margin-left: 5px;}
+#app #page-device-edit details summary {cursor: pointer;}
 #app #page-device-edit details > div {margin-top: 10px;}
 #app #page-device-edit details table {width: 100%}
 #app #page-device-edit details table tr:hover {background-color: #eff;}
@@ -104,8 +105,8 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-edit .varbind-list #varbind-add {float: left; padding-left: 5px;} 
 #app #page-device-edit .varbind-list #td-address input {margin-bottom: 2px;}
 #app #page-device-edit .varbind-list #td-address {width: 215px;}
-#app #page-device-edit .varbind-list #td-address #address > input {width: 100%; }
-#app #page-device-edit .varbind-list #td-address #expression {display: none; width: 100%;}
+#app #page-device-edit .varbind-list #td-address > input {width: 100%; }
+#app #page-device-edit .varbind-list #td-address > textarea {width: 100%;}
 #app #page-device-edit .varbind-list #td-value-type, 
 #app #page-device-edit .varbind-list #td-divider {width: 50px; min-width: 50px;}
 #app #page-device-edit .varbind-list #td-divider input {text-align: center;}
@@ -176,7 +177,11 @@ textarea {border: 1px solid #bbb;}
 .tabs > input:nth-of-type(7):checked ~ div:nth-of-type(7),
 .tabs > input:nth-of-type(8):checked ~ div:nth-of-type(8),
 .tabs > input:nth-of-type(9):checked ~ div:nth-of-type(9),
-.tabs > input:nth-of-type(10):checked ~ div:nth-of-type(10) { display: block; padding-top: 15px; border-top: 1px solid #bbb; margin: 0px;}
+.tabs > input:nth-of-type(10):checked ~ div:nth-of-type(10),
+.tabs > input:nth-of-type(11):checked ~ div:nth-of-type(11),
+.tabs > input:nth-of-type(12):checked ~ div:nth-of-type(12),
+.tabs > input:nth-of-type(13):checked ~ div:nth-of-type(13),
+.tabs > input:nth-of-type(14):checked ~ div:nth-of-type(14) { display: block; padding-top: 15px; border-top: 1px solid #bbb; margin: 0px;}
 
 /* Calendar Pickmeup */
 .pickmeup{border-radius:.4em;border:1px solid #bbb;-moz-box-sizing:content-box;box-sizing:content-box;display:none;position:absolute;background:#fff;z-index:101}

@@ -8,6 +8,9 @@ exports.getValues = function(opts, address_list, callback) {
 	if (ver[opts.version] == undefined)
 		return callback(new Error('Unsupported version of snmp: ' + opts.version));
 
+	if (address_list.some((a) => !a.oid))
+		return callback(new Error('Oid is empty!'));
+
 	let session = snmp.createSession (opts.ip, opts.community, {
 		port: opts.port, 
 		version: ver[opts.version], 
@@ -68,6 +71,7 @@ exports.getValues = function(opts, address_list, callback) {
 					isError: !!snmp.isVarbindError(rows[i])
 				}
 			});
+
 			callback(null, res);
 		});
 	}

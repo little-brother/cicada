@@ -1,0 +1,16 @@
+<ul style = "margin-left: 20px;">
+	<li>Use <code>$X</code> to get value of varbind with name <code>X</code>, e.g. <code>$CPU</code>.<br>
+ 		If name contain any special chars e.g. <code>&nbsp;</code> or <code>-</code> then use square brackets <code>$[X]</code>.<br>
+		To get value of non-current device use <code>$[A => B]</code>, e.g. <code>$[My switch #1 => CPU]<code>.
+	</li>
+	<li>Values of these varbinds updated after each device poll.</li>
+	<li>You can use any valid js-expression, e.g:
+		<ul style = "list-style-type: circle; margin-left: 20px;">	
+			<li><code>($CPU + $GPU)/2</code></li>
+			<li><code>Math.max($CPU, $GPU)</code></li>
+			<li><code>$TEXT.substr(1, 10)</code></li>
+			<li><code>$[Some varbind name].split(';')[0]</code></li>
+		</ul>
+	</li>
+	<li>Save device and non-expression varbinds before use expressions.</li> 	
+</ul>

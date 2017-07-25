@@ -90,7 +90,7 @@ server.on('request', function (req, res) {
 			return d.delete(onDone);
 
 		if (/device\/([\d]*)\/varbind-list$/g.test(path) && req.method == 'GET')
-			return json(d.varbind_list.map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
+			return json(d.varbind_list.filter((v) => !v.is_temporary).map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
 		
 		if ((/^\/device\/([\d]*)\/varbind-history$/).test(path) && req.method == 'GET') 
 			return d.getHistory(parsePeriod(query), onDone);
@@ -267,9 +267,9 @@ setInterval(function () {
 	broadcast(null, (client) => client.readyState == WebSocket.OPEN)
 }, 10000);
 
-Device.events.on('values-changed', function (device, time) {
+Device.events.on('values-updated', function (device, time) {
 	let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, status: v.status || 0}));
-	let packet = {event: 'values-changed', id: device.id, values, time}
+	let packet = {event: 'values-updated', id: device.id, values, time}
 	broadcast(packet, (client) => client.device_id == device.id);	
 });
 
@@ -333,6 +333,50 @@ Device.events.on('status-changed', function(device, reason) {
 	})
 })
 
+// Publisher
+function startPublisher () {
+	let opts = config.publisher;
+	if (!opts)
+		return;
+
+	const net = require('net');
+	let clients = [];
+
+	function start () {
+		function onConnect (socket) {
+			clients.push(socket);
+			socket.on('error', (err) => console.error (__filename, err.message));
+			socket.on('end', function () {
+				clients.splice(clients.indexOf(socket), 1);
+				if (opts.host)
+					start();
+			});
+		}
+
+		if (!opts.host)
+			net.createServer(onConnect).listen(opts.port || (parseInt(config.port) + 2) || 5002);
+		else
+			net.createConnection(opts.host, opts.port || 2003, onConnect);
+	}
+	start();		
+
+	Device.events.on('values-updated', function (device, time) {
+		clients.forEach(function (socket) {
+			device.varbind_list.forEach(function(varbind) {
+				if (varbind.is_temporary || !!opts['only-numeric'] && varbind.value_type != 'number')
+					return;
+
+				try {
+					socket.write((opts.pattern ? eval(`\`${opts.pattern}\``) : device.name + '/' + varbind.name + ' ' + varbind.value + ' ' + time) + (opts.EOL || '\r\n'));
+				} catch (err) {
+					console.error(err);
+				}
+			});
+		});
+	});	
+}
+startPublisher();
+
 // nmap ping by timer
 function runPing (delay) {
 	if (delay)
@@ -387,6 +431,35 @@ function runAutoScan(delay) {
 	})	
 }
 runAutoScan(true);
+
+// Event catchers e.g. snmptrapd
+let catchers = config.catchers;
+if (catchers && catchers instanceof Array && catchers.length > 0) {
+	catchers.forEach(function (opts) {
+		let catcher = child_process.spawn(opts.command, opts.args || [], opts.options || {});
+	
+		var re;
+		try {
+			re = new RegExp(opts.regexp);	
+		} catch (err) {
+			return console.error(__filename, err);
+		}
+		
+		function onData(data) {
+			let ip = re.exec(data);
+			if (!ip)
+				return;
+			
+			Device.getList()
+				.filter((device) => device.ip == ip)
+				.forEach((device) => device.polling());
+		} 
+		
+		catcher.stdout.on('data', onData);
+		catcher.stderr.on('data', onData);
+		catcher.on('close', (code) => console.error(__filename, `Catcher ${opts.command} crashed with code ${code}`));
+	})
+}
 
 exec('wmic /?', (err) => (err) ? console.error('wmic not found') : null);
 exec('nmap /?', (err) => (err) ? console.error('nmap not found') : null);

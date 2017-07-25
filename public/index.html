@@ -144,11 +144,12 @@
 				<input type="radio" name="tab" id="tab-snmp" autocomplete = "off"><label for="tab-snmp"> SNMP</label>
 				<input type="radio" name="tab" id="tab-modbus-tcp" autocomplete = "off"><label for="tab-modbus-tcp"> Modbus TCP</label>
 				<input type="radio" name="tab" id="tab-wmi" autocomplete = "off"><label for="tab-wmi"> WMI</label>
+				<input type="radio" name="tab" id="tab-http" autocomplete = "off"><label for="tab-http"> http/s</label>
+				<input type="radio" name="tab" id="tab-port" autocomplete = "off"><label for="tab-port"> Ports</label>
 				<input type="radio" name="tab" id="tab-zabbix" autocomplete = "off"><label for="tab-zabbix">&#9670; Zabbix</label>
 				<input type="radio" name="tab" id="tab-check-mk" autocomplete = "off"><label for="tab-check-mk">&#9670; Check-mk</label>
 				<input type="radio" name="tab" id="tab-munin" autocomplete = "off"><label for="tab-munin">&#9670; Munin</label>
-				<input type="radio" name="tab" id="tab-http" autocomplete = "off"><label for="tab-http"> http/s</label>
-				<input type="radio" name="tab" id="tab-port" autocomplete = "off"><label for="tab-port"> Ports</label>
+				<input type="radio" name="tab" id="tab-expression" autocomplete = "off"><label for="tab-expression">&#931; Expr</label>
 	
 				<div id = "page-snmp">
 					<div id = "protocol-params">
@@ -213,6 +214,51 @@
 					    <div></div>
 					</details>
 				</div>
+
+				<div id = "page-http">
+					<div id = "protocol-params">
+						<table>
+						<tr>
+							<td>Protocol</td>
+							<td>
+								<select id = "protocol">
+									<option value = "http">http (80)</option>
+									<option value = "https">https (443)</option>
+								</select>
+							</td>
+						</tr>	
+						<tr>
+							<td>Port</td>
+							<td><input type = "text" id = "port"></td>
+						</tr>
+						<tr>
+							<td colspan = "2">Basic authentication</td>
+						</tr>
+						<tr>
+							<td>User</td>
+							<td><input type = "text" id = "user" placeholder = "user"></td>
+						</tr>
+						<tr>
+							<td>Password</td>
+							<td><input type = "text" id = "password" placeholder = "password"></td>
+						</tr>
+						</table>
+					</div>
+
+					<details url = "/help/http.html">
+					    <summary>HTTP response status codes</summary>
+					    <div></div>
+					</details>
+				</div>
+
+				<div id = "page-port">
+					<div id = "protocol-params"></div>
+
+					<details url = "/help/port.html">
+					    <summary>Well-known ports</summary>
+					    <div></div>
+					</details>
+				</div>
 	
 				<div id = "page-zabbix">
 					<div id = "protocol-params">
@@ -262,50 +308,14 @@
 					</details>
 				</div>
 	
-				<div id = "page-http">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Protocol</td>
-							<td>
-								<select id = "protocol">
-									<option value = "http">http (80)</option>
-									<option value = "https">https (443)</option>
-								</select>
-							</td>
-						</tr>	
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port"></td>
-						</tr>
-						<tr>
-							<td colspan = "2">Basic authentication</td>
-						</tr>
-						<tr>
-							<td>User</td>
-							<td><input type = "text" id = "user" placeholder = "user"></td>
-						</tr>
-						<tr>
-							<td>Password</td>
-							<td><input type = "text" id = "password" placeholder = "password"></td>
-						</tr>
-						</table>
-					</div>
-
-					<details url = "/help/http.html">
-					    <summary>HTTP response status codes</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-port">
+				<div id = "page-expression">
 					<div id = "protocol-params"></div>
 
-					<details url = "/help/port.html">
-					    <summary>Well-known ports</summary>
+					<details url = "/help/expression.html">
+					    <summary>How to use expression varbind</summary>
 					    <div></div>
 					</details>
-				</div>
+				</div>				
 			</div>	
 		</div>
 	</div>
@@ -372,8 +382,8 @@ Possible options
   20C - divide the value by 20 and convert Fahrenheit degree to Celsius 
   1F - convert Celsius degree to Fahrenheit
   3.1R - divide the value by 3.1 and round the result to two decimal
-  2.3rMemory ([\d]*) - extract value by pattern "Memory ([\d]*)" and divide by 2.3 
-* Empty if not required.
+  2.3rMemory ([\d]*) - extract value by pattern &#34;Memory ([\d]*)&#34; and divide by 2.3 
+* Empty or 1 if not required.
 "> x / y</th>
 				<th>Type</th>
 				<th>Value</th>
@@ -383,10 +393,7 @@ Possible options
 			</tr>
 			<tr id = "template-row">
 				<td id = "td-name"><input id = "name" type = "text"></td>
-				<td id = "td-address">
-					<div id = "address"></div>
-					<textarea id = "expression" rows = "2" placeholder = "Expression" title = "Example: use $CPU * 2 to get doubled value of CPU varbind"></textarea>
-				</td>
+				<td id = "td-address"></td>
 				<td id = "td-divider"><input id = "divider" type = "text" value = "1"></td>
 				<td id = "td-value-type">
 					<select id = "value-type">	
@@ -398,6 +405,7 @@ Possible options
 						<option value = "duration">duration</option>
 						<option value = "yesno">yes/no</option>
 						<option value = "onoff">on/off</option>
+						<option value = "updown">up/down</option>
 						<option value = "filesize">filesize</option>
 					</select>
 				</td>
@@ -485,6 +493,11 @@ Possible options
 			<option value = "udp">UDP</option>
 		</select>
 	</div>
+
+	<div id = "partial-varbind-address-expression">
+		<textarea id = "expression" rows="2" placeholder = "Expression"></textarea>
+	</div>
+
 
 	<div id = "partial-varbind-condition" class = "status-condition">
 		If

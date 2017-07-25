@@ -237,7 +237,7 @@ $(function(){
 			var protocol = e.id.substring(5);
 			var $varbind_list = $vb_table.clone().attr('protocol', protocol);
 			var $template_row = $varbind_list.find('#template-row');
-			$template_row.find('#td-address #address').html($components.find('#partial-varbind-address-' + protocol).html());
+			$template_row.find('#td-address').html($components.find('#partial-varbind-address-' + protocol).html());
 			
 			$.each(varbind_list, function(i, varbind) {
 				if (varbind.protocol != protocol)
@@ -248,14 +248,7 @@ $(function(){
 				$row.find('#name').val(varbind.name);
 
 				var $td_address = $row.find('#td-address');
-				var isExpression = !!varbind.address && !!varbind.address.expression
-				var $address = $td_address.find('#address').toggle(!isExpression);
-				var $expression = $td_address.find('#expression').toggle(isExpression);
-				if (isExpression) {
-					$expression.val(varbind.address.expression).show();
-				} else {
-					$.each(varbind.address || {}, (key, value) => $address.find('#' + key).val(value).attr('value', value));
-				}	
+				$.each(varbind.address || {}, (key, value) => $td_address.find('#' + key).val(value).attr('value', value));
 				
 				$row.find('#divider').val(varbind.divider);
 				$row.find('#value-type').val(varbind.value_type || 'string');
@@ -296,12 +289,7 @@ $(function(){
 				
 				var address = {};
 				var $td_address = $row.find('#td-address');
-				var $expression = $td_address.find('#expression:visible');
-				if ($expression.length > 0) {
-					address.expression = $expression.val();
-				} else {
-					$.each($td_address.find('#address').find('input, select'), (i, e) => address[e.id] = e.value);
-				};
+				$.each($td_address.find('input, select, textarea'), (i, e) => address[e.id] = e.value);
 				
 				var status_conditions = [];
 				$row.find('#td-status-conditions .status-condition').each(function() {
@@ -352,11 +340,12 @@ $(function(){
 		$protocols.find('input:radio[name="tab"]').each(function(i, e) {
 			var protocol = e.id.substring(4); // tab-#protocol
 			var params = {};
-			$protocols.find('#page-' + protocol + ' #protocol-params').find('input, select').each(function(i, param) {
+			$protocols.find('#page-' + protocol + ' #protocol-params').find('input, select, textarea').each(function(i, param) {
 				params[param.id] = param.value;
 			})
 			protocol_params[protocol] = params;
 		})
+
 		data.json_protocols = JSON.stringify(protocol_params);
 		data.json_varbind_list = JSON.stringify(getVarbindList());
 		
@@ -435,13 +424,14 @@ $(function(){
 	$page.on('click', '#page-device-edit .varbind-list #td-value', function() {
 		var $row = $(this).closest('tr');
 		var data = {
+			device_id: $row.closest('#page-content').find('#properties #id').val(),
 			protocol: $row.closest('table').attr('protocol'),
 			protocol_params: {ip: $page.find('#ip').val()},
 			address: {},
 			divider: $row.find('#divider').val()
 		}
 		$row.closest('div[id^="page-"]').find('#protocol-params').find('input, select').each((i, param) => data.protocol_params[param.id] = param.value);
-		$row.find('#td-address').find('input:visible, select:visible').each((i, param) => data.address[param.id] = param.value);
+		$row.find('#td-address').find('input:visible, select:visible, textarea:visible').each((i, param) => data.address[param.id] = param.value);
 	
 		$.ajax({
 			method: 'GET',
@@ -804,11 +794,6 @@ $(function(){
 			.append($('<td>').html(value));
 	}
 
-	$page.on('dblclick', '.varbind-list #td-address', function() {
-		var $e = $(this);
-		$e.children().toggle();
-	});
-
 	$page.on('change', '.varbind-list[protocol="modbus-tcp"] #func', function() {
 		var row = $(this).closest('#td-address');
 		if (this.value == 'readDiscreteInputs' || this.value == 'readCoils') {
@@ -977,7 +962,7 @@ $(function(){
 				return;
 			}
 
-			if (packet.event == 'values-changed') {
+			if (packet.event == 'values-updated') {
 				var $varbind_list = $page.find('#varbind-list');
 				if (!$varbind_list.length || $varbind_list[0].hasAttribute('period'))
 					return;
@@ -1132,7 +1117,10 @@ $(function(){
 	
 		if (type == 'yesno') 
 			return ['Yes', 'No'][parseInt(value) ? 0 : 1];
-		
+
+		if (type == 'updown') 
+			return ['Up', 'Down'][parseInt(value) ? 0 : 1];
+
 		if (type == 'duration' && !isNaN(value)) {
 			var min = 6000;
 			var mhd = [Math.floor((value/min % 60)), Math.floor((value/(60 * min)) % 24), Math.floor(value/(24 * 60 * min))];
