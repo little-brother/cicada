@@ -17,8 +17,8 @@
 <div id = "app">
     <div id = "navigator">
 		<div class = "top-menu">
-			<div class="dropdown" tabindex = "0">
-				<div class = "button clickable device-add" title = "Add device">+ Add</div>	
+			<div class="dropdown-click" tabindex = "0">
+				<div class = "button clickable" title = "Add device">+ Add</div>	
 				<div id = "template-list" class = "content"></div>
 			</div>
 			<div id = "device-scan" title = "Discovery devices">&#9973; Scan</div>
@@ -99,7 +99,7 @@
 				</tr>	
 				<tr>
 					<td>IP</td>
-					<td><input id = "ip" type = "text"></td>
+					<td><input id = "ip" type = "text"> <span class = "ping-button">ping</span></td>
 				</tr>	
 				<tr>
 					<td>MAC</td>
@@ -107,7 +107,12 @@
 				</tr>	
 				<tr>
 					<td>Tags</td>
-					<td><input id = "tags" type = "text"  class = "long" placeholder = "Split tag by semicolon"></td>
+					<td>
+						<input id = "tags" type = "text"  class = "long" placeholder = "Split tag by semicolon">					
+						<div id = "tag-list">
+							<span class = "a">CPU</span> <span class = "a">CPU2</span>
+						</div>
+					</td>
 				</tr>	
 				<tr>
 					<td>Description</td>
@@ -140,183 +145,7 @@
 				</table>
 			</div> 
 	
-			<div id = "protocols" class="tabs"> 
-				<input type="radio" name="tab" id="tab-snmp" autocomplete = "off"><label for="tab-snmp"> SNMP</label>
-				<input type="radio" name="tab" id="tab-modbus-tcp" autocomplete = "off"><label for="tab-modbus-tcp"> Modbus TCP</label>
-				<input type="radio" name="tab" id="tab-wmi" autocomplete = "off"><label for="tab-wmi"> WMI</label>
-				<input type="radio" name="tab" id="tab-http" autocomplete = "off"><label for="tab-http"> http/s</label>
-				<input type="radio" name="tab" id="tab-port" autocomplete = "off"><label for="tab-port"> Ports</label>
-				<input type="radio" name="tab" id="tab-zabbix" autocomplete = "off"><label for="tab-zabbix">&#9670; Zabbix</label>
-				<input type="radio" name="tab" id="tab-check-mk" autocomplete = "off"><label for="tab-check-mk">&#9670; Check-mk</label>
-				<input type="radio" name="tab" id="tab-munin" autocomplete = "off"><label for="tab-munin">&#9670; Munin</label>
-				<input type="radio" name="tab" id="tab-expression" autocomplete = "off"><label for="tab-expression">&#931; Expr</label>
-	
-				<div id = "page-snmp">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Version</td>
-							<td>
-								<select id = "version">
-									<option value = "1">1</option>
-									<option value = "2c" selected>2c</option>
-								</select>
-							</td>
-						</tr>	
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port" value = "161"></td>
-						</tr>	
-						<tr>
-							<td>Community</td>
-							<td><input type = "text" id = "community" value = "public"></td>
-						</tr>
-						</table>
-					</div>
-						
-					<details url = "/help/snmp.html">
-					    <summary>Details...</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-modbus-tcp">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port" value = "502"></td>
-						</tr>	
-						<tr>
-							<td>Device ID</td>
-							<td><input type = "text" id = "device_id" value = "1"></td>
-						</tr>
-						</table>
-					</div>
-				</div>
-		
-				<div id = "page-wmi">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>User</td>
-							<td><input type = "text" id = "user" value = ""></td>
-						</tr>	
-						<tr>
-							<td>Password</td>
-							<td><input type = "text" id = "password" value = ""></td>
-						</tr>
-						</table>
-					</div>
-
-					<details url = "/help/wmi.html">
-					    <summary>WMI queries</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-http">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Protocol</td>
-							<td>
-								<select id = "protocol">
-									<option value = "http">http (80)</option>
-									<option value = "https">https (443)</option>
-								</select>
-							</td>
-						</tr>	
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port"></td>
-						</tr>
-						<tr>
-							<td colspan = "2">Basic authentication</td>
-						</tr>
-						<tr>
-							<td>User</td>
-							<td><input type = "text" id = "user" placeholder = "user"></td>
-						</tr>
-						<tr>
-							<td>Password</td>
-							<td><input type = "text" id = "password" placeholder = "password"></td>
-						</tr>
-						</table>
-					</div>
-
-					<details url = "/help/http.html">
-					    <summary>HTTP response status codes</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-port">
-					<div id = "protocol-params"></div>
-
-					<details url = "/help/port.html">
-					    <summary>Well-known ports</summary>
-					    <div></div>
-					</details>
-				</div>
-	
-				<div id = "page-zabbix">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port" value = "10050"></td>
-						</tr>	
-						</table>
-					</div>
-
-					<details url = "/help/zabbix.html">
-					    <summary>Available Zabbix-agent items</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-check-mk">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port" value = "6556"></td>
-						</tr>	
-						</table>
-					</div>
-
-					<details url = "/help/check-mk.html">
-					    <summary>Check-mk agent details</summary>
-					    <div></div>
-					</details>
-				</div>
-
-				<div id = "page-munin">
-					<div id = "protocol-params">
-						<table>
-						<tr>
-							<td>Port</td>
-							<td><input type = "text" id = "port" value = "4949"></td>
-						</tr>	
-						</table>
-					</div>
-
-					<details url = "/help/munin.html">
-					    <summary>Munin agent details</summary>
-					    <div></div>
-					</details>
-				</div>
-	
-				<div id = "page-expression">
-					<div id = "protocol-params"></div>
-
-					<details url = "/help/expression.html">
-					    <summary>How to use expression varbind</summary>
-					    <div></div>
-					</details>
-				</div>				
-			</div>	
+			<div id = "protocols" class="tabs"></div>	
 		</div>
 	</div>
 
@@ -344,7 +173,7 @@
 					<th>Period, sec</th>
 					<th>Tags</th>
 					<th>Description</th>
-					<th>Copy from</th>
+					<th>Template</th>
 					<th><div class = "a add" all>All</div></th>
 				</tr>
 				<tr id = "template-row">
@@ -368,7 +197,7 @@
 		</div>
 	</div>
 
-	<div id = "block-varbind-list-edit">
+	<div id = "partial-varbind-list-edit">
 		<table class = "varbind-list">
 		<thead>
 			<tr>
@@ -416,8 +245,11 @@ Possible options
 					<div id = "condition-list"></div>
 					<div id = "condition-add" class = "a">Add</div>
 				</td>
-				<td id = "td-tags"><input id = "tags" type = "text"></td>
-				<th id = "td-remove"><span id = "varbind-remove" class = "clickable">&#10006;</span></th>
+				<td id = "td-tags">
+					<input id = "tags" type = "text">
+					<div id = "tag-list"></div>
+				</td>
+				<td id = "td-remove"><span id = "varbind-remove" class = "clickable">&#10006;</span></td>
 			</tr>
 		</thead>
 		<tbody>
@@ -426,90 +258,16 @@ Possible options
 
 	</div>
 
-	<div id = "partial-varbind-address-snmp">
-		<input id = "oid" type = "text" placeholder = "OID">
-	</div>
-
-	<div id = "partial-varbind-address-modbus-tcp">
-		<select id = "func">
-			<option value = "readCoils">0x Coil</option>
-			<option value = "readDiscreteInputs">2x Discrete input</option>
-			<option value = "readInputRegisters">3x Input register</option>
-			<option value = "readHoldingRegisters">4x Holding register</option>
-		</select>
-		
-		<input type = "text" id = "register" placeholder = "Register">
-		<br>
-		<select id = "type" value = "">
-			<option value = "" is-visible = "false"></option>
-			<option value = "readInt16">integer, 16bit</option>
-			<option value = "readUInt16">unsigned integer, 16bit</option>
-			<option value = "readInt32">integer, 32bit</option>
-			<option value = "readUInt32">unsigned integer, 32bit</option>
-			<option value = "readFloat">float, 32bit</option>
-			<option value = "readDouble">double, 64bit</option>
-		</select>
-		
-		<select id = "order" value = "" title = "Byte order">
-			<option value = "" is-visible = "false"></option>
-			<option value = "BE" title = "big-endian">BE</option>
-			<option value = "LE" title = "little-endia">LE</option>
-		</select>
-	</div>
-
-	<div id = "partial-varbind-address-wmi">
-		<input id = "alias" type = "text" placeholder = "Alias">
-		<input id = "property" type = "text" placeholder = "Property">
-	</div>
-
-	<div id = "partial-varbind-address-zabbix">
-		<input id = "item" type = "text" placeholder = "Item">
-	</div>
-
-	<div id = "partial-varbind-address-check-mk">
-		<input id = "section" type = "text" placeholder = "Section">
-		<input id = "pattern" type = "text" placeholder = "Pattern">
-	</div>
-
-	<div id = "partial-varbind-address-munin">
-		<input id = "group" type = "text" placeholder = "Group">
-		<input id = "item" type = "text" placeholder = "Item">
-	</div>
-
-	<div id = "partial-varbind-address-http">
-		<input id = "path" type = "text" placeholder = "Url">
-		<select id = "check" title = "Response attribute for check">
-			<option value = "code">status code</option>
-			<option value = "text">content</option>
-			<option value = "size">content length</option>
-			<option value = "time">time, ns</option>
-		</select>	
-	</div>
-
-	<div id = "partial-varbind-address-port">
-		<input id = "port" type = "text" placeholder = "Port">
-		<select id = "protocol" type = "text">
-			<option value = "tcp">TCP</option>
-			<option value = "udp">UDP</option>
-		</select>
-	</div>
-
-	<div id = "partial-varbind-address-expression">
-		<textarea id = "expression" rows="2" placeholder = "Expression"></textarea>
-	</div>
-
-
 	<div id = "partial-varbind-condition" class = "status-condition">
 		If
 		<select id = "if">
 			<option value = "greater"> &#62; </option>
 			<option value = "equals"> &#61; </option>
-			<option value = "not-equals"> &#60;&#62; </option>
 			<option value = "smaller"> &#60; </option>
-			<option value = "regexp">regexp</option>
-			<option value = "empty">empty</option>
+			<option value = "not-equals"> &#60;&#62; </option>
+			<option value = "empty" title = "Null, undefined, empty string">empty</option>
 			<option value = "change">change</option>
-			<option value = "anything">anything</option>
+			<option value = "any">any</option>
 			<option value = "error">error</option>
 		</select>
 		<input type = "text" id = "value">
@@ -521,8 +279,7 @@ Possible options
 			<option value = "0">unknown</option>
 		</select>
 		<span id = "condition-remove" class = "clickable">&#10006;</span>
-	</div>		
+	</div>	
 </div>
-
 </body>
 </html>

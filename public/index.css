@@ -1,9 +1,9 @@
 * {margin: 0px; padding: 0px;} 
 html,body { padding: 0; margin: 0; font: normal 14px "Helvetica Neue", Helvetica, Arial, sans-serif; overflow:hidden;}
-input[type="text"] {border: 1px solid #bbb;}
-textarea {border: 1px solid #bbb;}
+input[type="text"] {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
+textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .hidden {display: none;}
-.a {color: #337ab7; cursor: pointer;}
+.a {color: #337ab7; cursor: pointer; text-decoration: none;}
 .clickable {cursor: pointer}
 #template-row {display: none;}
 .dygraph-legend {width: initial !important; right: 0 !important; left: initial !important;}
@@ -18,7 +18,6 @@ textarea {border: 1px solid #bbb;}
 .history-period-block {position: absolute; right: 20px; padding: 5px 10px; border-radius: 5px; background: #cfc; display: none;}
 
 .top-menu #template-list #template-remove {float: right; position: relative; top: -3px;}
-.top-menu #template-list:empty {display: none !important;}
 
 #app {background: url(logo.png) center no-repeat; width: 100%}
 #app #navigator {width: 200px; height: 100%; position: relative;}
@@ -39,6 +38,7 @@ textarea {border: 1px solid #bbb;}
 #app #page:empty ~ #page-close {display: none;}
 
 #app #dashboard .tag-list {text-align: left; margin: 0 10px; padding: 10px;}
+#app #dashboard[hidden] {display: none;}
 #app #dashboard .tag-list div {display: inline;}
 #app #dashboard .tag-list label {margin-right:10px;padding: 5px 10px 5px 5px; cursor: pointer;}
 #app #dashboard .tag-list input {display: none}
@@ -64,7 +64,7 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-view #varbind-list td {padding: 2px 5px;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
 #app #page-device-view #varbind-list #td-name {width: 1px; min-width: 100px;}
-#app #page-device-view #varbind-list #td-value {width: 1px; min-width: 100px; text-align: center; font-weight: bold;}
+#app #page-device-view #varbind-list #td-value {width: 1px; min-width: 150px; max-width: 150px; width: 150px; text-align: center; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
 #app #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
 #app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
 #app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
@@ -78,8 +78,8 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-edit label.has-varbind {background: #f5f5ff;}
 #app #page-device-edit #template-save img {height: 12px;}
 #app #page-device-edit #properties table {display: inline; margin-right: 40px;}
+#app #page-device-edit #properties table tr td:nth-of-type(2) {padding-left: 20px;}
 #app #page-device-edit #properties {margin-bottom: 20px;}
-#app #page-device-edit #properties input[type = "text"] {margin-left: 20px;}
 #app #page-device-edit #properties input[type = "text"].long {width: 360px;}
 #app #page-device-edit #properties input[type = "text"].long {width: 360px;}
 #app #page-device-edit #properties #period {width: 40px; margin: 0; text-align: center;}
@@ -87,21 +87,35 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-edit #protocol-params input[type = "text"], 
 #app #page-device-edit #protocol-params select {margin-left: 20px;}
 #app #page-device-edit #protocol-params table {margin-bottom: 10px;}
-#app #page-device-edit details {margin-top: 20px; margin-left: 5px;}
-#app #page-device-edit details summary {cursor: pointer;}
-#app #page-device-edit details > div {margin-top: 10px;}
-#app #page-device-edit details table {width: 100%}
-#app #page-device-edit details table tr:hover {background-color: #eff;}
-#app #page-device-edit details code {background-color: #eee;}
 
+#app #page-device-edit #protocol-params select.small {width: 60px;}
+#app #page-device-edit #protocol-params select.small ~ input {margin-left: -3px;}
+#app #page-device-edit #page-snmp-v3 #protocol-params tr[value="noAuthNoPriv"] ~ tr:not(.class-noAuthNoPriv) {display: none !important;}
+#app #page-device-edit #page-snmp-v3 #protocol-params tr[value="authNoPriv"] ~ tr:not(.class-authNoPriv) {display: none !important;}
+
+#app #page-device-edit details {margin-top: 20px; margin-left: 5px;}
+#app #page-device-edit details summary {cursor: pointer; outline: none;}
+#app #page-device-edit details.help > div {margin-top: 10px;}
+#app #page-device-edit details.help > div > ul {margin-left: 15px;}
+#app #page-device-edit details.help table {width: 100%}
+#app #page-device-edit details.help table tr:hover {background-color: #eff;}
+#app #page-device-edit details.help code {background-color: #eee;}
+
+#app #page-device-edit .varbind-list #td-status-conditions {width: 280px;}
+#app #page-device-edit .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
+#app #page-device-edit .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
 #app #page-device-edit .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
 #app #page-device-edit .varbind-list #td-status-conditions #if[if="change"] ~ #value,
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="anything"] ~ #value,
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="error"] ~ #value {display:none}
+#app #page-device-edit .varbind-list #td-status-conditions #if[if="any"] ~ #value,
+#app #page-device-edit .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
+#app #page-device-edit .varbind-list #td-status-conditions #value {width: 60px;}
+#app #page-device-edit .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
+#app #page-device-edit .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
 
 #app #page-device-edit .varbind-list {width: 100%}
 #app #page-device-edit .varbind-list tbody td {vertical-align: top; padding: 5px;}
 #app #page-device-edit .varbind-list tbody tr:hover {background-color: #eff;}
+#app #page-device-edit .varbind-list td > input {width: 100%;}
 #app #page-device-edit .varbind-list #varbind-add {float: left; padding-left: 5px;} 
 #app #page-device-edit .varbind-list #td-address input {margin-bottom: 2px;}
 #app #page-device-edit .varbind-list #td-address {width: 215px;}
@@ -110,22 +124,28 @@ textarea {border: 1px solid #bbb;}
 #app #page-device-edit .varbind-list #td-value-type, 
 #app #page-device-edit .varbind-list #td-divider {width: 50px; min-width: 50px;}
 #app #page-device-edit .varbind-list #td-divider input {text-align: center;}
-#app #page-device-edit .varbind-list #td-status-conditions {width: 350px;}
-#app #page-device-edit .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
-#app #page-device-edit .varbind-list #td-status-conditions select {width: 70px;}
-#app #page-device-edit .varbind-list #td-status-conditions #value {width: 140px;}
-#app #page-device-edit .varbind-list td > input {width: 100%; }
-#app #page-device-edit .varbind-list #td-value {text-align: center;}
+#app #page-device-edit .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
+
+
 
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #func {width: 160px; display:inline;}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #register {width: 46px; display:inline;}
+#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #register {width: 49px; display:inline;}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #type:not([value=""]) {width: 160px; clear: right;}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #order:not([value=""]) {width: 50px; display:inline;}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
 #app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
 
-#app #page-device-edit .varbind-list[protocol="port"] #td-address {width: 125px;}
-#app #page-device-edit .varbind-list[protocol="port"] #td-address #port {width: 65px;}
+#app #page-device-edit .varbind-list[protocol="port"] #td-address #port {width: 140px;}
+#app #page-device-edit .varbind-list[protocol="port"] #td-address #protocol {width: 70px;}
+
+#app #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
+#app #page-device-edit .ping-button:after {margin-left: 5px;}
+#app #page-device-edit .ping-button[status="0"]:after {content: '\2717';}
+#app #page-device-edit .ping-button[status="1"]:after {content: '\2713';}
+
+#app #page-device-edit #tags:not([focused]) ~ #tag-list {display: none;}
+#app #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;}
+#app #page-device-edit #tags[focused] ~ #tag-list span {margin-right: 5px;}
 
 #app #page-device-scan #device-scan-result {display: none;}
 #app #page-device-scan #range-wrapper {text-align: center; margin-bottom: 20px;}
@@ -157,6 +177,13 @@ textarea {border: 1px solid #bbb;}
 #app #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
 #app #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
 
+#stats {margin: 10px;}
+#stats tr:hover {background-color: #eff;}
+#stats td {padding: 2px 10px;}
+#stats td:nth-of-type(3) {text-align: center;}
+#stats td:nth-of-type(4) {text-align: right;}
+#stats td:nth-of-type(5) {text-align: right;}
+#stats tr:nth-last-child(2) td {padding-top: 20px;}
 
 .dropdown {position: relative;}
 .dropdown > .button { border: none; cursor: pointer;}
@@ -165,8 +192,20 @@ textarea {border: 1px solid #bbb;}
 .dropdown > .content *:hover { background-color: #eff;}
 .dropdown:hover > .content { display: block; z-index: 100;}
 
+.dropdown-click { position: relative; display: inline-block; outline-width: 0; }
+.dropdown-click .button { cursor: pointer;}
+.dropdown-click:focus {pointer-events: none;}
+.dropdown-click:focus .content { opacity: 1; visibility: visible; pointer-events: auto; }
+.dropdown-click .content { position: absolute; z-index: 1; opacity: 0; visibility: hidden; transition: visibility 0.5s; width: 160px; background-color: #f9f9f9; border: 1px solid #bbb; }
+.dropdown-click .content > * { display: block; padding: 5px 10px;}
+.dropdown-click .content > *:hover { background-color: #f1f1f1; z-index: 100;}
+
 .tabs > div, .tabs > input { display: none; margin: 0px;} 
 .tabs > label { padding: 5px 15px 5px 15px; border: 1px solid #aaa; line-height: 26px; cursor: pointer; position: relative; background: #fff; margin: 0px;display:inline;} 
+.tabs > label.agent:before {content: '\25c6'; margin-right: 5px;}
+.tabs > label.external:before {content: '\2327'; margin-right: 5px;}
+.tabs > label.expression:before {content: '\3a3'; margin-right: 5px;}
+.tabs > label.native:before {}
 .tabs > input[type="radio"]:checked + label { border-bottom: 1px solid #fff; margin: 0px;} 
 .tabs > input:nth-of-type(1):checked ~ div:nth-of-type(1), 
 .tabs > input:nth-of-type(2):checked ~ div:nth-of-type(2), 

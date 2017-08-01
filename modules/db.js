@@ -1,12 +1,16 @@
 'use strict'
 const async = require('async');
 const sqlite3 = require('sqlite3');
+const config = require('../config.json').db || {'synchronous': 0};
 let db = new sqlite3.Database('./db/main.sqlite');
 
-db.serialize(function() {
+db.serialize(function() {	
+	for (let prop in config)
+		db.run(prop == 'query' ? config[prop] : `pragma ${prop} = ${config[prop]}`, (err) => (err) ? console.error(__filename, err, prop, config[prop]) : null);
+
 	db.run('pragma synchronous = 0');
 	db.run('create table if not exists devices (id integer primary key, name text not null, ip text, mac text, tags text, description text, json_protocols text, is_pinged integer, period integer, timeout integer, parent_id integer, force_status_to integer, template text)');
-	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, updated integer)');
+	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, status integer, updated integer)');
 	db.run('attach database \"./db/history.sqlite\" as history');
 	db.run('attach database \"./db/changes.sqlite\" as changes');
 	db.run('create table if not exists history.latencies (\"time\" integer primary key) without rowid');
@@ -17,6 +21,10 @@ db.serialize(function() {
 	db.run('alter table devices add column template text', (err) => null);
 	db.run('alter table devices add column timeout integer', (err) => null);
 	db.run('alter table varbinds add column prev_value text', (err) => null);
+
+	// migration 0.10 => 0.11
+	db.run('alter table varbinds add column status integer', (err) => null);
+
 });
 
 db.checkHistoryTable = function (device, callback) {

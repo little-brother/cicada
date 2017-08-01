@@ -1,7 +1,14 @@
-<ul style = "margin-left: 20px;">
+<ul>
 	<li>Use <code>$X</code> to get value of varbind with name <code>X</code>, e.g. <code>$CPU</code>.<br>
  		If name contain any special chars e.g. <code>&nbsp;</code> or <code>-</code> then use square brackets <code>$[X]</code>.<br>
-		To get value of non-current device use <code>$[A => B]</code>, e.g. <code>$[My switch #1 => CPU]<code>.
+		To get value of non-current device use <code>$[A => B]</code>, e.g. <code>$[My switch #1 => CPU]</code>.<br>
+		Also you can use next phase
+		<ul style = "list-style-type: circle; margin-left: 20px;">	
+			<li><code>$X.value</code> or <code>$[X].value</code></li>
+			<li><code>$X.prev_value</code>, <code>$X.status</code>, <code>$X.value_type</code></li>
+			<li><code>$X.avg(10)</code>, <code>$X.sum(10)</code>, <code>$X.min(10)</code> and <code>$X.max(10)</code> to get average, summa, minimun and maximum of last 10 (any) values</li>
+			<li><code>$X.speed</code> to get speed (per seconds) of value changing between measurements.</li>
+		</ul>
 	</li>
 	<li>Values of these varbinds updated after each device poll.</li>
 	<li>You can use any valid js-expression, e.g:

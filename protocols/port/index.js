@@ -1,9 +1,16 @@
 'use strict'
+const exec = require('child_process').exec;
 const spawn = require('child_process').spawn;
+
+let is_enable = false;
+exec('nmap -V', (err) => is_enable = !err || !console.log('Nmap is not installed. Checking ports are not available.'));
 
 // opts = {ip: 127.0.0.1}
 // address = {port: 80, protocol: 'tcp'}
 exports.getValues = function (opts, address_list, callback) {
+	if (!is_enable)
+		return callback(new Error('Require Nmap'));
+
 	function check(protocol, callback) {
 		let ports = address_list.filter((a) => a.protocol == protocol).map((a) => a.port).join(',');
 		if (!ports)

@@ -1,0 +1,55 @@
+<div id = "info" name = "SNMP v3" category = "external"></div>
+
+<div id = "protocol-params">
+	<table>
+	<tr>
+		<td>Port</td>
+		<td><input type = "text" id = "port" value = "161"></td>
+	</tr>	
+	<tr>
+		<td>User</td>
+		<td><input type = "text" id = "user"></td>
+	</tr>
+	<tr>
+		<td>Context</td>
+		<td><input type = "text" id = "context"></td>
+	</tr>
+	<tr value = "noAuthNoPriv">
+		<td>Security</td>
+		<td>
+			<select id = "security_level" onchange = "$(this).closest('tr').attr('value', this.value)">
+				<option value = "noAuthNoPriv" selected>noAuthNoPriv</option>
+				<option value = "authNoPriv">authNoPriv</option>
+				<option value = "authPriv">authPriv</option>									
+			</select>	
+		</td>
+	</tr>
+
+	<tr class = "class-authNoPriv class-authPriv">
+		<td>Authentication</td>
+		<td>
+			<select id = "auth_protocol" class = "small" title = "Authentication protocol">
+				<option value = "MD5" selected>MD5</option>
+				<option value = "SHA">SHA</option>
+			</select>
+
+			<input type = "text" id = "auth_password" placeholder = "password">
+		</td>
+	</tr>
+	<tr class = "class-authPriv">
+		<td>Privacy</td>
+		<td>
+			<select id = "priv_protocol" class = "small" title = "Privacy protocol">
+				<option value = "AES">AES</option>
+				<option value = "DES" selected>DES</option>
+			</select>
+
+			<input type = "text" id = "priv_password" placeholder = "password">
+		</td>
+	</tr>
+	</table>
+</div>
+
+<div id = "varbind-address">
+	<input id = "oid" type = "text" placeholder = "OID">
+</div>

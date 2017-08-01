@@ -17,5 +17,12 @@
 			"options": {}
 		}
 	},
-	"publisher": true
+	"publisher": true,
+
+	"alerters": {
+		"default": {
+			"event": "on-change",
+			"command": "echo %TIME ${device.name}  ${device.prev_status} ${device.status} >> D:/1.txt"
+		}
+	}
 }

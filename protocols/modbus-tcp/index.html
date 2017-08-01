@@ -1,0 +1,41 @@
+<div id = "info" name = "Modbus-TCP" category = "native"></div>
+
+<div id = "protocol-params">
+	<table>
+	<tr>
+		<td>Port</td>
+		<td><input type = "text" id = "port" value = "502"></td>
+	</tr>	
+	<tr>
+		<td>Device ID</td>
+		<td><input type = "text" id = "device_id" value = "1"></td>
+	</tr>
+	</table>
+</div>
+
+<div id = "varbind-address">
+	<select id = "func">
+		<option value = "readCoils">0x Coil</option>
+		<option value = "readDiscreteInputs">2x Discrete input</option>
+		<option value = "readInputRegisters">3x Input register</option>
+		<option value = "readHoldingRegisters">4x Holding register</option>
+	</select>
+	
+	<input type = "text" id = "register" placeholder = "Register">
+	<br>
+	<select id = "type" value = "">
+		<option value = "" is-visible = "false"></option>
+		<option value = "readInt16">integer, 16bit</option>
+		<option value = "readUInt16">unsigned integer, 16bit</option>
+		<option value = "readInt32">integer, 32bit</option>
+		<option value = "readUInt32">unsigned integer, 32bit</option>
+		<option value = "readFloat">float, 32bit</option>
+		<option value = "readDouble">double, 64bit</option>
+	</select>
+	
+	<select id = "order" value = "" title = "Byte order">
+		<option value = "" is-visible = "false"></option>
+		<option value = "BE" title = "big-endian">BE</option>
+		<option value = "LE" title = "little-endia">LE</option>
+	</select>
+</div>

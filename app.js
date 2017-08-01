@@ -4,13 +4,18 @@ const url = require('url');
 const fs = require('fs');
 const qs = require('querystring');
 const exec = require('child_process').exec;
+const spawn = require('child_process').spawn;
+
+const async = require('async');
 const WebSocket = require('ws');
 
 const Device = require('./modules/device'); 
 const Alert = require('./modules/alert'); 
 const nmap = require('./modules/nmap'); 
+const stats = require('./modules/stats');
 const config = require('./config.json');
 
+let protocols;
 let scan_processes = [];
 let alert_summary  = {warning: 0, critical: 0};
 
@@ -161,6 +166,34 @@ server.on('request', function (req, res) {
 		return;	
 	}
 
+	if (path == '/ping' && req.method == 'GET')
+		return nmap.ping(query.ip, null, function (err, res) {
+			if (err)	
+				return send(500, err.message);
+			send(200, res[0] && +res[0].alive || 0);
+		});	
+
+	if (path == '/protocols' && req.method == 'GET') {
+		if (protocols)
+			return json(protocols);
+
+		fs.readdir('./protocols', function (err, files) {
+			if (err)
+				return send(500, err.message);
+
+			files = files.filter((f) => f != 'index.js');
+			async.mapSeries(files.map((f) => `./protocols/${f}/index.html`), fs.readFile, function (err, results) {
+				if (err)
+					return send(500, err.message);
+
+				protocols = {};
+				files.forEach((f, i) => protocols[f] = results[i].toString());
+				return json(protocols);
+			})
+		});
+		return;
+	}
+
 	if (path == '/scan/cancel' && req.method == 'GET' || scan_processes.length > 0) {
 		scan_processes.forEach(function (proc) {
 			try {
@@ -190,11 +223,15 @@ server.on('request', function (req, res) {
 		return Device.getValue(opts, (err, res) => send(200, (err) ? err.message : res));
 	}
 
+	if (path == '/stats') 
+		return stats((err, html) => (err) ? send(500, err.message) : send(200, html, 'html'));
+
 	// Serve static
 	if (path == '/')
 		path = '/index.html';
 
-	fs.readFile('./public/' + path, function(err, data) {
+	path = (path.indexOf('/protocols') == -1 || path.indexOf('/help.html') == -1) ? './public/' + path : '.' + path ;
+	fs.readFile(path, function(err, data) {
 		if (err) 
 			return (err.code === 'ENOENT') ? send(404, 'Page not found.') : send(500, `Error getting the file: ${err}.`);
 
@@ -216,7 +253,7 @@ function getAccess(ip) {
 // Init cache and run polling
 Device.cache(function (err) {
 	if (err) {
-		console.error(err.message);
+		console.error(__filename, err.message);
 		process.exit(1);
 		return;
 	}
@@ -273,12 +310,12 @@ Device.events.on('values-updated', function (device, time) {
 	broadcast(packet, (client) => client.device_id == device.id);	
 });
 
-Device.events.on('status-updated', function(device) {
-	let packet = {event: 'status-updated', id: device.id, status: device.status}
+Device.events.on('status-updated', function(device, time) {
+	let packet = {event: 'status-updated', id: device.id, status: device.status, time}
 	broadcast(packet);
 });
 
-Device.events.on('status-changed', function(device, reason) {
+Device.events.on('status-changed', function(device, time, reason) {
 	if (device.status != 2 && device.status != 3)
 		return;
 
@@ -287,7 +324,6 @@ Device.events.on('status-changed', function(device, reason) {
 	let packet = {event: 'alert-summary', warning: alert_summary.warning, critical: alert_summary.critical};
 	broadcast(packet);
 
-	let time = new Date().getTime();
 	Alert.add(time, device.status, device.id, reason, function (err, id) {
 		if (err) 
 			return console.error(err.message)
@@ -297,40 +333,86 @@ Device.events.on('status-changed', function(device, reason) {
 	});
 });
 
-Device.events.on('status-changed', function(device, reason) {
-	function run(event) {
-		if (!config[event] || !config[event].command)
-			return;
+function isAlerterActive (period, time) {
+	if (!period)	
+		return true;
 
-		try {
-			exec(eval(`\`${config[event].command}\``), config[event].options || {}, (err, stdout, stderr) => (err) ? console.error(err) : null);
-		} catch (err) {
-			console.error(err);
+	let t = {day: time.getDay(), time: 60 * time.getHours() + time.getMinutes()};
+	let check = (p, e) => p.day1 <= e.day && e.day <= p.day2 && p.time1 <= e.time && e.time < p.time2;
+
+	if (!isAlerterActive.cache[period])
+		isAlerterActive.cache[period] = period.split(';').map(function (p) {
+			let r = p.match(/(\d)-(\d),(\d{2}):(\d{2})-(\d{2}):(\d{2})/);
+			if (!r)	{
+				console.error(__filename, 'Invalid time pattern: ' + period);
+				return null;
+			} 
+
+			r = r.map((e) => parseInt(e));
+			return {day1: r[1], day2: r[2], time1: r[3] * 60 + r[4], time2: r[5] * 60 + r[6]};			
+		}).filter((p) => !!p);
+
+	return isAlerterActive.cache[period].some((p) => check(p, t));
+}
+isAlerterActive.cache = {};
+
+let device_alerters = {};
+Device.events.on('status-changed', function(device, time, reason) {
+	// Find appropriate alerters for device by tags
+	// If device don't have any alerter tag then use default alerter
+	let hash = device.id + '-' + device.tags;
+	if (!device_alerters[hash]) {
+		let alerter_names = Object.keys(config.alerters || {}).map((e) => '$' + e);
+		let tags = device.tag_list.filter((t) => alerter_names.indexOf(t) != -1);
+
+		for (let alerter_name in config.alerters) {
+			let opts = config.alerters[alerter_name];
+			
+			if (opts.tags && opts.tags.length && opts.tags.some((t) => d.tag_list.indexOf(t) != -1))
+				tags.push(alerter_name);
 		}
+
+		if (tags.length == 0)
+			tags.push('default');
+
+		device_alerters[hash] = tags;
 	}
 
-	run('on-status-change');
+	function run () {
+		device_alerters[hash].forEach(function (alerter_name) {
+			let opts = config.alerters && config.alerters[alerter_name];
 
-	let event = (device.status == 2) ? 'on-warning' : (device.status == 3) ? 'on-critical' : null;
-	if (!event)
-		return;
+			if (!opts || !opts.event || !opts.command || !isAlerterActive(opts.active, time))
+				return;
 
+			if (opts.event == 'on-change' ||
+				opts.event == 'on-normal' && device.status == 1 ||
+				opts.event == 'on-warning' && device.status == 2 ||
+				opts.event == 'on-critical' && device.status == 3) {
+				try {
+					exec(eval(`\`${opts.command}\``), opts.options || {}, (err, stdout, stderr) => (err) ? console.error(__filename, alerter_name, err) : null);
+				} catch (err) {
+					console.error(__filename, alerter_name, err);
+				}				
+			}
+		})
+	}
+
+	// "Don't trigger alarm if parent is down" support
 	if (!device.parent_id)
-		return run(event);
+		return run();
 
 	let parent = Device.get(device.parent_id);
 	if (parent && parent.ip)
-		return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run(event) : null);
+		return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run() : null);
 
 	device.updateParent(function(err, parent) {
-		if (err) {
-			console.error(err);
-			return run(event);
-		}
+		if (err) 
+			return console.error(__filename, err) || run();
 
 		if (parent)
-			return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run(event) : null);
-	})
+			return nmap.ping(parent.ip, null, (err, res) => (err || res && res[0] && res[0].alive) ? run() : null);
+	});
 })
 
 // Publisher
@@ -376,6 +458,30 @@ function startPublisher () {
 	});	
 }
 startPublisher();
+
+// Event catchers e.g. snmptrapd
+for (let catcher_name in config.catchers) {
+	let opts = config.catchers[catcher_name];
+	let catcher = spawn(opts.command, opts.args || [], opts.options || {});
+
+	var pattern;
+	try {
+		pattern = new RegExp(opts.pattern);	
+	} catch (err) {
+		console.error(__filename, catcher_name, err);
+		continue;
+	}
+	
+	function onData(data) {
+		let ip = pattern.exec(data);
+		if (ip)
+			Device.getList().filter((d) => d.ip == ip).forEach((d) => d.polling());
+	} 
+	
+	catcher.stdout.on('data', onData);
+	catcher.stderr.on('data', onData);
+	catcher.on('close', (code) => console.error(__filename, `Catcher "${catcher_name}" crashed with code ${code}`));
+}
 
 // nmap ping by timer
 function runPing (delay) {
@@ -432,34 +538,4 @@ function runAutoScan(delay) {
 }
 runAutoScan(true);
 
-// Event catchers e.g. snmptrapd
-let catchers = config.catchers;
-if (catchers && catchers instanceof Array && catchers.length > 0) {
-	catchers.forEach(function (opts) {
-		let catcher = child_process.spawn(opts.command, opts.args || [], opts.options || {});
-	
-		var re;
-		try {
-			re = new RegExp(opts.regexp);	
-		} catch (err) {
-			return console.error(__filename, err);
-		}
-		
-		function onData(data) {
-			let ip = re.exec(data);
-			if (!ip)
-				return;
-			
-			Device.getList()
-				.filter((device) => device.ip == ip)
-				.forEach((device) => device.polling());
-		} 
-		
-		catcher.stdout.on('data', onData);
-		catcher.stderr.on('data', onData);
-		catcher.on('close', (code) => console.error(__filename, `Catcher ${opts.command} crashed with code ${code}`));
-	})
-}
-
-exec('wmic /?', (err) => (err) ? console.error('wmic not found') : null);
 exec('nmap /?', (err) => (err) ? console.error('nmap not found') : null);

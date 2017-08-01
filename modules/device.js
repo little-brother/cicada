@@ -1,9 +1,11 @@
 'use strict'
+const fs = require('fs');
 const EventEmitter = require('events').EventEmitter;
 const async = require('async');
+const RRStore = require('rrstore');
 const db = require('./db');
 const mixin = require('./mixin');
-const protocols = require('../protocols');
+const protocols = fs.readdirSync('./protocols').reduce((r, f) => {r[f] = require('../protocols/' + f); return r;}, {});
 const nmap = require('./nmap');
 
 let timers = {};
@@ -74,7 +76,7 @@ function getTagList () {
 	let device_list = Device.getList();
 	device_list.forEach((d) => d.is_pinged && d.tag_list.forEach((tag) => tags[tag] = ['latency']));
 	device_list.forEach(function(d) {
-		d.tag_list.forEach(function(tag) {
+		d.tag_list.filter((tag) => tag[0] != '$').forEach(function(tag) {
 			if (!tags[tag])
 				tags[tag] = [];
 
@@ -86,7 +88,7 @@ function getTagList () {
 	});
 
 	for (let tag in tags)
-		if (tags[tag].length == 0)
+		if (tags[tag].length == 0 && tag != 'All')
 			delete tags[tag];	
 
 	for (let tag in tags)
@@ -196,7 +198,7 @@ function getValue(opts, callback) {
 
 		let res;
 		try {
-			let expressionCode = generateExpressionCode(device, opts.address && opts.address.expression);	
+			let expressionCode = generateExpressionCode(device, opts.address && opts.address.expression);
 			res = eval(expressionCode);
 			res = applyDivider(res, opts.divider);
 		} catch (err) {
@@ -209,7 +211,7 @@ function getValue(opts, callback) {
 		return callback(new Error('Unsupported protocol'));
 
 	protocols[opts.protocol].getValues(opts.protocol_params, [opts.address], function(err, res) {
-		callback(null, (err) ? 'ERR: ' + err.message : applyDivider(res[0].value, opts.divider));
+		callback(null, (err) ? 'ERR: ' + err.message : (res[0].isError) ? 'ERR: ' + res[0].value : applyDivider(res[0].value, opts.divider));
 	})
 }
 
@@ -388,6 +390,8 @@ Device.prototype.polling = function (delay) {
 			})
 		}, 
 		function (err) {
+			let time = new Date().getTime();
+
 			device.varbind_list
 				.filter((v) => values[v.id] !== undefined)
 				.forEach(function(v) {
@@ -398,6 +402,14 @@ Device.prototype.polling = function (delay) {
 					v.prev_value = v.value;
 					v.value = value;
 					v.updateStatus();
+					
+					// must be updated before expressions
+					// Update round robin stores
+					for(let i in v.stores) 
+						v.stores[i].push(v.value);
+
+					v.prev_value_time = v.value_time;
+					v.value_time = time;
 				});
 
 			device.varbind_list
@@ -408,17 +420,23 @@ Device.prototype.polling = function (delay) {
 					v.prev_value = v.value;
 					v.value = value;
 					v.updateStatus();
+
+					// Update round robin stores
+					for(let i in v.stores) 
+						v.stores[i].push(v.value);
+
+					v.prev_value_time = v.value_time;
+					v.value_time = time;
 				});
 
 			device.varbind_list
 				.filter((v) => !v.is_temporary && (v.value != v.prev_value || v.status != v.prev_status))
 				.forEach(function (v) {
-					let sql = 'update varbinds set value = ?, prev_value = ? where id = ?'; 
-					let params = [v.value, v.prev_value, v.id];
+					let sql = 'update varbinds set value = ?, prev_value = ?, status = ? where id = ?'; 
+					let params = [v.value, v.prev_value, v.status || 0, v.id];
 					db.run(sql, params, (err) => (err) ? console.log(__filename, err, {sql, params}) : null);
 				});
 
-			let time = new Date().getTime();
 			Device.events.emit('values-updated', device, time);
 
 			let isError = errors.every((e) => e instanceof Error)
@@ -429,13 +447,13 @@ Device.prototype.polling = function (delay) {
 				device.updateStatus();
 			}	 
 
-			Device.events.emit('status-updated', device);
+			Device.events.emit('status-updated', device, time);
 
 			if (device.prev_status != device.status) {
 				let reason = isError ? 
 					errors.map((e) => e.message).join(';') :
 					device.varbind_list.filter((v) => v.is_status && v.status == device.status).map((v) => v.name + ': ' + v.value).join(';');
-				Device.events.emit('status-changed', device, reason);
+				Device.events.emit('status-changed', device, time, reason);
 			}
 	
 			let query_list = [];
@@ -603,8 +621,7 @@ const checkCondition = {
 	'smaller' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) < parseFloat(v1),
 	'empty' : (v) => isNaN(v) && !v,
 	'change' : (v, prev) => prev != undefined && v != undefined && prev != v,
-	'regexp' : (v, v1) => (new RegExp(v1)).test(v),
-	'anything' : (v, v1) => true,
+	'any' : (v, v1) => true,
 	'error' : (v) => (v + '').indexOf('ERR') == 0
 }
 
@@ -612,6 +629,22 @@ const checkCondition = {
 Object.assign(Varbind, mixin.get('varbind'));
 
 function Varbind (data) {
+	if (this.json_address != data.json_address)
+		this.stores = {};
+
+	// Support of avg, min and max values
+	let self = this;
+	function getStore(size) {
+		size = parseInt(size) || 1;
+		if (!self.stores[size]) {
+			self.stores[size] = new RRStore(size);
+			self.stores[size].push(self.value);
+		}
+
+		return self.stores[size];
+	}
+	['avg', 'min', 'max', 'sum'].forEach((e) => this[e] = (size) => getStore(size)[e]);
+
 	Object.assign(this, data);
 	if(this.id)
 		this.id = parseInt(this.id);
@@ -639,6 +672,8 @@ function Varbind (data) {
 	Object.defineProperty(this, 'is_expression', {get: () => this.protocol == 'expression'});
 	if (this.is_expression)
 		this.expressionCode = '';
+
+	Object.defineProperty(this, 'speed', {get: () => 1000 * (this.value - this.prev_value)/(this.value_time - this.prev_value_time)});
 }
 
 // divider is a "number" or "number + char" or "number + r + regexp"
@@ -709,14 +744,13 @@ function generateExpressionCode (curr_device, expression) {
 		return '';
 
 	let expr = (expression + '').replace(/\n/g, '');
-	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3) {
+	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3, pos, exp) {
 		let names = (p2 || p3 || '').split('=>').map((name) => (name || '').trim());
 		let device = (names.length == 1) ? curr_device : Device.getList().find((d) => d.name == names[0]) || {varbind_list: []};
 		let varbind_name = (names.length == 1) ? names[0] : names[1];
-
-		let varbind_id = (device.varbind_list.find((v) => v.name == varbind_name) || null).id;
+		let varbind_id = (device.varbind_list.find((v) => v.name == varbind_name) || {}).id;
 		
-		return (!varbind_id) ? 'null' : `Varbind.get(${varbind_id}).value`;
+		return (!varbind_id) ? 'undefined' : `Varbind.get(${varbind_id})${exp[pos + matched.length] == '.' ? '' : '.value'}`;
  	});
 
  	return expr;

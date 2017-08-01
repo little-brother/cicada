@@ -23,15 +23,19 @@ $(function(){
 	});
 
 	$app.on('click', '#page-close', function() {
+		$dashboard.removeAttr('hidden');
 		$page.empty();
 	});
 
 	$app.on('click', '#device-list li', function(e, data) {
 		$page.empty();
+		$dashboard.attr('hidden', true);
 
 		var $e = $(this);
-		if ($e.hasClass('active') && !!e.originalEvent)
+		if ($e.hasClass('active') && !!e.originalEvent) {
+			$dashboard.removeAttr('hidden');
 			return $e.removeClass('active');
+		}
 	
 		var device_id = $e.attr('id');
 		$.ajax({
@@ -39,6 +43,8 @@ $(function(){
 			url: '/device/' + device_id + '/varbind-list',
 			dataType: 'json',
 			success: function(varbind_list) {
+				$dashboard.removeAttr('hidden');
+				
 				var $component = $components.find('#page-device-view').clone();
 				$component.find('.top-menu').find('#device-edit, #device-clone, #device-remove').attr('device-id', device_id);
 				$component.appendTo($page);
@@ -225,20 +231,34 @@ $(function(){
 		$(this).attr('if', this.value);
 	});
 
+
+	$page.on('focus', '#page-device-edit #tags', function () {
+		$(this).attr('focused', true);
+	}); 
+
+	$page.on('blur', '#page-device-edit #tags', function () {
+		var $e = $(this);
+		setTimeout(() => $e.is(':focus') ? null : $e.removeAttr('focused'), 100);
+	});
+
+	$page.on('click', '#page-device-edit #tag-list span', function() {
+		var $e = $(this).closest('td').find('input').focus();
+		$e.val() ? $e.val($e.val() + ';' + this.innerHTML) : $e.val(this.innerHTML);
+	});
+
+
 	$page.on('change', '#page-device-edit .varbind-list input', function() {
 		$(this).closest('table.varbind-list').attr('changed', true);
 	});
 
 	function setVarbindList($component, varbind_list) {
-		var $vb_table = $components.find('#block-varbind-list-edit .varbind-list');
+		var $vb_table = $components.find('#partial-varbind-list-edit .varbind-list');
 
 		$component.find('#protocols div[id^="page-"]').each(function(i, e) {
 			var $e = $(e);
 			var protocol = e.id.substring(5);
-			var $varbind_list = $vb_table.clone().attr('protocol', protocol);
-			var $template_row = $varbind_list.find('#template-row');
-			$template_row.find('#td-address').html($components.find('#partial-varbind-address-' + protocol).html());
-			
+			var $varbind_list = $e.find('.varbind-list').attr('protocol', protocol);
+			var $template_row = $varbind_list.find('#template-row');			
 			$.each(varbind_list, function(i, varbind) {
 				if (varbind.protocol != protocol)
 					return;
@@ -248,9 +268,9 @@ $(function(){
 				$row.find('#name').val(varbind.name);
 
 				var $td_address = $row.find('#td-address');
-				$.each(varbind.address || {}, (key, value) => $td_address.find('#' + key).val(value).attr('value', value));
+				$.each(varbind.address || {}, (key, value) => $td_address.find('#' + key).val(value).attr('value', value).closest('tr').attr('value', value));
 				
-				$row.find('#divider').val(varbind.divider);
+				$row.find('#divider').val(varbind.divider || 1);
 				$row.find('#value-type').val(varbind.value_type || 'string');
 				$cond_template_row = $components.find('#partial-varbind-condition');
 			
@@ -264,10 +284,9 @@ $(function(){
 				});
 
 				$row.find('#tags').val(varbind.tags);
+				$row.find('#memcache').val(varbind.memcache || 2);
 				$row.appendTo($varbind_list);
 			});
-
-			$varbind_list.insertAfter($e.find('#protocol-params'));
 		});
 	}
 
@@ -279,24 +298,24 @@ $(function(){
 			$varbind_list.find('tbody tr').each(function(j, row) {
 				var $row = $(row);
 				var varbind = {
-					protocol: protocol,
-					id: $row.attr('id'),
-					name: $row.find('#name').val(),
-					divider: $row.find('#divider').val(),
+					protocol: trim(protocol),
+					id: parseInt($row.attr('id')),
+					name: trim($row.find('#name').val()),
+					divider: trim($row.find('#divider').val()),
 					value_type: $row.find('#value-type').val(),
-					tags: $row.find('#tags').val()	
+					tags: trim($row.find('#tags').val())	
 				}
 				
 				var address = {};
 				var $td_address = $row.find('#td-address');
-				$.each($td_address.find('input, select, textarea'), (i, e) => address[e.id] = e.value);
+				$.each($td_address.find('input, select, textarea'), (i, e) => address[e.id] = trim(e.value));
 				
 				var status_conditions = [];
 				$row.find('#td-status-conditions .status-condition').each(function() {
 					var $cond = $(this);	
 					status_conditions.push({
 						if: $cond.find('#if').val(),
-						value: $cond.find('#value').val(),
+						value: trim($cond.find('#value').val()),
 						status: $cond.find('#status').val()
 					});
 				});
@@ -322,27 +341,27 @@ $(function(){
 		var $protocols = $page.find('#page-content #protocols'); 
 
 		var data = {
-			id: $props.find('#id').val(),
-			name: $props.find('#name').val(),
-			description: $props.find('#description').val(),
-			ip: $props.find('#ip').val(),
-			period: $props.find('#period').val(),
-			timeout: $props.find('#timeout').val(),
-			mac: $props.find('#mac').val(),
-			tags: $props.find('#tags').val(),
+			id: parseInt($props.find('#id').val()),
+			name: trim($props.find('#name').val()),
+			description: trim($props.find('#description').val()),
+			ip: trim($props.find('#ip').val()),
+			period: parseInt($props.find('#period').val()),
+			timeout: parseInt($props.find('#timeout').val()),
+			mac: trim($props.find('#mac').val()),
+			tags: trim($props.find('#tags').val()),
 			is_pinged: $props.find('#is-pinged:checked').length,
 			parent_id: $props.find('#check-parent-at-failure:checked').length,
-			force_status_to:  $props.find('#force-status-to').val(),
-			template: $props.find('#template').val()
+			force_status_to:  trim($props.find('#force-status-to').val()),
+			template: trim($props.find('#template').val())
 		};
 
 		var protocol_params = {};
 		$protocols.find('input:radio[name="tab"]').each(function(i, e) {
 			var protocol = e.id.substring(4); // tab-#protocol
 			var params = {};
-			$protocols.find('#page-' + protocol + ' #protocol-params').find('input, select, textarea').each(function(i, param) {
-				params[param.id] = param.value;
-			})
+			$protocols.find('#page-' + protocol + ' #protocol-params')
+				.find('input, select, textarea')
+				.each((i, param) => params[param.id] = trim(param.value));
 			protocol_params[protocol] = params;
 		})
 
@@ -365,11 +384,11 @@ $(function(){
 		var id = $page.find('#page-content #properties #id');
 		var $e = $device_list.find('li#' + (id.val() || id.attr('cloned') || 0));
 
-		return ($e.length > 0) ? $e.click() : $page.empty();
+		return ($e.length > 0) ? $e.click() : $page.empty() && $dashboard.removeAttr('hidden');
 	});
 
 	$page.on('click', '#page-device-edit #template-save', function() {
-		var name = $page.find('#page-device-edit #properties #name').val();
+		var name = trim($page.find('#page-device-edit #properties #name').val());
 		if (!name)
 			return alert('The name is empty');
 
@@ -404,7 +423,10 @@ $(function(){
 
 	$page.on('click', '#page-device-edit .varbind-list #varbind-add', function() {
 		var $table = $(this).closest('.varbind-list');
-		$table.find('#template-row').clone().removeAttr('id').appendTo($table.find('tbody'));
+		$table.find('#template-row').clone()
+			.removeAttr('id')
+			.appendTo($table.find('tbody'))
+			.find('input:text').each((i, e) => e.value = e.getAttribute('value'));
 		highlightProtocolTabs();
 	});
 
@@ -439,8 +461,10 @@ $(function(){
 			data: {
 				json_opts: JSON.stringify(data)
 			},
+			dataType: 'text',
 			success: function(res) {
-				$row.find('#td-value').html(cast($row.find('#value-type').val(), res) + '<br>&#10227;')
+				var value = cast($row.find('#value-type').val(), res);
+				$row.find('#td-value').html(value + '<br>&#10227;').attr('title', value);
 			}
 		})
 	});
@@ -589,15 +613,15 @@ $(function(){
 			return updateTemplateInfo(template_name, () => $(this).trigger('click'));
 	
 		var data = {
-			name: $row.find('#name').val(),
-			ip: $row.find('#ip').val(),
-			mac: $row.find('#mac').val(),
+			name: trim($row.find('#name').val()),
+			ip: trim($row.find('#ip').val()),
+			mac: trim($row.find('#mac').val()),
 			is_pinged: $row.find('#is-pinged:checked').length,
-			period: $row.find('#period').val(),
-			tags: $row.find('#tags').val(),
-			description: $row.find('#description').val(),
+			period: parseInt($row.find('#period').val()) || 60,
+			tags: trim($row.find('#tags').val()),
+			description: trim($row.find('#description').val()),
 			json_varbind_list: JSON.stringify(template),
-			template: template_name
+			template: trim(template_name)
 		}
 
 		$.ajax({
@@ -754,6 +778,11 @@ $(function(){
 				var $varbind_tag_list = $dashboard.find('#varbind-tag-list').empty();
 				$.each(tags.All, (i, tag) => addTag($varbind_tag_list, tag));
 				$varbind_tag_list.find('#latency').closest('div').prependTo($varbind_tag_list);
+
+				var $tag_list = $components.find('#page-device-edit #properties #tag-list').empty();
+				Object.keys(tags).filter((e) => e != 'All').forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list))
+				$tag_list = $components.find('#partial-varbind-list-edit #tag-list').empty();
+				(tags.All || []).filter((e) => e != 'latency').forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list));
 			}
 		});
 	}
@@ -812,6 +841,15 @@ $(function(){
 			.css({top: position.top, left: position.left - 200 + $e.width(), display: 'block'})
 			.pickmeup('show');
 	});
+
+	$page.on('click', '.ping-button', function() {
+		var $e = $(this);
+		$.ajax({
+			type: 'GET',
+			url: '/ping?ip=' + $e.parent().find('#ip').val(),
+			success: (res) => $e.attr('status', res)
+		});
+	})
 
 	function setDevice(device) {
 		var $e = $device_list.find('#' + device.id);
@@ -873,7 +911,7 @@ $(function(){
 			dataType: 'json',
 			error: (jqXHR, textStatus, errorThrown) => error(textStatus),
 			success: function (template_list) {
-				var $list = $app.find('#template-list').empty();
+				var $list = $app.find('#template-list').empty().append($('<div class = "device-add"/>').html('New...'));
 				template_list.forEach(function (name) {
 					$('<div/>')
 						.addClass('device-add')
@@ -903,6 +941,52 @@ $(function(){
 		});			
 	}
 
+	function generateDeviceEditPage() {
+		$.ajax({
+			method: 'GET',
+			url: '/protocols',
+			dataType: 'json',
+			success: function (protocols) {
+				var $tabs = $components.find('#page-device-edit #page-content #protocols');
+				var $varbind_list = $components.find('#partial-varbind-list-edit');
+				var categories = ['native', 'external', 'agent', 'expression'];
+				let collator = new Intl.Collator();
+
+				var protocol_list = $.map(protocols, function(html, id) {
+					var $e = $('<div/>').html(html);
+					var $info = $e.find('#info');
+					return {
+						id: id,
+						name: $info.attr('name'),
+						order: categories.indexOf($info.attr('category')) + 1,
+						category: $info.attr('category'),
+						$params: $e.find('#protocol-params'),
+						$address: $e.find('#varbind-address')
+					}
+				}).sort((a, b) =>  (a.order == b.order) ? collator.compare(a.name, b.name) : a.order - b.order);
+
+				protocol_list.forEach(function (protocol) {
+						$('<input type = "radio" name = "tab" autocomplete = "off"/>').attr('id', 'tab-' + protocol.id).appendTo($tabs);
+						$('<label/>').attr('for', 'tab-' + protocol.id).addClass(protocol.category).html(protocol.name).appendTo($tabs);
+						$tabs.append(' ');
+				});	
+
+				protocol_list.forEach(function (protocol) {
+						var $tab = $('<div/>').attr('id', 'page-' + protocol.id)
+						protocol.$params.appendTo($tab);
+						var $vl = $varbind_list.clone(true, true).appendTo($tab).find('#template-row #td-address').html(protocol.$address.html());
+
+						$('<details class = "help"/>')
+							.attr('url', '/protocols/' + protocol.id + '/help.html')
+							.append($('<summary/>').html(protocol.name + ' detail'))
+							.append($('<div/>'))
+							.appendTo($tab);
+						$tab.appendTo($tabs);
+				});	
+			}
+		})
+	}
+
 	var socket;
 	function connect() {
 		socket = new WebSocket('ws://' + location.hostname + ':' + (parseInt(location.port) + 1));
@@ -910,6 +994,7 @@ $(function(){
 		var timer = setTimeout(function() {
 			alert('Connection broken. Reload page.');
 			console.error(new Date() + ': Notify server disconnected. Page must be reload.');
+			location.reload();
 		}, 5000);	
 	
 		socket.onopen = function() {
@@ -930,12 +1015,13 @@ $(function(){
 			var packet = JSON.parse(event.data);
 
 			if (packet.event == 'access') {
-				if (packet.access == 'view')
+				if (packet.access == 'view') 
 					$components.find('#page-alert-list-view #alert-list #td-hide').remove();
 
 				if (packet.access == 'edit') {
 					$('.top-menu').attr('admin', true);
 					updateTemplates();
+					generateDeviceEditPage();
 				}
 				return;
 			}
@@ -974,10 +1060,11 @@ $(function(){
 					if ($row.length == 0)
 						return;
 
+					var value = cast(varbind.value_type, varbind.value)
 					$row.find('#td-value')
-						.html(cast(varbind.value_type, varbind.value))
+						.html(value)
 						.attr('status', varbind.status)
-						.attr('title', cast('datetime', packet.time));
+						.attr('title', value + '\nUpdated: ' + cast('datetime', packet.time));
 
 					if (varbind.value_type == 'number') {
 						var val = parseFloat(varbind.value);
@@ -1079,6 +1166,10 @@ $(function(){
 		ctx.fill();
 		ctx.stroke();
 	}
+
+	function trim(x) {
+		return Object.prototype.toString.call(x) === "[object String]" ? x.trim() : x;
+	}	
 
 	function cast(type, value, args) {
 		type = (type + '').toLowerCase();

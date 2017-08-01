@@ -1,32 +1,46 @@
 # Chupacabra
 
 Chupacabra is a lightweight Node.js application with web browser interface for discovery and monitoring network devices.<br>
-Supported protocols: ICMP, SNMP v1/2c, Modbus TCP, WMI and http/s.<br>
+Supported protocols: ICMP (ping), SNMP v1/2c/3, Modbus TCP, IPMI, WMI and http/s.<br>
 Also you can polling [**Zabbix**](http://www.zabbix.com/download), [**Check-mk**](https://mathias-kettner.de/checkmk_linuxagent.html) and [**Munin**](https://github.com/munin-monitoring/munin-c) agents and check TCP/UDP ports.
 
+Cross-platform, open source, extendable, free.
+
 # Features
-* Check device by any supported protocols
-* View history separate by device and varbind group on dashboard
-* Calculated varbind
+* Polling device by any supported protocols
+* Check threshold values 
+* Auto-dashboard based on tags
+* Calculated and temporary varbinds
 * Online statuses and charts on device page
 * Templates to create copy in one click
-* Alerts when device change status by user conditions
-* Alert on new device in network
+* Extreme compact storage of history data (2-4Byte per numeric value)
+* Flexible mechanism of alert messages
+* Alert management
+* Notify on new device in network
+* and MORE!
+
+Roadmap
+* Distributed
+* Support for polling VMs, JVM, etc
+* Daily data aggregation
+* Multi-varbind dashboard with realtime update
 
 Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
-Visit our [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.<br>
-Are you need more features? Try [**Little Brother**](https://github.com/little-brother/little-brother)!
+Visit [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.<br>
 
-![Screenshots](http://little-brother.ru/images/chupacabra2.gif)<br>
+![Screenshots](http://little-brother.ru/images/chupacabra3.gif)<br>
 
 ## Requirements
 * [**Node.js**](https://nodejs.org/en/download/) (JavaScript runtime engine)
 * [**nmap**](https://nmap.org/download.html) (network scanner)
-* [**wmic**](https://www.krenger.ch/blog/wmi-commands-from-linux/) (command line tools; only if you use *nix and want polling Windows machines)
+
+Optional
+* WMI: [**wmic**](https://www.krenger.ch/blog/wmi-commands-from-linux/)
+* SNMPv3: [**Net-SNMP**](http://www.net-snmp.org/)
+* IPMI: [**IPMItool**](https://sourceforge.net/projects/ipmitool/)
 
 ## Installation
 1. [**Download and unpack**](https://github.com/little-brother/chupacabra/archive/master.zip) or run
-
    ```
    git clone --depth=1 https://github.com/little-brother/chupacabra.git
    ``` 
@@ -46,34 +60,47 @@ Are you need more features? Try [**Little Brother**](https://github.com/little-b
    Otherwise log only changes into `changes.sqlite`.	
 3. Set up device and push &#128190; to save varbind list as template.<br>
    Template will be appear in "Add device"-menu and in scan results.
-4. Start varbind name from `$` to create temporary (unlogged and hidden) varbind.
+4. Read expression protocol help to learn about its power.
+5. Start varbind name from `$` to create temporary (unlogged and hidden) varbind.
+6. Use `http://127.0.0.1:5000/stats` to get summary details.
 
 ## Configuration (config.json)
 * **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket.
+
 * **access** - define access by ips.
   * **edit** (array) - allowed edit from those ips. By default is `["127.0.0.1", "::ffff:127.0.0.1", "localhost"]`.
   * **view** (array) - allowed view from those ips. By default is `any`. 
+  
 * **ping-period** - in seconds. By default `300`.
-* **on-status-change** 
-  * **command** - Any shell command. You can use `${device.*}` and `${reason}`. Available device props: `status` (0, 1, 2 or 3), `prev_status`, `name`, `ip`, `mac` and `alive` (ping status; true/false). By default is empty.
-    <br>Example: `echo %TIME% ${device.status} ${device.name} >> log.txt`
-  * **options** - Special command [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options). By default `{}`.
-* **on-warning** and **on-critical** - similar **on-status-change**. These commands triggers when device changed status to `2` (warning) or `3` (critical).
+
+* **db** - sqlite configuration on start up. By default is `{'synchronous': 0}`. See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+
 * **publisher** - send data to external server e.g. [`Graphite`](https://graphiteapp.org/) or publish on local tcp-port.
-  * **host** - server host. If host is not set then application open local tcp-port and publish data to its.
+  * **host** - server host. If host is not set then application open local tcp-port and publish data to it.
   * **port** - by default `2003`. Or `5002` if host is empty.	
-  * **pattern** - Output row pattern. By default `${device.name}/{varbind.name} ${varbind.value} $time`.
+  * **pattern** - output row pattern. By default `${device.name}/{varbind.name} ${varbind.value} $time`.
   * **delimiter** - row delimiter. By default is `\r\n`
   * **only-numeric** - publish only `numeric` varbinds. By default `false`.	
-* **catchers** - array of event catcher. Each catcher is daemon who catch incoming message. Application parse daemon log, extract sender ip by pattern and force device polling with this ip.
-    * **command** - the command to run, e.g. `snmptrapd`
-    * **args** - list of string arguments, eg `["-A", "-n", "-f", "-Lo"]`
-    * **options** - optional [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) for command.
-    * **regexp** - regexp pattern to get ip address. You can use `\\[(.*?)\\]` to parse snmp trap like below
-    ```
-    2017-01-23 23:35:11 UDP: [127.0.0.1]:56632->[0.0.0.0]:0 [UDP: [127.0.0.1]:56632->[0.0.0.0]:0]:DISMAN-EVENT-MIB::sysUpTimeInstance = Timeticks: (3002705848) 347 days, 12:50:58.48 SNMPv2-MIB::snmpTrapOID.0 = OID: SNMPv2-SMI::org.3.3.3.3.3.3    iso.2.2.2.2.2.2 = STRING: "Aliens opened the door"
-    ```
-* **auto-scan** - Define params of process to check network on new devices. If `on-detect` is not set then auto-scan is off.
+
+* **alerters** - set of alerter. Each alerter has next params
+  * **event** - one of `on-change`, `on-normal`, `on-warning`, `on-critical`.<br>
+  * **command** - any shell command. You can use `${device.*}` and `${reason}`.
+  * **options** - special command [options](https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback). By default `{}`.	
+  * **active** - the time when messages are sent in [Zabbix time periods format](https://www.zabbix.com/documentation/3.0/manual/appendix/time_period). By default is `empty` (any time).
+  * **tags** - array of optional tags.
+  
+  See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+ 
+* **catchers** - set of event catcher. Each catcher is daemon, eg `snmptrapd`, who catch incoming message.<br>
+  Application parse daemon log, extract sender ip by pattern and force device polling with this ip.
+  * **command** - the command to run.
+  * **args** - list of string arguments.
+  * **options** - optional [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) for command.
+  * **pattern** - regexp pattern to get ip address.
+    
+  See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+
+* **auto-scan** - define params of process to check network on new devices. If `on-detect` is not set then auto-scan is off.
   * **period** - in seconds. By default `600`.
   * **range** - use nmap range format e.g. `192.168.0.1-255`. Already registered IP will be ignored.
-  *	**on-detect** - Shell command executed for each unknown devices. You can use `${ip}`, `${mac}` and `${description}`.
+  *	**on-detect** - shell command executed for each unknown devices. You can use `${ip}`, `${mac}` and `${description}`.

@@ -1,9 +1,15 @@
 'use strict'
 const exec = require('child_process').exec;
 
+let is_enable = false;
+exec('wmic /?', (err) => is_enable = !err || !console.log('WMI is not available'));
+
 // opts = {user: Home, password: mypassword, ip: localhost, timeout: 3}
 // address = {alias: cpu, property: caption}
 exports.getValues = function(opts, address_list, callback) {
+	if (!is_enable)
+		return callback(new Error('Require WMIC'));
+
 	let res = new Array(address_list.length);
 
 	function parseValue(value, format) {
