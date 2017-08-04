@@ -25,6 +25,8 @@ server.on('request', function (req, res) {
 		const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
 		res.setHeader('Content-type', mimes[mime] || 'text/plain');
 		res.statusCode = code;
+		if (typeof(data) == 'boolean')	
+			data = +data;
 		if (!(typeof(data) == 'string' || data instanceof Buffer || data == undefined))
 			data = data + '';
 		res.end(data);
@@ -220,7 +222,7 @@ server.on('request', function (req, res) {
 		if (opts instanceof Error)
 			return send(500, opts.message);
 
-		return Device.getValue(opts, (err, res) => send(200, (err) ? err.message : res));
+		return Device.getValue(opts, (err, val) => send(200, (err) ? err.message : val));
 	}
 
 	if (path == '/stats') 
@@ -258,7 +260,7 @@ Device.cache(function (err) {
 		return;
 	}
 	
-	Device.getList().forEach((device) => device.polling());
+	Device.getList().forEach((device) => device.polling(1000 + Math.random() * 3000));
 });
 
 Alert.getSummary((err, res) => err ? console.error(err.message) : alert_summary = res);

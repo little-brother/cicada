@@ -5,7 +5,8 @@
 	<title>Chupacabra</title>
 	<script src = "/vendors/jquery-1.11.0.min.js"></script>
 	<script src = "/vendors/jquery.splitter.js"></script>
-	<script src = "/vendors/dygraph-combined.js"></script>
+	<script src = "/vendors/dygraph.min.js"></script>
+	<script src = "/vendors/dygraph-synchronizer.js"></script>
 	<script src = "/vendors/jquery.pickmeup.min.js"></script>
 	<script src = "/vendors/strftime-min.js"></script>
 
@@ -36,15 +37,13 @@
 		<div id = "dashboard">
 			<div id = "tag-list">	
 				<div id = "device-tag-list" class = "tag-list"></div>
-				<div id = "varbind-tag-list" class = "tag-list"></div>
+				<div id = "varbind-tag-list" class = "tag-list" title = "Use Ctrl + Mouse Click to select one more tag"></div>
 			</div>
 			<div class = "history-period-block">
 				<input class = "history-period" autocomplete = "off">
 				<span class = "history-period-value">Last hour</span>
 			</div>
-			<div id = "graph-block">
-				<div id = "graph"></div>
-			</div>
+			<div id = "graph-block"></div>
 		</div>
 	</div>
 </div>
@@ -145,7 +144,12 @@
 				</table>
 			</div> 
 	
-			<div id = "protocols" class="tabs"></div>	
+			<div id = "protocols" class="tabs">
+				<span id = "protocol-menu" class = "dropdown-click" tabindex = "0">
+					<div class = "button clickable"><span>&#43;</span> Add poller</div>
+					<div id = "protocol-list" class = "content"></div>
+				</span>
+			</div>	
 		</div>
 	</div>
 
@@ -236,6 +240,7 @@ Possible options
 						<option value = "onoff">on/off</option>
 						<option value = "updown">up/down</option>
 						<option value = "filesize">filesize</option>
+						<option value = "status">status</option>
 					</select>
 				</td>
 

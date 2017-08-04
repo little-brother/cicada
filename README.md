@@ -23,7 +23,7 @@ Roadmap
 * Distributed
 * Support for polling VMs, JVM, etc
 * Daily data aggregation
-* Multi-varbind dashboard with realtime update
+* Real-time dashboard
 
 Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
 Visit [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.<br>

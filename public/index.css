@@ -6,8 +6,6 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .a {color: #337ab7; cursor: pointer; text-decoration: none;}
 .clickable {cursor: pointer}
 #template-row {display: none;}
-.dygraph-legend {width: initial !important; right: 0 !important; left: initial !important;}
-.dygraph-legend > span {display: block;}
 
 .top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff; display: none;}
 .top-menu[admin] {display: block;}
@@ -46,7 +44,9 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #dashboard #device-tag-list {border-bottom: 1px solid #eee}
 #app #dashboard .history-period-block {margin-top: -10px;} 
 #app #dashboard #graph-block {padding: 30px;}
-#app #dashboard #graph {display: block;}
+#app #dashboard #graph-block > .graph {display: block;}
+#app #dashboard #graph-block > .graph:first-child:last-child:hover {background-color: initial;} 
+#app #dashboard #graph-block > .graph:hover {background-color: #eff;}
 
 #app #device-list {list-style: none;}
 #app #device-list li {cursor: pointer; margin: 3px 0; padding: 3px; padding-left: 10px;}
@@ -75,7 +75,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
 
-#app #page-device-edit label.has-varbind {background: #f5f5ff;}
+#app #page-device-edit label.without-varbind {color: #bbb;}
 #app #page-device-edit #template-save img {height: 12px;}
 #app #page-device-edit #properties table {display: inline; margin-right: 40px;}
 #app #page-device-edit #properties table tr td:nth-of-type(2) {padding-left: 20px;}
@@ -202,10 +202,18 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 
 .tabs > div, .tabs > input { display: none; margin: 0px;} 
 .tabs > label { padding: 5px 15px 5px 15px; border: 1px solid #aaa; line-height: 26px; cursor: pointer; position: relative; background: #fff; margin: 0px;display:inline;} 
-.tabs > label.agent:before {content: '\25c6'; margin-right: 5px;}
-.tabs > label.external:before {content: '\2327'; margin-right: 5px;}
-.tabs > label.expression:before {content: '\3a3'; margin-right: 5px;}
-.tabs > label.native:before {}
+.tabs > label .remove {margin-left: 10px; cursor: pointer;}
+.tabs #protocol-menu .button span {margin-left: 5px; font-size: 18px;}
+.tabs #protocol-menu #protocol-list div {cursor: pointer;}
+.tabs .agent:before {content: '\25c6'; margin-right: 5px;}
+.tabs .external:before {content: '\2327'; margin-right: 5px;}
+.tabs .expression:before {content: '\3a3'; margin-right: 5px;}
+.tabs .native:before {}
+
+.tabs > input.hidden {display: none !important;}
+.tabs > label.hidden {display: none !important;}
+.tabs > div[id^="page-"].hidden {display: none !important;}
+
 .tabs > input[type="radio"]:checked + label { border-bottom: 1px solid #fff; margin: 0px;} 
 .tabs > input:nth-of-type(1):checked ~ div:nth-of-type(1), 
 .tabs > input:nth-of-type(2):checked ~ div:nth-of-type(2), 
@@ -246,3 +254,23 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .pickmeup .pmu-instance:first-child:last-child .pmu-month{width:12em}
 .pickmeup:not(.pmu-view-days) .pmu-days,.pickmeup:not(.pmu-view-days) .pmu-day-of-week,.pickmeup:not(.pmu-view-months) .pmu-months,.pickmeup:not(.pmu-view-years) .pmu-years{display:none}
 /* End calendar */
+
+
+.dygraph-legend {width: initial !important; right: 0 !important; left: initial !important; font-size: 10px !important;}
+.dygraph-legend b {font-size: 14px;}
+.dygraph-legend > span {display: block; font-size: 14px;}
+.dygraph-ylabel {position: relative; top: -20px;}
+
+/* Dygraph */
+.dygraph-legend{position:absolute;font-size:14px;z-index:10;width:250px;background:#fff;line-height:normal;text-align:left;overflow:hidden}
+.dygraph-legend-line{display:inline-block;position:relative;bottom:.5ex;padding-left:1em;height:1px;border-bottom-width:2px;border-bottom-style:solid}
+.dygraph-legend-dash{display:inline-block;position:relative;bottom:.5ex;height:1px;border-bottom-width:2px;border-bottom-style:solid}
+.dygraph-roller{position:absolute;z-index:10}
+.dygraph-annotation{position:absolute;z-index:10;overflow:hidden}
+.dygraph-default-annotation{border:1px solid #000;background-color:#fff;text-align:center}
+.dygraph-axis-label{z-index:10;line-height:normal;overflow:hidden;color:#000}
+.dygraph-title{font-weight:700;z-index:10;text-align:center}
+.dygraph-xlabel{text-align:center}
+.dygraph-label-rotate-left{text-align:center;transform:rotate(90deg);-webkit-transform:rotate(90deg);-moz-transform:rotate(90deg);-o-transform:rotate(90deg);-ms-transform:rotate(90deg)}
+.dygraph-label-rotate-right{text-align:center;transform:rotate(-90deg);-webkit-transform:rotate(-90deg);-moz-transform:rotate(-90deg);-o-transform:rotate(-90deg);-ms-transform:rotate(-90deg)}
+/* End dygraph */

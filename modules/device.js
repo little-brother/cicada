@@ -52,6 +52,7 @@ function updateLatencies (data, callback) {
 			return;
 
 		d.alive = res.alive;
+		d.latency = res.latency;
 
 		columns.push('device' + d.id);
 		let latency = res.latency;
@@ -191,7 +192,6 @@ function getValue(opts, callback) {
 		return callback(new Error('Address is empty'));
 
 	if (opts.protocol == 'expression') {
-
 		let device = Device.get(opts.device_id);
 		if (!device)	
 			return callback(new Error('Bad device id'));
@@ -258,7 +258,7 @@ Device.prototype.cache = mixin.cache;
 
 Device.prototype.updateStatus = function () {
 	this.prev_status = this.status;
-	this.status = this.varbind_list.reduce((max, e) => Math.max(max, e.status || 0), 0);
+	this.status = (this.is_status) ? this.varbind_list.reduce((max, e) => Math.max(max, e.status || 0), 0) : this.status;
 	return this;
 }
 
@@ -412,6 +412,9 @@ Device.prototype.polling = function (delay) {
 					v.value_time = time;
 				});
 
+			let isError = errors.every((e) => e instanceof Error);
+			device.alive = !isError;
+
 			device.varbind_list
 				.filter((v) => v.is_expression)
 				.forEach(function(v) {
@@ -439,7 +442,6 @@ Device.prototype.polling = function (delay) {
 
 			Device.events.emit('values-updated', device, time);
 
-			let isError = errors.every((e) => e instanceof Error)
 			if (isError) {
 				device.prev_status = device.status;
 				device.status = device.force_status_to;
@@ -678,6 +680,9 @@ function Varbind (data) {
 
 // divider is a "number" or "number + char" or "number + r + regexp"
 function applyDivider (value, divider) {
+	if (typeof(value) === 'boolean')
+		return value;
+
 	if (isNaN(value) && isNaN(divider)) {
 		value = value + '';
 		divider = divider + '';
@@ -747,10 +752,14 @@ function generateExpressionCode (curr_device, expression) {
 	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3, pos, exp) {
 		let names = (p2 || p3 || '').split('=>').map((name) => (name || '').trim());
 		let device = (names.length == 1) ? curr_device : Device.getList().find((d) => d.name == names[0]) || {varbind_list: []};
-		let varbind_name = (names.length == 1) ? names[0] : names[1];
-		let varbind_id = (device.varbind_list.find((v) => v.name == varbind_name) || {}).id;
+		let name = (names.length == 1) ? names[0] : names[1];
+		if (name[0] == '@') {
+			let prop = name.substring(1);
+			return (device[prop] !== undefined) ? `Device.get(${device.id}).${prop}` : ' null ';
+		}
 		
-		return (!varbind_id) ? 'undefined' : `Varbind.get(${varbind_id})${exp[pos + matched.length] == '.' ? '' : '.value'}`;
+		let varbind = device.varbind_list.find((v) => v.name == name);
+		return (!!varbind) ? `Varbind.get(${varbind.id})${exp[pos + matched.length] == '.' ? '' : '.value'}` : ' null ';
  	});
 
  	return expr;

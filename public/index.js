@@ -5,7 +5,7 @@ $(function(){
 	var $dashboard = $app.find('#dashboard');
 	var $components = $('#components');
 
-	var graphs = {};
+	var graphs = {device: {}, dashboard:{}};
 	var templates = {};
 
 	$app.splitter({orientation: 'horizontal', limit: 200});
@@ -69,16 +69,15 @@ $(function(){
 				});
 				$varbind_list.appendTo($component.find('#page-content'));
 
-				if (data && data.period) {
+				if (data && data.period)
 					return $selector.pickmeup('set_date', [new Date(data.period[0]), new Date(data.period[1])]).attr('changed', true).pickmeup('hide');
-				}
 
-				$varbind_list.trigger('update-data');
+				$varbind_list.trigger('update-device');
 			}
 		});
 	});
 
-	$page.on('update-data', '#page-device-view #varbind-list', function (event, data) {
+	$page.on('update-device', '#page-device-view #varbind-list', function (event, data) {
 		var $varbind_list = $(this);
 		var varbind_list = $varbind_list.data('varbind-list');
 		var from = data && data.period && data.period[0]; 
@@ -99,12 +98,13 @@ $(function(){
 				if (!res.rows.length)
 					return;
 
+				deleteGraph('device');
+
 				$.each(varbind_list.filter((varbind) => varbind.value_type == 'number'), function(i, varbind) {
 					var idx = res.columns.indexOf('varbind' + varbind.id);
 					if (idx == -1)
 						return;
 
-					deleteGraph(varbind.id);
 					var data = res.rows.map((row) => [new Date(row[0]), row[idx]]);
 					if (data.length == 0)
 						return;
@@ -125,12 +125,15 @@ $(function(){
 							if (!status)	
 								return;
 							drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
-						}
+						},
+						legendFormatter: (data) => (data.x !== null && data.series && data.series[0].yHTML) ? data.xHTML + ': <b>' + data.series[0].yHTML + '</b>' : ''
 					};
 				
-					graphs[varbind.id] = new Dygraph($cells[varbind.id].get(0), data, opts);
-					graphs[varbind.id].alerts = alerts;
+					graphs.device[varbind.id] = new Dygraph($cells[varbind.id].get(0), data, opts);
+					graphs.device[varbind.id].alerts = alerts;
 				})
+				
+				Dygraph.synchronize(varbind_list.map((v) => graphs.device[v.id]).filter((g) => !!g));
 			}
 		});
 
@@ -171,13 +174,9 @@ $(function(){
 
 		$page.empty();
 		var $component = $components.find('#page-device-edit').clone(true, true);
-		
-		setVarbindList($component,  templates[template_name] || []);
-
-		$component.find('#protocols input:radio:first').prop('checked', true);
 		$component.find('#properties #template').val(template_name);
-		$component.appendTo($page);
-		highlightProtocolTabs();				
+		
+		setVarbindList($page, $component,  templates[template_name] || []);				
 	});
 
 	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block', function() {
@@ -218,11 +217,7 @@ $(function(){
 						.each((i, e) => $(e).val(device.protocols[protocol] && device.protocols[protocol][e.id]));
 				}
 				
-				setVarbindList($component, device.varbind_list);
-
-				$component.find('#protocols input:radio:first').prop('checked', true);
-				$component.appendTo($page);	
-				highlightProtocolTabs();
+				setVarbindList($page, $component, device.varbind_list);
 			}
 		})	
 	});
@@ -251,7 +246,7 @@ $(function(){
 		$(this).closest('table.varbind-list').attr('changed', true);
 	});
 
-	function setVarbindList($component, varbind_list) {
+	function setVarbindList($page, $component, varbind_list) {
 		var $vb_table = $components.find('#partial-varbind-list-edit .varbind-list');
 
 		$component.find('#protocols div[id^="page-"]').each(function(i, e) {
@@ -288,6 +283,13 @@ $(function(){
 				$row.appendTo($varbind_list);
 			});
 		});
+
+		$component.appendTo($page);	
+
+		var $menu = $component.find('#protocol-menu');
+		$component.find('.varbind-list tbody:has(tr)').each((i, e) => $menu.find('div[protocol="' + $(e).closest('table').attr('protocol') + '"]').trigger('click'));
+		$component.find('#protocols label:Visible:first').trigger('click');
+		highlightProtocolTabs();
 	}
 
 	function getVarbindList(templated) {
@@ -467,6 +469,25 @@ $(function(){
 				$row.find('#td-value').html(value + '<br>&#10227;').attr('title', value);
 			}
 		})
+	});
+
+	$page.on('click', '#page-device-edit .tabs #protocol-list div', function () {
+		var $e = $(this);
+		var protocol = $e.attr('protocol');
+		var $tabs = $page.find('#page-device-edit .tabs');
+		$tabs.children('label[for="tab-' + protocol + '"], div[id="page-' + protocol + '"], input[id="tab-' + protocol + '"]').toggleClass('hidden');
+		$tabs.children('label[for="tab-' + protocol + '"]').trigger('click');
+		$e.hide();
+	});
+
+	$page.on('click', '#page-device-edit .tabs label .remove', function () {
+		var $e = $(this);
+		var protocol = $e.attr('protocol');
+		var $tabs = $page.find('#page-device-edit .tabs');
+		$tabs.children('label[for="tab-' + protocol + '"], div[id="page-' + protocol + '"], input[id="tab-' + protocol + '"]').toggleClass('hidden');		
+		$tabs.children('div[id="page-' + protocol + '"]').find('.varbind-list tbody').empty();
+		$tabs.children('.dropdown-click').find('#protocol-list div[protocol="' + protocol + '"]').show();
+		setTimeout(() => $tabs.children('label:not(.hidden)').trigger('click'), 10);
 	});
 
 	$page.on('click', 'details', function() {
@@ -654,7 +675,7 @@ $(function(){
 		addDevice(0);
 	});
 
-	$dashboard.on('click', '#device-tag-list input', function() {
+	$dashboard.on('click', '#device-tag-list label', function() {
 		var $device_tag_list = $dashboard.find('#device-tag-list');
 		var $varbind_tag_list = $dashboard.find('#varbind-tag-list');
 		var $checked_list = $device_tag_list.find('input:checked:not(#All)');
@@ -666,7 +687,7 @@ $(function(){
 
 		var time = new Date();
 		$varbind_tag_list.find('input:checked').removeAttr('checked');
-		$dashboard.trigger('update-graph');
+		deleteGraph('dashboard');
 
 		if (this.id == 'All' || $checked_list.length == 0) {
 			$device_tag_list.find('input:not(#All)').attr('checked', false).prop('checked', false);
@@ -686,33 +707,59 @@ $(function(){
 		})
 	});
 
-	$dashboard.on('click', '#varbind-tag-list input', function() {
-		$dashboard.find('#varbind-tag-list input:checked:not(#' + this.id + ')').removeAttr('checked');
+	$dashboard.on('click', '#varbind-tag-list label', function(event) {
+		var $e = $(this).prev();
+		var tag = $e.attr('id');
+		if (!event.ctrlKey) {
+			$dashboard.find('#varbind-tag-list input:checked:not(#' + tag + ')').removeAttr('checked');
+			$e.prop('checked', false);
+		} else {
+			$e.prop('checked', !$e.prop('checked'));
+			event.preventDefault();
+		}
+
 		$dashboard.find('.history-period-block').show();
 		var period = $dashboard.find('.history-period').pickmeup('get_date') || null;
 		if (period && period.length > 0) 
 			period = [period[0].getTime(), period[1].getTime()];
-		$dashboard.trigger('update-graph', {tag: this.checked && this.id, period: period});
+		setTimeout(() => $dashboard.trigger('update-dashboard', {period: period}), 10);
 	});
 
-	$dashboard.on('update-graph', function(event, data) {
-		deleteGraph('dashboard');
+	$dashboard.on('update-dashboard', function(event, data) {
+		if (data.update)
+			deleteGraph('dashboard');
 
-		if (!data || !data.tag)
-			return;
+		var tags = $dashboard.find('#varbind-tag-list input:checked').map((i, e) => e.id).get();
+		var etag = tags.filter((tag) => !graphs.dashboard[tag])[0];
+
+		if (!etag) {
+			for (var tag in graphs.dashboard) {
+				if (tags.indexOf(tag) == -1)
+					deleteGraph('dashboard', tag);
+			}
+
+			var h = ($app.height() - $dashboard.find('#tag-list').height() - 60) / tags.length;
+			tags.forEach((tag) => $(graphs.dashboard[tag].graphDiv.parentNode).height(h));
+			
+			var $graphs = $dashboard.find('.graph').sort((a, b) => tags.indexOf(a.getAttribute('tag')) - tags.indexOf(b.getAttribute('tag')));
+			$graphs.detach().appendTo($dashboard.find('#graph-block'));
+
+			Dygraph.synchronize(tags.map((tag) => graphs.dashboard[tag]));
+
+			return window.dispatchEvent(new Event('resize'));
+		}
+
+		delete data.update;
 
 		$.ajax({
 			method: 'GET',
-			url: '/tag/' + data.tag,
+			url: '/tag/' + etag,
 			data: {
 				from: data.period && data.period[0], 
 				to: data.period && data.period[1],
 				tags: $dashboard.find('#device-tag-list input:checked').map(function () { return this.id}).get().join(';')
 			},
 			success: function(res) {
-				if (!res || !res.rows.length)
-					return alert('No data');
-
 				res.rows.forEach((row) => row[0] = new Date(row[0]));
 
 				var opts = {
@@ -721,6 +768,8 @@ $(function(){
 					valueRange: getRange(res.rows),
 					highlightCircleSize: 2,					
 					height: $app.height() - $dashboard.find('#tag-list').height() - 60,
+					//height: 100,
+					ylabel: etag,
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)}
 					},
@@ -739,16 +788,31 @@ $(function(){
 					}
 				}
 			
-				graphs.dashboard = new Dygraph($dashboard.find('#graph').get(0), res.rows, opts);
+				graphs.dashboard[etag] = new Dygraph($('<div/>').attr('tag', etag).addClass('graph').appendTo($dashboard.find('#graph-block')).get(0), res.rows, opts);
+				$dashboard.trigger('update-dashboard', data);
 			}
 		})
 	});
 
-	function deleteGraph(id) {
-		if (graphs[id]) {
-			graphs[id].destroy();
-			delete graphs[id];
-		}		
+	function deleteGraph(where, id) {
+		if (!graphs[where])
+			return console.error('deleteGraph: Bad "where" request - ' + where);
+
+		function deleteById(id) {
+			if (graphs[where][id]) {
+				try {	
+					graphs[where][id].graphDiv.parentNode.remove();
+					graphs[where][id].destroy();
+				} catch (err) {}
+				delete graphs[where][id];
+			}
+		}
+			
+		if (id != undefined)
+			return deleteById(id);	
+
+		for (var id in graphs[where]) 
+			deleteById(id);
 	}
 
 	function updateDashboard () {
@@ -805,9 +869,10 @@ $(function(){
 				var period = $e.data('pickmeup-options').date;
 				$e.closest('.history-period-block').find('.history-period-value').html($e.pickmeup('get_date', true).join(' - '));
 	
+				var data = {update: true, period: period}
 				return (!$page.html()) ? 
-					$dashboard.trigger('update-graph', {tag: $dashboard.find('#varbind-tag-list input:checked').attr('id'), period: period}) :
-					$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-data', {period: period});
+					$dashboard.trigger('update-dashboard', data) :
+					$page.find('#page-device-view #varbind-list').attr('period', true).trigger('update-device', data);
 			}
 		});
 	}
@@ -849,7 +914,11 @@ $(function(){
 			url: '/ping?ip=' + $e.parent().find('#ip').val(),
 			success: (res) => $e.attr('status', res)
 		});
-	})
+	});
+
+	$app.on('click', '.dropdown-click .content > *', function() {
+		$(this).closest('.dropdown-click').trigger('blur');
+	});
 
 	function setDevice(device) {
 		var $e = $device_list.find('#' + device.id);
@@ -882,11 +951,11 @@ $(function(){
 	}
 
 	function highlightProtocolTabs () {
-		$page.find('#protocols > label').removeClass('has-varbind');
-		$page.find('.varbind-list tbody:has(tr)').each(function() {
+		$page.find('#protocols > label').removeClass('without-varbind');
+		$page.find('.varbind-list tbody:not(:has(tr))').each(function() {
 			var $e = $(this).closest('table');
 			var protocol = $e.attr('protocol');
-			$e.closest('#protocols').find('label[for="tab-' + protocol + '"]').addClass('has-varbind');
+			$e.closest('#protocols').find('label[for="tab-' + protocol + '"]').addClass('without-varbind');
 		})
 	}
 
@@ -966,22 +1035,28 @@ $(function(){
 				}).sort((a, b) =>  (a.order == b.order) ? collator.compare(a.name, b.name) : a.order - b.order);
 
 				protocol_list.forEach(function (protocol) {
-						$('<input type = "radio" name = "tab" autocomplete = "off"/>').attr('id', 'tab-' + protocol.id).appendTo($tabs);
-						$('<label/>').attr('for', 'tab-' + protocol.id).addClass(protocol.category).html(protocol.name).appendTo($tabs);
-						$tabs.append(' ');
+					$('<input type = "radio" name = "tab" autocomplete = "off"/>').attr('id', 'tab-' + protocol.id).addClass('hidden').appendTo($tabs);
+					$('<label/>').attr('for', 'tab-' + protocol.id).addClass(protocol.category).addClass('hidden').html(protocol.name)
+						.append($('<span/>').addClass('remove').attr('protocol', protocol.id).html('&#10006;'))
+						.appendTo($tabs);
+					$tabs.append(' ');
 				});	
 
+				var $menu = $tabs.find('#protocol-menu');
+				$menu.find('.content').append(protocol_list.map((p) => $('<div/>').attr('protocol', p.id).addClass(p.category).html(p.name)));
+				$menu.appendTo($tabs);
+											
 				protocol_list.forEach(function (protocol) {
-						var $tab = $('<div/>').attr('id', 'page-' + protocol.id)
-						protocol.$params.appendTo($tab);
-						var $vl = $varbind_list.clone(true, true).appendTo($tab).find('#template-row #td-address').html(protocol.$address.html());
+					var $tab = $('<div/>').attr('id', 'page-' + protocol.id).addClass('hidden');
+					protocol.$params.appendTo($tab);
+					var $vl = $varbind_list.clone(true, true).appendTo($tab).find('#template-row #td-address').html(protocol.$address.html());
 
-						$('<details class = "help"/>')
-							.attr('url', '/protocols/' + protocol.id + '/help.html')
-							.append($('<summary/>').html(protocol.name + ' detail'))
-							.append($('<div/>'))
-							.appendTo($tab);
-						$tab.appendTo($tabs);
+					$('<details class = "help"/>')
+						.attr('url', '/protocols/' + protocol.id + '/help.html')
+						.append($('<summary/>').html(protocol.name + ' detail'))
+						.append($('<div/>'))
+						.appendTo($tab);
+					$tab.appendTo($tabs);
 				});	
 			}
 		})
@@ -1084,7 +1159,7 @@ $(function(){
 						if (!isNaN(val) && (val < range[0] || val > range[1])) 
 							range = getRange(data);
 
-						graph.updateOptions({file: data, valueRange: range});
+						graph.updateOptions({file: data, valueRange: range, dateWindow: graph.xAxisExtremes()});
 						return;
 					}
 
@@ -1174,9 +1249,9 @@ $(function(){
 	function cast(type, value, args) {
 		type = (type + '').toLowerCase();
 	
-		if (!type)
+		if (!type || (value + '').indexOf('ERR: ') == 0)
 			return value;
-	
+
 		if (value == null || value == undefined)
 			return '';
 	
@@ -1211,6 +1286,9 @@ $(function(){
 
 		if (type == 'updown') 
 			return ['Up', 'Down'][parseInt(value) ? 0 : 1];
+
+		if (type == 'status') 
+			return ['Unknown', 'Normal', 'Warning', 'Critical'][parseInt(value)];
 
 		if (type == 'duration' && !isNaN(value)) {
 			var min = 6000;
