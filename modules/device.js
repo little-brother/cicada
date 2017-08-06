@@ -3,6 +3,8 @@ const fs = require('fs');
 const EventEmitter = require('events').EventEmitter;
 const async = require('async');
 const RRStore = require('rrstore');
+const regression = require('regression');
+
 const db = require('./db');
 const mixin = require('./mixin');
 const protocols = fs.readdirSync('./protocols').reduce((r, f) => {r[f] = require('../protocols/' + f); return r;}, {});
@@ -121,8 +123,10 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 				return callback(err);
 	
 			let res = {
+				ids: device_list.map((d) => d.id),
 				columns: ['time'].concat(device_list.map((d) => d.name)),
-				rows: rows.map((row) => [row.time].concat(device_list.map((d) => row['device' + d.id])))
+				rows: rows.map((row) => [row.time].concat(device_list.map((d) => row['device' + d.id]))),
+				alerts: {}
 			}
 			callback(null, res);
 		});
@@ -175,7 +179,7 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 				}
 
 				for (let i = 1; i < row.length; i++) 
-					times[time][idx[i - 1]] = parseFloat(row[i]) || null;
+					times[time][idx[i - 1]] = parseFloat(row[i]) || row[i];
 			})
 		})
 
@@ -263,7 +267,8 @@ Device.prototype.updateStatus = function () {
 }
 
 Device.prototype.updateVarbindList = function () {
-	this.varbind_list = mixin.get('varbind').getList().filter((v) => v.device_id == this.id) || [];
+	let collator = new Intl.Collator();
+	this.varbind_list = mixin.get('varbind').getList().filter((v) => v.device_id == this.id).sort(collator.compare) || [];
 	return this;
 }
 
@@ -646,6 +651,7 @@ function Varbind (data) {
 		return self.stores[size];
 	}
 	['avg', 'min', 'max', 'sum'].forEach((e) => this[e] = (size) => getStore(size)[e]);
+	this.forecast = (size, when, method, skip) => getStore(size).forecast(when, method, skip);
 
 	Object.assign(this, data);
 	if(this.id)
@@ -778,6 +784,27 @@ Varbind.prototype.calcExpressionValue = function () {
 		result = err;
 	}
 	return result;
+}
+
+RRStore.prototype.forecast = function (when, a, b) {
+	if (!this._forecast)
+		this._forecast = {};
+
+	let method = isNaN(a) ? a : 'linear';
+	let skip = !isNaN(a) ? a : b;
+	let opts = [when, a, b].join(';'); 
+
+	if (skip != undefined && this.i % skip != 0)
+		return this._forecast[opts];
+
+	try {	
+		this._forecast[opts] = regression[method](this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]))).predict(this.arr.length + when - 1)[1];
+	} catch (err) { 
+		this._forecast[opts] = 'ERR: Bad params';
+		console.error(__filename, err.message, opts);
+	}
+
+	return this._forecast[opts];
 }
 
 module.exports = Device;

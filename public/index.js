@@ -110,6 +110,15 @@ $(function(){
 						return;
 
 					var alerts = res.alerts[varbind.id];
+					var strings = {};
+					data.filter((row) => isNaN(row[1])).forEach((row) => strings[row[0].getTime()] = row[1] + '');
+
+					data.forEach(function (row, no) {
+						if (!isNaN(row[1]))
+							return;	
+						row[1] = data[no - 1] != undefined && !isNaN(data[no - 1][1]) && data[no - 1][1] || data[no + 1] != undefined && !isNaN(data[no + 1][1]) && data[no + 1][1];
+					});
+
 					var opts = {
 						animatedZooms: true,
 						valueRange: getRange(data),
@@ -117,20 +126,26 @@ $(function(){
 						highlightCircleSize: 2,					
 						height: 120,
 						axes: {
-							x: {valueFormatter: (ms) => cast('datetime', ms)}
+							x: {valueFormatter: (ms) => cast('datetime', ms)},
+							y: {valueFormatter: (val, opts, seriesName, g, row) => strings[g.getValue(row, 0)] || val}
 						},
 						drawPoints: true,
 						drawPointCallback: function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row) {
-							var status = alerts[g.getValue(row, 0)];
-							if (!status)	
-								return;
-							drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+							var time = g.getValue(row, 0);
+							var status = alerts[time];
+							if (status)	
+								return drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+
+							if (strings[time])
+								return drawCircle(canvasContext, cx, cy, '#000', 2);
+							
 						},
 						legendFormatter: (data) => (data.x !== null && data.series && data.series[0].yHTML) ? data.xHTML + ': <b>' + data.series[0].yHTML + '</b>' : ''
 					};
 				
 					graphs.device[varbind.id] = new Dygraph($cells[varbind.id].get(0), data, opts);
 					graphs.device[varbind.id].alerts = alerts;
+					graphs.device[varbind.id].strings = strings;
 				})
 				
 				Dygraph.synchronize(varbind_list.map((v) => graphs.device[v.id]).filter((g) => !!g));
@@ -725,8 +740,8 @@ $(function(){
 		setTimeout(() => $dashboard.trigger('update-dashboard', {period: period}), 10);
 	});
 
-	$dashboard.on('update-dashboard', function(event, data) {
-		if (data.update)
+	$dashboard.on('update-dashboard', function(event, edata) {
+		if (edata.update)
 			deleteGraph('dashboard');
 
 		var tags = $dashboard.find('#varbind-tag-list input:checked').map((i, e) => e.id).get();
@@ -749,47 +764,70 @@ $(function(){
 			return window.dispatchEvent(new Event('resize'));
 		}
 
-		delete data.update;
+		delete edata.update;
 
 		$.ajax({
 			method: 'GET',
 			url: '/tag/' + etag,
 			data: {
-				from: data.period && data.period[0], 
-				to: data.period && data.period[1],
+				from: edata.period && edata.period[0], 
+				to: edata.period && edata.period[1],
 				tags: $dashboard.find('#device-tag-list input:checked').map(function () { return this.id}).get().join(';')
 			},
 			success: function(res) {
-				res.rows.forEach((row) => row[0] = new Date(row[0]));
+				var data = res.rows;
+				data.forEach((row) => row[0] = new Date(row[0]));
+
+				var alerts = res.alerts;
+				var strings = {};
+				res.ids.forEach((id) => strings[id] = {});
+				
+				data.forEach(function (row, no) {
+					for (var i = 1; i < row.length; i++) {
+						if (isNaN(row[i])) {
+							strings[res.ids[i - 1]][row[0].getTime()] = row[i] + '';
+							row[i] = data[no - 1] != undefined && !isNaN(data[no - 1][i]) && data[no - 1][i] || data[no + 1] != undefined && !isNaN(data[no + 1][i]) && data[no + 1][i];
+						}
+					}
+				});
+
+				var names = {};
+				res.columns.forEach((name, i) => names[name] = res.ids && res.ids[i - 1]);
 
 				var opts = {
 					animatedZooms: true,
 					labels: res.columns,
-					valueRange: getRange(res.rows),
+					valueRange: getRange(data),
 					highlightCircleSize: 2,					
 					height: $app.height() - $dashboard.find('#tag-list').height() - 60,
 					//height: 100,
 					ylabel: etag,
 					axes: {
-						x: {valueFormatter: (ms) => cast('datetime', ms)}
+						x: {valueFormatter: (ms) => cast('datetime', ms)},
+						y: {valueFormatter: function (val, opts, seriesName, g, row) {
+								var varbind_id = names[seriesName];	
+								return strings[varbind_id] && strings[varbind_id][g.getValue(row, 0)] || val;
+							}
+						}
 					},
-					drawPoints: true					
+					drawPoints: true,
+					drawPointCallback: function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row, idx) {
+						var varbind_id = names[seriesName];
+						var time = g.getValue(row, 0);
+
+						var status = alerts[varbind_id] && res.alerts[varbind_id][time];
+						if (status)	
+							return drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+
+						if (strings[varbind_id] && strings[varbind_id][time])
+							return drawCircle(canvasContext, cx, cy, '#000', 2);
+					}
 				};
 
-				if (res.ids) {
-					var names = {};
-					res.columns.forEach((name, i) => names[name] = res.ids[i - 1]);
-					opts.drawPointCallback = function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row, idx) {
-						var varbind_id = names[seriesName];
-						var status = res.alerts[varbind_id] && res.alerts[varbind_id][g.getValue(row, 0)];
-						if (!status)	
-							return;
-						drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
-					}
-				}
-			
-				graphs.dashboard[etag] = new Dygraph($('<div/>').attr('tag', etag).addClass('graph').appendTo($dashboard.find('#graph-block')).get(0), res.rows, opts);
-				$dashboard.trigger('update-dashboard', data);
+				graphs.dashboard[etag] = new Dygraph($('<div/>').attr('tag', etag).addClass('graph').appendTo($dashboard.find('#graph-block')).get(0), data, opts);
+				graphs.dashboard[etag].alerts = alerts;
+				graphs.dashboard[etag].strings = strings;
+				$dashboard.trigger('update-dashboard', edata);
 			}
 		})
 	});
@@ -1143,7 +1181,7 @@ $(function(){
 
 					if (varbind.value_type == 'number') {
 						var val = parseFloat(varbind.value);
-						var graph = graphs[varbind.id];
+						var graph = graphs.device[varbind.id];
 						if (!graph)
 							return;
 
@@ -1151,10 +1189,13 @@ $(function(){
 						var range = graph.user_attrs_.valueRange;
 
 						data = data.filter((e) => e[0].getTime() + hour > packet.time);
-						data.push([time, val || varbind.value]);
+						data.push([time, !isNaN(val) ? val : data[data.length - 1][1]]);
 
 						if (varbind.status == 2 || varbind.status == 3)
 							graph.alerts[packet.time] = varbind.status;
+
+						if (isNaN(val))
+							graph.strings[packet.time] = varbind.value;
 
 						if (!isNaN(val) && (val < range[0] || val > range[1])) 
 							range = getRange(data);
@@ -1187,7 +1228,7 @@ $(function(){
 							return;	
 						
 						if ($last.length && last_event.value != event.value || !$last.length)
-							createHistoryTableRow(last_event, varbind.value_type).appendTo($table);
+							createHistoryTableRow(last_event || event, varbind.value_type).appendTo($table);
 					}
 				})
 			}	

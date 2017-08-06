@@ -1,6 +1,6 @@
 {
   "name": "chupacabra",
-  "version": "0.11.2",
+  "version": "0.11.3",
   "description": "Simple network monitoring",
   "main": "app.js",
   "keywords": [],
@@ -17,6 +17,7 @@
     "async": "^2.4.0",
     "modbus-serial": "4.5.1",
     "net-snmp": "^1.1.19",
+    "regression": "^2.0.0",
     "rrstore": "^0.1.0",
     "sqlite3": "^3.1.8",
     "ws": "^2.3.1"
