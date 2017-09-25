@@ -1,5 +1,5 @@
 'use strict'
-const cache = require('./cache');
+const cache = require('../modules/cache');
 
 module.exports = {
 	get: function(type) {

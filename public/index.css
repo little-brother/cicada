@@ -63,12 +63,13 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #page-device-view #varbind-list {width: 100%; margin-top: 20px;}
 #app #page-device-view #varbind-list td {padding: 2px 5px;}
 #app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
-#app #page-device-view #varbind-list #td-name {width: 1px; min-width: 100px;}
+#app #page-device-view #varbind-list #td-name {width: 1px; min-width: 130px;}
 #app #page-device-view #varbind-list #td-value {width: 1px; min-width: 150px; max-width: 150px; width: 150px; text-align: center; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
 #app #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
 #app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
 #app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
 #app #page-device-view #varbind-list #td-history {padding: 2px 0;}
+#app #page-device-view #varbind-list #td-history[is-number="true"] {height: 124px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
 #app #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
@@ -84,14 +85,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #page-device-edit #properties input[type = "text"].long {width: 360px;}
 #app #page-device-edit #properties #period {width: 40px; margin: 0; text-align: center;}
 #app #page-device-edit #properties #timeout {width: 40px; margin: 0; text-align: center;}
-#app #page-device-edit #protocol-params input[type = "text"], 
-#app #page-device-edit #protocol-params select {margin-left: 20px;}
-#app #page-device-edit #protocol-params table {margin-bottom: 10px;}
 
-#app #page-device-edit #protocol-params select.small {width: 60px;}
-#app #page-device-edit #protocol-params select.small ~ input {margin-left: -3px;}
-#app #page-device-edit #page-snmp-v3 #protocol-params tr[value="noAuthNoPriv"] ~ tr:not(.class-noAuthNoPriv) {display: none !important;}
-#app #page-device-edit #page-snmp-v3 #protocol-params tr[value="authNoPriv"] ~ tr:not(.class-authNoPriv) {display: none !important;}
 
 #app #page-device-edit details {margin-top: 20px; margin-left: 5px;}
 #app #page-device-edit details summary {cursor: pointer; outline: none;}
@@ -101,42 +95,51 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #page-device-edit details.help table tr:hover {background-color: #eff;}
 #app #page-device-edit details.help code {background-color: #eee;}
 
-#app #page-device-edit .varbind-list #td-status-conditions {width: 280px;}
-#app #page-device-edit .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
-#app #page-device-edit .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="change"] ~ #value,
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="any"] ~ #value,
-#app #page-device-edit .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
-#app #page-device-edit .varbind-list #td-status-conditions #value {width: 60px;}
-#app #page-device-edit .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
-#app #page-device-edit .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
+/* #page-device-edit, #page-check-list-edit */
+#app #protocol-params td {padding: 0;}
+#app #protocol-params input[type = "text"], 
+#app #protocol-params select {margin-left: 20px; width: initial;}
+#app #protocol-params table {margin-bottom: 10px;}
+#app #protocol-params select.small {width: 60px;}
+#app #protocol-params select.small ~ input {margin-left: -3px;}
 
-#app #page-device-edit .varbind-list {width: 100%}
-#app #page-device-edit .varbind-list tbody td {vertical-align: top; padding: 5px;}
-#app #page-device-edit .varbind-list tbody tr:hover {background-color: #eff;}
-#app #page-device-edit .varbind-list td > input {width: 100%;}
-#app #page-device-edit .varbind-list #varbind-add {float: left; padding-left: 5px;} 
-#app #page-device-edit .varbind-list #td-address input {margin-bottom: 2px;}
-#app #page-device-edit .varbind-list #td-address {width: 215px;}
-#app #page-device-edit .varbind-list #td-address > input {width: 100%; }
-#app #page-device-edit .varbind-list #td-address > textarea {width: 100%;}
-#app #page-device-edit .varbind-list #td-value-type, 
-#app #page-device-edit .varbind-list #td-divider {width: 50px; min-width: 50px;}
-#app #page-device-edit .varbind-list #td-divider input {text-align: center;}
-#app #page-device-edit .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
+#app .varbind-list #td-status-conditions {width: 280px;}
+#app .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
+#app .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
+#app .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
+#app .varbind-list #td-status-conditions #if[if="change"] ~ #value,
+#app .varbind-list #td-status-conditions #if[if="any"] ~ #value,
+#app .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
+#app .varbind-list #td-status-conditions #value {width: 60px;}
+#app .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
+#app .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
 
+#app .varbind-list {width: 100%}
+#app .varbind-list tbody td {vertical-align: top; padding: 5px;}
+#app .varbind-list tbody tr:hover {background-color: #eff;}
 
+#app .varbind-list tbody tr[check-id] *[readonly] {background-color: #eee;}
+#app .varbind-list tbody tr[check-id] #td-remove #varbind-remove {visibility: hidden;}
+#app .varbind-list tbody tr[check-id] #td-status-conditions #condition-add {visibility: hidden;}
+#app .varbind-list tbody tr[check-id] #td-status-conditions #condition-remove {visibility: hidden;}
 
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #func {width: 160px; display:inline;}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #register {width: 49px; display:inline;}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #type:not([value=""]) {width: 160px; clear: right;}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #order:not([value=""]) {width: 50px; display:inline;}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
-#app #page-device-edit .varbind-list[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
-
-#app #page-device-edit .varbind-list[protocol="port"] #td-address #port {width: 140px;}
-#app #page-device-edit .varbind-list[protocol="port"] #td-address #protocol {width: 70px;}
+#app .varbind-list td > input {width: 100%;}
+#app .varbind-list #varbind-add, 
+#app .varbind-list #check-add  {float: left; padding-left: 5px;}
+#app .varbind-list #td-device-tags {width: 200px;}
+#app .varbind-list #td-device-tags #include-tags {color: green}
+#app .varbind-list #td-device-tags #exclude-tags {color: red; margin-top: 2px;}
+#app .varbind-list #td-protocol {width: 100px;}
+#app .varbind-list #td-protocol-params {width: 240px;}
+#app .varbind-list #td-address input {margin-bottom: 2px;}
+#app .varbind-list #td-address {width: 215px;}
+#app .varbind-list #td-address > input {width: 100%; }
+#app .varbind-list #td-address > textarea {width: 100%;}
+#app .varbind-list #td-value-type, 
+#app .varbind-list #td-divider {width: 50px; min-width: 50px;}
+#app .varbind-list #td-divider input {text-align: center;}
+#app .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
+#app .varbind-list #td-value:after {content: '\27f3'; display: block;}
 
 #app #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
 #app #page-device-edit .ping-button:after {margin-left: 5px;}
@@ -167,23 +170,29 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app #page-device-scan #device-scan-result td > select {width: 100%;}
 #app #page-device-scan #device-scan-result tbody #td-add {text-align: center;}
 
-#app #page-alert-list-view #alert-list {width: 100%; padding: 20px;}
+#app #page-alert-list-view #alert-list {width: 100%; padding: 20px; margin-top: 2px; padding-top: 25px;}
 #app #page-alert-list-view #alert-list td {padding: 0 5px;}
 #app #page-alert-list-view #alert-list #td-status {width: 25px; font-size: 24px; font-weight: bold;}
 #app #page-alert-list-view #alert-list #td-datetime {width: 120px; font-size: 10px; cursor: pointer;}
 #app #page-alert-list-view #alert-list #td-device {width: 200px; cursor: pointer;}
 #app #page-alert-list-view #alert-list #td-hide {width: 40px; cursor: pointer;}
-#app #page-alert-list-view #alert-list tr:hover {background-color: #eff;}
+#app #page-alert-list-view #alert-list tr:hover {background-color: #eff; color: #000 !important;}
 #app #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
 #app #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
+#app #page-alert-list-view #alert-list tr[is-hidden="1"] {color: #bbb;}
+#app #page-alert-list-view #alert-list tr[is-hidden="1"] #td-hide {display: none;}
+#app #page-alert-list-view #alert-list tbody:empty:after {content: 'No actual alerts'}
+#app #page-alert-list-view .history-period-block {right: 30px;}
+
+#app #page-check-list-edit #restrictions {font-weight: bold; color: red; margin-left: 10px;}
 
 #stats {margin: 10px;}
 #stats tr:hover {background-color: #eff;}
 #stats td {padding: 2px 10px;}
+#stats td:empty {height: 10px;}
 #stats td:nth-of-type(3) {text-align: center;}
 #stats td:nth-of-type(4) {text-align: right;}
 #stats td:nth-of-type(5) {text-align: right;}
-#stats tr:nth-last-child(2) td {padding-top: 20px;}
 
 .dropdown {position: relative;}
 .dropdown > .button { border: none; cursor: pointer;}
@@ -208,6 +217,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .tabs .agent:before {content: '\25c6'; margin-right: 5px;}
 .tabs .external:before {content: '\2327'; margin-right: 5px;}
 .tabs .expression:before {content: '\3a3'; margin-right: 5px;}
+.tabs .collector:before {content: '\203b'; margin-right: 5px;}
 .tabs .native:before {}
 
 .tabs > input.hidden {display: none !important;}

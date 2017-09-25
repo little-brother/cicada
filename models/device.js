@@ -1,30 +1,46 @@
 'use strict'
 const fs = require('fs');
-const EventEmitter = require('events').EventEmitter;
 const async = require('async');
-const RRStore = require('rrstore');
-const regression = require('regression');
 
-const db = require('./db');
+const db = require('../modules/db');
 const mixin = require('./mixin');
 const protocols = fs.readdirSync('./protocols').reduce((r, f) => {r[f] = require('../protocols/' + f); return r;}, {});
-const nmap = require('./nmap');
+const nmap = require('../modules/nmap');
+const history = require('../modules/history');
+const events = require('../modules/events');
+const Varbind = require('./varbind');
 
 let timers = {};
 
-Object.assign(Device, mixin.get('device'), {cache: cacheAll, events: new EventEmitter(), getValue, getIpList, updateLatencies, getHistoryByTag, getTagList});
+Object.assign(Device, mixin.get('device'), {cache: cacheAll, getValue, getIpList, updateLatencies, getHistoryByTag, getTagList});
 
 function cacheAll (callback) {
 	async.series([
 			(callback) => db.all('select * from devices', callback),
 			(callback) => db.all('select * from varbinds', callback),
+			(callback) => db.all('select * from checks', callback)
 		], 
 		function(err, results) {
 			if (err)
 				return callback(err);
 
-			results[1].forEach((r) => (new Varbind(r)).cache());
-			results[0].forEach((r) => (new Device()).setAttributes(r).cache().updateVarbindList().updateStatus());
+			let device_list = results[0];
+			let varbind_list = results[1];
+			let check_list = results[2];
+
+			// Varbinds with check_id don't have any props
+			// Set them by appropriate check
+			let checks = {};
+			check_list.forEach((r) => checks[r.id] = r);
+
+			let columns = varbind_list.length ? Object.keys(varbind_list[0]).filter((c) => c != 'id' && c != 'updated') : [];
+			varbind_list.filter((r) => !!r.check_id && checks[r.check_id]).forEach(function(r) {
+				let check = checks[r.check_id];
+				columns.filter((c) => check[c] != undefined).forEach((c) => r[c] = check[c]);
+			});
+
+			varbind_list.forEach((r) => (new Varbind(r)).cache());
+			device_list.forEach((r) => (new Device()).setAttributes(r).cache().updateVarbindList().updateStatus());
 
 			async.eachSeries(Device.getList(), db.checkHistoryTable, callback);
 		}
@@ -64,16 +80,16 @@ function updateLatencies (data, callback) {
 			let prev_prev_status = d.prev_status;
 			d.prev_status = d.status;
 			d.status = res.alive ? 1 : (device.force_status_to || 3);
-			Device.events.emit('status-updated', d);
+			events.emit('status-updated', d);
 			if (prev_prev_status != undefined && d.prev_status != d.status)
-				Device.events.emit('status-changed', d, 'ping');
+				events.emit('status-changed', d, 'ping');
 		}
 	})
 
 	db.run(`insert into history.latencies ("${columns.join('","')}") values (${values.join(',')})`, callback);
 }
 
-// Return object: key is tags of devices, values is array of varbind tags
+// Return object: keys is device tag, values is array of varbind tags
 function getTagList () {
 	let tags = {All: []};
 	let device_list = Device.getList();
@@ -103,7 +119,7 @@ function getTagList () {
 	return tags;
 }
 
-function getHistoryByTag(tag, device_tags, period, callback) {
+function getHistoryByTag(tag, device_tags, period, downsample, callback) {
 	let device_list = Device.getList();
 	let device_tag_list = (device_tags || '').split(';');
 
@@ -117,78 +133,15 @@ function getHistoryByTag(tag, device_tags, period, callback) {
 	if (!device_list.length)	
 		return callback(new Error('Device list is empty')); 
 
-	if (tag == 'latency') {
-		db.all(`select "time", ${device_list.map((d) => 'device' + d.id).join(', ')} from history.latencies where time between ? and ? order by "time"`, period, function (err, rows) {
-			if (err)
-				return callback(err);
-	
-			let res = {
-				ids: device_list.map((d) => d.id),
-				columns: ['time'].concat(device_list.map((d) => d.name)),
-				rows: rows.map((row) => [row.time].concat(device_list.map((d) => row['device' + d.id]))),
-				alerts: {}
-			}
-			callback(null, res);
-		});
-		return;
-	}
+	if (tag == 'latency')
+		return history.getLatency(device_list.filter((d) => d.is_pinged).map((d) => new Object({id: d.id, name: d.name})), period, downsample, callback);
 
-	function getHistory(device, callback) {
-		let varbind_list = device.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number' && !v.is_temporary);
-		if (varbind_list.length == 0)
-			return callback(null, null);
+	let dl = device_list.map(function (d) {
+		let varbind_list = d.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number' && !v.is_temporary).map((v) => new Object({id: v.id, name: v.name})); 
+		return {id: d.id, name: d.name, varbind_list};
+	});
 
-		db.all(`select "time", ${varbind_list.map((v) => 'varbind' + v.id + ', varbind' + v.id + '_status').join(', ')} from history.device${device.id} where time between ? and ? order by "time"`, period, function (err, rows) {
-			if (err)
-				return callback(err);
-	
-			let res = {
-				ids: varbind_list.map((v) => v.id),
-				columns: varbind_list.map((v) => device.name + '/' + v.name),
-				rows: rows.map((row) => [row.time].concat(varbind_list.map((v) => row['varbind' + v.id]))),
-				alerts: getHistoryAlerts(varbind_list, rows)
-			}
-			callback(null, res);
-		});
-	}
-
-	async.mapSeries(device_list, getHistory, function(err, results) {
-		if (err)
-			return callback(err);
-
-		let ids = [];
-		results.forEach((res) => res ? ids.push.apply(ids, res.ids) : null);
-
-		let columns = ['time'];
-		results.forEach((res) => res ? columns.push.apply(columns, res.columns) : null);
-		
-		let alerts = {};
-		results.forEach((res) => Object.assign(alerts, res && res.alerts || {}));
-
-		let times = {};
-		results.forEach(function (res) {
-			if (!res)
-				return;
-
-			let idx = res.columns.map((c) => columns.indexOf(c));
-			res.rows.forEach(function(row) {
-				let time = row[0];
-				if (!times[time]) {
-					times[time] = new Array(columns.length);	
-					times[time][0] = time;
-				}
-
-				for (let i = 1; i < row.length; i++) 
-					times[time][idx[i - 1]] = parseFloat(row[i]) || row[i];
-			})
-		})
-
-		let rows = [];
-		for (let time in times)
-			rows.push(times[time]);
-
-		callback(null, {ids, columns, rows, alerts});
-	})	
+	history.get(dl, period, downsample, callback);
 }
 
 function getValue(opts, callback) {
@@ -272,43 +225,9 @@ Device.prototype.updateVarbindList = function () {
 	return this;
 }
 
-Device.prototype.getHistory = function (period, callback) {
-	let device = this;
-	let varbind_list = device.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary);
-
-	if (varbind_list.length == 0)
-		return callback(null, {columns:[], rows: [], alerts: {}});
-	
-	let columns = ['time'];
-	columns.push.apply(columns, varbind_list.map((v) => `varbind${v.id}`));
-
-	let cols = ['time'];
-	varbind_list.forEach((v) => cols.push(`varbind${v.id}`) && cols.push(`varbind${v.id}_status`));
-	
-	db.all(`select ${cols.join(',')} from history.device${device.id} where time between ? and ? order by "time"`, period, function (err, rows) {
-		if (err)	
-			return callback(err);
-
-		let res = {
-			columns: columns,
-			rows: rows.map((row) => columns.map((c) => isNaN(row[c]) ? row[c] : parseFloat(row[c]))),
-			alerts: getHistoryAlerts(varbind_list, rows)
-		}
-		callback(null, res);
-	});
-}
-
-function getHistoryAlerts(varbind_list, rows) {
-	let alerts = {};
-	varbind_list.forEach((v) => alerts[v.id] = {});
-	rows.forEach(function (row) {
-		varbind_list.forEach(function (v) {
-			let status = row[`varbind${v.id}_status`];
-			if (status == 2 || status == 3)
-				alerts[v.id][row.time] = status;
-		});
-	});
-	return alerts;
+Device.prototype.getHistory = function (period, downsample, callback) {
+	let varbind_list = this.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).map((v) => new Object({id: v.id, name: v.name}));
+	history.get([{id: this.id, name: this.name, varbind_list}], period, downsample, callback);
 }
 
 Device.prototype.getChanges = function (period, callback) {
@@ -397,45 +316,24 @@ Device.prototype.polling = function (delay) {
 		function (err) {
 			let time = new Date().getTime();
 
-			device.varbind_list
-				.filter((v) => values[v.id] !== undefined)
-				.forEach(function(v) {
-					let value = values[v.id].value;
-					let isError = values[v.id].isError;
-	
-					value = (isError) ? 'ERR: ' + value : applyDivider (value, v.divider);
-					v.prev_value = v.value;
-					v.value = value;
-					v.updateStatus();
-					
-					// must be updated before expressions
-					// Update round robin stores
-					for(let i in v.stores) 
-						v.stores[i].push(v.value);
+			function update (varbind) {
+				let value = (varbind.is_expression) ? varbind.calcExpressionValue() : values[varbind.id].value;
+				let isError = varbind.is_expression && value instanceof Error || !varbind.is_expression && values[varbind.id].isError;
+				value = (isError) ? 'ERR: ' + value : applyDivider (value, varbind.divider);
 
-					v.prev_value_time = v.value_time;
-					v.value_time = time;
-				});
+				varbind.prev_value = varbind.value;
+				varbind.value = value;
+				varbind.updateStatus();			
 
-			let isError = errors.every((e) => e instanceof Error);
-			device.alive = !isError;
+				for(let i in varbind.stores) 
+					varbind.stores[i].push(varbind.value);
 
-			device.varbind_list
-				.filter((v) => v.is_expression)
-				.forEach(function(v) {
-					let value = v.calcExpressionValue();
-					value = (value instanceof Error) ? 'ERR: ' + value.message : applyDivider (value, v.divider);
-					v.prev_value = v.value;
-					v.value = value;
-					v.updateStatus();
+				varbind.prev_value_time = varbind.value_time;
+				varbind.value_time = time;
+			}
 
-					// Update round robin stores
-					for(let i in v.stores) 
-						v.stores[i].push(v.value);
-
-					v.prev_value_time = v.value_time;
-					v.value_time = time;
-				});
+			device.varbind_list.filter((v) => values[v.id] !== undefined && !v.is_expression).forEach(update);
+			device.varbind_list.filter((v) => v.is_expression).forEach(update);
 
 			device.varbind_list
 				.filter((v) => !v.is_temporary && (v.value != v.prev_value || v.status != v.prev_status))
@@ -445,7 +343,10 @@ Device.prototype.polling = function (delay) {
 					db.run(sql, params, (err) => (err) ? console.log(__filename, err, {sql, params}) : null);
 				});
 
-			Device.events.emit('values-updated', device, time);
+			events.emit('values-updated', device, time);
+
+			let isError = errors.every((e) => e instanceof Error);
+			device.alive = !isError;
 
 			if (isError) {
 				device.prev_status = device.status;
@@ -454,13 +355,13 @@ Device.prototype.polling = function (delay) {
 				device.updateStatus();
 			}	 
 
-			Device.events.emit('status-updated', device, time);
+			events.emit('status-updated', device, time);
 
 			if (device.prev_status != device.status) {
 				let reason = isError ? 
 					errors.map((e) => e.message).join(';') :
 					device.varbind_list.filter((v) => v.is_status && v.status == device.status).map((v) => v.name + ': ' + v.value).join(';');
-				Device.events.emit('status-changed', device, time, reason);
+				events.emit('status-changed', device, time, reason);
 			}
 	
 			let query_list = [];
@@ -469,17 +370,18 @@ Device.prototype.polling = function (delay) {
 			// number
 			let columns = ['time'];
 			let params = [time];
-			device.varbind_list
-				.filter((v) => !v.is_temporary && v.value_type == 'number' && (!!v.value || v.value === 0))
-				.forEach(function(v) {
-					columns.push(`varbind${v.id}`);
-					params.push(`${v.value}`);
+			let varbind_list = device.varbind_list.filter((v) => !v.is_temporary && v.value_type == 'number');
 
-					if (!v.status)
-						return;
-					columns.push(`varbind${v.id}_status`);			
-					params.push(`${v.status}`);
-				});
+			varbind_list.forEach(function(v) {
+				columns.push(`varbind${v.id}`);
+				params.push(`${v.value || null}`);
+
+				if (!v.status)
+					return;
+				columns.push(`varbind${v.id}_status`);			
+				params.push(`${v.status}`);
+			});
+
 			query_list.push(`insert into history.device${device.id} (${columns.join(',')}) values (${'?, '.repeat(columns.length - 1) + '?'})`);
 			params_list.push(params);
 
@@ -494,7 +396,7 @@ Device.prototype.polling = function (delay) {
 					params_list.push([time - 1, v.id]);
 
 					query_list.push(`insert into changes.device${device.id} (varbind_id, prev_value, value, status, start_date) values (?, ?, ?, ?, ?)`);
-					params_list.push([v.id, v.value_type == 'duration' ? v.prev_value : null, v.value, v.status, time]);
+					params_list.push([v.id, v.value_type == 'duration' ? v.prev_value : null, v.value || null, v.status, time]);
 				});
 
 			async.eachOfSeries(
@@ -578,7 +480,7 @@ Device.prototype.save = function (callback) {
 		},
 
 		function (callback) { 
-			let sql = 'select id from varbinds where device_id = ? and updated <> ?';
+			let sql = 'select id from varbinds where device_id = ? and updated <> ? and check_id is null';
 			let params = [device.id, time];
 			db.all(sql, params, function (err, rows) {
 				if (err)
@@ -619,69 +521,8 @@ Device.prototype.save = function (callback) {
 	});
 }
 
-
-
-const checkCondition = {
-	'greater' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) > parseFloat(v1),
-	'equals' : (v, v1) => v == v1,
-	'not-equals' : (v, v1) => v != v1,
-	'smaller' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) < parseFloat(v1),
-	'empty' : (v) => isNaN(v) && !v,
-	'change' : (v, prev) => prev != undefined && v != undefined && prev != v,
-	'any' : (v, v1) => true,
-	'error' : (v) => (v + '').indexOf('ERR') == 0
-}
-
-
-Object.assign(Varbind, mixin.get('varbind'));
-
-function Varbind (data) {
-	if (this.json_address != data.json_address)
-		this.stores = {};
-
-	// Support of avg, min and max values
-	let self = this;
-	function getStore(size) {
-		size = parseInt(size) || 1;
-		if (!self.stores[size]) {
-			self.stores[size] = new RRStore(size);
-			self.stores[size].push(self.value);
-		}
-
-		return self.stores[size];
-	}
-	['avg', 'min', 'max', 'sum'].forEach((e) => this[e] = (size) => getStore(size)[e]);
-	this.forecast = (size, when, method, skip) => getStore(size).forecast(when, method, skip);
-
-	Object.assign(this, data);
-	if(this.id)
-		this.id = parseInt(this.id);
-
-	this.__type__ = 'varbind';
-	this.cache = mixin.cache;
-	if (!this.value_type)
-		this.value_type = 'string';
-	this.name = this.name + '';
-
-	for (let f of ['status_conditions', 'address']) {
-		try {
-			this[f] = JSON.parse(this['json_' + f]) || {};
-		} catch (err) {
-			this[f] = {};
-			this['json_' + f] = '{}';
-		}
-	}	
-	
-	this.tag_list = !!this.tags ? this.tags.toString().split(';').map((t) => t.trim()).filter((t, idx, tags) => tags.indexOf(t) == idx) : [];
-	this.tags = this.tag_list.join(';');
-
-	Object.defineProperty(this, 'is_status', {get: () => (this.status_conditions || []).length > 0});
-	Object.defineProperty(this, 'is_temporary', {get: () =>  this.name[0] == '$'});
-	Object.defineProperty(this, 'is_expression', {get: () => this.protocol == 'expression'});
-	if (this.is_expression)
-		this.expressionCode = '';
-
-	Object.defineProperty(this, 'speed', {get: () => 1000 * (this.value - this.prev_value)/(this.value_time - this.prev_value_time)});
+Device.prototype.getParent = function () {
+	return Device.get(this.parent_id);
 }
 
 // divider is a "number" or "number + char" or "number + r + regexp"
@@ -689,12 +530,30 @@ function applyDivider (value, divider) {
 	if (typeof(value) === 'boolean')
 		return value;
 
-	if (isNaN(value) && isNaN(divider)) {
-		value = value + '';
-		divider = divider + '';
-		let pos = divider.indexOf('r');
+	if (isNaN(value)) {
+		value += '';
 
-		if (pos == -1 || value.indexOf('ERR') == 0)		
+		// Don't change error-values
+		if (value.indexOf('ERR') == 0)
+			return value;
+
+		// Force to number
+		let comma_count = (value.match(/,/g) || []).length;
+		let point_count = (value.match(/\./g) || []).length;
+		if (point_count == 0 && comma_count == 1) // '123,4' to 123.4
+			return applyDivider(parseFloat(value.replace(',', '.')), divider);
+
+		if (point_count == 1 && comma_count > 0) // '1,234.5' to 1234.5
+			return applyDivider(parseFloat(value.replace(',', '')), divider);
+	}
+
+	// Extract and apply regexp, e.g 123rMemory(\d+)
+	if (isNaN(value) && isNaN(divider)) {
+		value += '' 
+		divider += '';
+		let pos = divider.indexOf('r'); 
+ 
+		if (pos == -1)		
 			return value;
 
 		let re, error, val;
@@ -728,83 +587,6 @@ function applyDivider (value, divider) {
 		return +val.toFixed(2); // round to .xx
 
 	return val;
-}
-
-Varbind.prototype.getParent = function() {
-	return mixin.get('device').get(this.device_id);
-}
-
-Varbind.prototype.updateStatus = function() {
-	if (!this.status_conditions.length)
-		return; 
-
-	this.prev_status = this.status;
-	this.status = 0;
-	for (let i = 0; i < this.status_conditions.length; i++) {	
-		let cond = this.status_conditions[i];
-		let val = cond.if != 'change' ? cond.value : this.prev_value;
-		if(checkCondition[cond.if] && checkCondition[cond.if](this.value, val)) {
-			this.status = cond.status;
-			break;
-		}
-	}
-}
-
-function generateExpressionCode (curr_device, expression) {
-	if (!expression)
-		return '';
-
-	let expr = (expression + '').replace(/\n/g, '');
-	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3, pos, exp) {
-		let names = (p2 || p3 || '').split('=>').map((name) => (name || '').trim());
-		let device = (names.length == 1) ? curr_device : Device.getList().find((d) => d.name == names[0]) || {varbind_list: []};
-		let name = (names.length == 1) ? names[0] : names[1];
-		if (name[0] == '@') {
-			let prop = name.substring(1);
-			return (device[prop] !== undefined) ? `Device.get(${device.id}).${prop}` : ' null ';
-		}
-		
-		let varbind = device.varbind_list.find((v) => v.name == name);
-		return (!!varbind) ? `Varbind.get(${varbind.id})${exp[pos + matched.length] == '.' ? '' : '.value'}` : ' null ';
- 	});
-
- 	return expr;
-}
-
-Varbind.prototype.calcExpressionValue = function () {
-	if (!this.expressionCode)
-		this.expressionCode = generateExpressionCode(this.getParent(), this.address && this.address.expression);	
-
-	let result;
-	try {
-		let val = eval(this.expressionCode);
-		let float = parseFloat(val);
-		result = (float == val) ? float : val;
-	} catch (err) {
-		result = err;
-	}
-	return result;
-}
-
-RRStore.prototype.forecast = function (when, a, b) {
-	if (!this._forecast)
-		this._forecast = {};
-
-	let method = isNaN(a) ? a : 'linear';
-	let skip = !isNaN(a) ? a : b;
-	let opts = [when, a, b].join(';'); 
-
-	if (skip != undefined && this.i % skip != 0)
-		return this._forecast[opts];
-
-	try {	
-		this._forecast[opts] = regression[method](this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]))).predict(this.arr.length + when - 1)[1];
-	} catch (err) { 
-		this._forecast[opts] = 'ERR: Bad params';
-		console.error(__filename, err.message, opts);
-	}
-
-	return this._forecast[opts];
 }
 
 module.exports = Device;

@@ -2,7 +2,7 @@
 const fs = require('fs');
 const async = require('async');
 const db = require('./db');
-const Device = require('./device');
+const Device = require('../models/device');
 
 function size(byte) {
 	var i = Math.floor(Math.log(byte) / Math.log(1024));
@@ -31,9 +31,24 @@ module.exports = function (callback) {
 		results[0].forEach((row) => counts[row.id][0] = row.cnt);
 		results[1].forEach((row) => counts[row.id][1] = row.cnt);
 
+		let stat = device_list.map((d) => [d.name, d.ip, d.varbind_list.filter((v) => v.value_type == 'number').length, d.varbind_list.length, counts[d.id][0], counts[d.id][1]]);
+		let total = [
+			'TOTAL', 
+			device_list.length, 
+			stat.reduce((sum, row) => sum + row[2], 0) + '/' + stat.reduce((sum, row) => sum + row[3], 0),
+			stat.reduce((sum, row) => sum + row[4], 0),
+			stat.reduce((sum, row) => sum + row[5], 0)
+		];
+		stat.forEach(function (row) {
+			row[2] = row[2] + '/' + row[3];
+			row.splice(3, 1);
+		});
+
 		let res = [];
 		res.push(['name', 'IP', 'varbinds', 'history rows', 'changes rows']);
-		device_list.map((d) => res.push([d.name, d.ip, d.varbind_list.length, counts[d.id][0], counts[d.id][1]]));
+		res = res.concat(stat);
+		res.push([]);
+		res.push(total);
 		res.push([]);
 		res.push(['latency: ' + results[2][0].cnt +  'rows', 'alerts: ' + results[3][0].cnt + 'rows']);
 		res.push(['main: ' + size(results[4].size), 'history: ' + size(results[5].size), 'changes: ' + size(results[6].size)]);

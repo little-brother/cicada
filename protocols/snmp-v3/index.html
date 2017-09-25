@@ -26,14 +26,14 @@
 	</tr>
 
 	<tr class = "class-authNoPriv class-authPriv">
-		<td>Authentication</td>
+		<td>Auth</td>
 		<td>
 			<select id = "auth_protocol" class = "small" title = "Authentication protocol">
 				<option value = "MD5" selected>MD5</option>
 				<option value = "SHA">SHA</option>
 			</select>
 
-			<input type = "text" id = "auth_password" placeholder = "password">
+			<input type = "text" id = "auth_password" class = "small" placeholder = "password">
 		</td>
 	</tr>
 	<tr class = "class-authPriv">
@@ -44,7 +44,7 @@
 				<option value = "DES" selected>DES</option>
 			</select>
 
-			<input type = "text" id = "priv_password" placeholder = "password">
+			<input type = "text" id = "priv_password" class = "small" placeholder = "password">
 		</td>
 	</tr>
 	</table>
@@ -53,3 +53,10 @@
 <div id = "varbind-address">
 	<input id = "oid" type = "text" placeholder = "OID">
 </div>
+
+<style>
+#app #protocol-params[protocol="snmp-v3"] #auth_password {width: 90px;}
+#app #protocol-params[protocol="snmp-v3"] #priv_password {width: 90px;}
+#app #protocol-params[protocol="snmp-v3"] tr[value="noAuthNoPriv"] ~ tr:not(.class-noAuthNoPriv) {display: none !important;}
+#app #protocol-params[protocol="snmp-v3"] tr[value="authNoPriv"] ~ tr:not(.class-authNoPriv) {display: none !important;}
+</style>

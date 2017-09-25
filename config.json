@@ -1,8 +1,8 @@
 {
 	"port": 5000,
 	"access": {
-		"edit": ["localhost", "127.0.0.1", "::ffff:127.0.0.1"],
-		"view": "any"
+		"edit": "",
+		"view": ""
 	},
 	"ping-period": 300,
 	"on-status-change": {
@@ -17,12 +17,5 @@
 			"options": {}
 		}
 	},
-	"publisher": true,
-
-	"alerters": {
-		"default": {
-			"event": "on-change",
-			"command": "echo %TIME ${device.name}  ${device.prev_status} ${device.status} >> D:/1.txt"
-		}
-	}
+	"publisher": false
 }

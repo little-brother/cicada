@@ -1,13 +1,14 @@
 # Chupacabra
 
 Chupacabra is a lightweight Node.js application with web browser interface for discovery and monitoring network devices.<br>
-Supported protocols: ICMP (ping), SNMP v1/2c/3, Modbus TCP, IPMI, WMI and http/s.<br>
+Supported protocols: ICMP (ping), SNMP v1/2c/3, Modbus TCP, IPMI, WMI and http/s (plain-text, json, xml).<br>
 Also you can polling [**Zabbix**](http://www.zabbix.com/download), [**Check-mk**](https://mathias-kettner.de/checkmk_linuxagent.html) and [**Munin**](https://github.com/munin-monitoring/munin-c) agents and check TCP/UDP ports.
 
 Cross-platform, open source, extendable, free.
 
 # Features
 * Polling device by any supported protocols
+* Individual and group check for devices
 * Check threshold values 
 * Auto-dashboard based on tags
 * Calculated and temporary varbinds
@@ -22,7 +23,6 @@ Cross-platform, open source, extendable, free.
 Roadmap
 * Distributed
 * Support for polling VMs, JVM, etc
-* Daily data aggregation
 * Real-time dashboard
 
 Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
@@ -62,14 +62,18 @@ Optional
    Template will be appear in "Add device"-menu and in scan results.
 4. Read expression protocol help to learn about its power.
 5. Start varbind name from `$` to create temporary (unlogged and hidden) varbind.
-6. Use `http://127.0.0.1:5000/stats` to get summary details.
+6. Hotkeys
+  * **Ctrl + Alt + L** - open login page.	
+  * **Ctrl + Alt + S** - to open `http://127.0.0.1:5000/stats` and get summary details.	
+  * **Ctrl + Alt + C** - open group check page.	
+  * **Ctrl + Alt + A** (only on Alert page) - to hide all active alerts.
 
 ## Configuration (config.json)
 * **port** - http-server port. By default `5000`. Next port number will be use to realtime update interface via websocket.
 
-* **access** - define access by ips.
-  * **edit** (array) - allowed edit from those ips. By default is `["127.0.0.1", "::ffff:127.0.0.1", "localhost"]`.
-  * **view** (array) - allowed view from those ips. By default is `any`. 
+* **access** - define access by password.
+  * **edit** - admin password. Can be empty.
+  * **view** - operator password. Can be empty. 
   
 * **ping-period** - in seconds. By default `300`.
 

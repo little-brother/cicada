@@ -1,0 +1,49 @@
+<html>
+<head>
+	<meta charset="UTF-8"/> 
+	<style>
+	* {margin: 0px; padding: 0px;} 
+	html,body { padding: 0; margin: 0; font: normal 14px "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+	#center { top: 50%; left: 50%; width: 250px; height: 40px; position: absolute; margin-top: -20px; margin-left: -125px;}
+	#password { width: 100%; font-size: 24px; border: 1px solid #bbb; padding: 5px; box-sizing: border-box; text-align: center;}
+	#error {font-size: 10px; text-align: center; margin-top: 5px; color: red;}
+	</style>
+</head>
+<body>
+	<div id = "center">		
+		<input type = "password" id = "password" autocomplete = "off">
+		<div id = "error"></div>
+	</div>
+
+	<script>
+	var pwd = document.getElementById('password');
+	var err = document.getElementById('error');
+
+	pwd.focus();
+
+	pwd.onblur = () => pwd.setAttribute('placeholder', 'Input password');
+	pwd.onfocus = () => pwd.removeAttribute('placeholder');
+
+	pwd.addEventListener('keydown', function(event) {
+    	if (event.key !== 'Enter') 
+        	return;
+
+		var xhr = new XMLHttpRequest();
+		xhr.open('POST', '/login', true);
+		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+		xhr.responseType = 'text';
+		xhr.send('password=' + pwd.value);
+		xhr.onreadystatechange = function() { 
+			if (xhr.readyState != 4) 
+				return;
+		
+			if (xhr.status != 200)
+				return err.innerHTML = xhr.responseText || (xhr.status + ': ' + xhr.statusText);
+
+			window.location = '/';		
+		}
+    });
+	</script>
+</body>
+</html>

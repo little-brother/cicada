@@ -1,5 +1,6 @@
 'use strict'
-const child_process = require('child_process');
+const exec = require('child_process').exec;
+const spawn = require('child_process').spawn;
 
 exports.ping = function (range, exclude, callback) {
 	let stdout = '';
@@ -15,7 +16,7 @@ exports.ping = function (range, exclude, callback) {
 		params.push([r[1], exclude].filter((e) => !!e).join(','));
 	}
 
-	let proc = child_process.spawn('nmap', params);
+	let proc = spawn('nmap', params);
 	proc.stdout.on('data', (data) => stdout += data + '');
 	proc.stderr.on('data', (data) => stderr += data + '');
 	proc.on('close', (code) => {
@@ -45,7 +46,7 @@ exports.route = function (ip, callback) {
 	let stderr = '';
 	let stdout = '';
 
-	let proc = child_process.spawn('nmap', ['-sn', '--traceroute', ip]);
+	let proc = spawn('nmap', ['-sn', '--traceroute', ip]);
 	proc.stdout.on('data', (data) => stdout += data + '');
 	proc.stderr.on('data', (data) => stderr += data + '');
 	proc.on('close', (code) => {
@@ -61,3 +62,5 @@ exports.route = function (ip, callback) {
 		callback(null, res)
 	});
 }
+
+exec('nmap /?', (err) => (err) ? console.error(__filename, 'nmap not found') : null);

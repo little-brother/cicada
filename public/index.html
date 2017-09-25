@@ -23,6 +23,7 @@
 				<div id = "template-list" class = "content"></div>
 			</div>
 			<div id = "device-scan" title = "Discovery devices">&#9973; Scan</div>
+			<div id = "check-list-edit" class = "hidden"></div>
 		</div>
 
 		<ul id = "device-list"></ul>
@@ -49,7 +50,11 @@
 </div>
 
 <div id = "components" style = "display: none">
-	<div id = "page-alert-list-view">		
+	<div id = "page-alert-list-view">
+		<div class = "history-period-block">
+			<input class = "history-period" autocomplete = "off">
+			<span class = "history-period-value">Actual</span>
+		</div>		
 		<table id = "alert-list">
 		<thead>
 			<tr id = "template-row">
@@ -60,6 +65,7 @@
 				<td id = "td-hide" title = "Hide alert from list">Hide</td>
 			</tr>	
 		</thead>
+		<tbody></tbody>	
 		</table>	
 	</div>
 
@@ -195,7 +201,50 @@
 					</td>
 					<td id = "td-add"> <div class = "a add">Add</div></td>
 				</tr>
-			<thead>	
+			</thead>	
+			<tbody></tbody>
+			</table>
+		</div>
+	</div>
+
+	<div id = "page-check-list-edit">
+		<div class = "top-menu">
+			<div id = "check-save">&#10003; Save</div>
+			<div id = "check-cancel">&#8709; Cancel</div>
+			<div id = "restrictions">Restrictions: you must reboot application to apply changes or after creating/editing device with checks.</div>
+		</div>
+	
+		<div id = "page-content">
+			<table id = "check-list" class = "varbind-list">
+			<thead>
+				<tr>
+					<th> <a id = "check-add"  class = "clickable" title = "Add"> + </a>  Name</th>
+					<th>Device tags</th>
+					<th>Protocol</th>
+					<th>Connection</th>
+					<th>Address</th>
+					<th>Divider</th>
+					<th>Value type</th>
+					<th>Status conditions</th>
+					<th>Tags</th>
+					<th></th>	
+				</tr>
+				<tr id = "template-row">
+					<td id = "td-name"><input id = "name" type = "text"></td>
+					<td id = "td-device-tags">
+						<input id = "include-tags" type = "text" placeholder = "Including">
+						<input id = "exclude-tags" type = "text" placeholder = "Excluding">
+					</td>
+					<td id = "td-protocol"><select id = "protocol"></select></td>
+					<td id = "td-protocol-params"></td>
+					<td id = "td-address"></td>
+					<td id = "td-divider"><input id = "divider" type = "text"></td>
+					<td id = "td-value-type"></td>
+					<td id = "td-status-conditions"></td>
+					<td id = "td-tags"><input id = "tags" type = "text"></td>
+					<td id = "td-remove"><span id = "check-remove" class = "clickable">&#10006;</span></td>
+				</tr>
+			</thead>	
 			<tbody></tbody>
 			</table>
 		</div>
@@ -244,11 +293,11 @@ Possible options
 					</select>
 				</td>
 
-				<td id = "td-value" class = "clickable">&#10227;</td>
+				<td id = "td-value" class = "clickable"></td>
 
 				<td id = "td-status-conditions">
 					<div id = "condition-list"></div>
-					<div id = "condition-add" class = "a">Add</div>
+					<span id = "condition-add" class = "a">Add</span>
 				</td>
 				<td id = "td-tags">
 					<input id = "tags" type = "text">

@@ -10,7 +10,9 @@ db.serialize(function() {
 
 	db.run('pragma synchronous = 0');
 	db.run('create table if not exists devices (id integer primary key, name text not null, ip text, mac text, tags text, description text, json_protocols text, is_pinged integer, period integer, timeout integer, parent_id integer, force_status_to integer, template text)');
-	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, status integer, updated integer)');
+	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, status integer, check_id integer, updated integer)');
+	db.run('create table if not exists checks (id integer primary key, name text, include_tags text, exclude_tags text, protocol text not null, json_protocol_params text, json_address text, divider text, value_type text, json_status_conditions text, tags text, updated integer)');
+	db.run('create unique index if not exists idx_check on varbinds (device_id, check_id)', (err) => null);
 	db.run('attach database \"./db/history.sqlite\" as history');
 	db.run('attach database \"./db/changes.sqlite\" as changes');
 	db.run('create table if not exists history.latencies (\"time\" integer primary key) without rowid');
@@ -25,6 +27,8 @@ db.serialize(function() {
 	// migration 0.10 => 0.11
 	db.run('alter table varbinds add column status integer', (err) => null);
 
+	// migration 0.11 => 0.12
+	db.run('alter table varbinds add column check_id integer', (err) => null);
 });
 
 db.checkHistoryTable = function (device, callback) {
@@ -51,7 +55,7 @@ db.checkHistoryTable = function (device, callback) {
 						query_list.push(`alter table history.device${device.id} add column varbind${varbind.id}_status integer`);
 				})
 			} else {
-				columns = ['"time" integer primary key'];
+				columns = ['"time" integer primary key', 'is_significant number'];
 				varbind_list.forEach(function(varbind) {
 					columns.push(`varbind${varbind.id} real`);
 					columns.push(`varbind${varbind.id}_status integer`);

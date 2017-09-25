@@ -14,7 +14,7 @@
 </div>
 
 <div id = "varbind-address">
-	<select id = "func">
+	<select id = "func" onchange>
 		<option value = "readCoils">0x Coil</option>
 		<option value = "readDiscreteInputs">2x Discrete input</option>
 		<option value = "readInputRegisters">3x Input register</option>
@@ -24,7 +24,7 @@
 	<input type = "text" id = "register" placeholder = "Register">
 	<br>
 	<select id = "type" value = "">
-		<option value = "" is-visible = "false"></option>
+		<option value = "" class = "hidden"></option>
 		<option value = "readInt16">integer, 16bit</option>
 		<option value = "readUInt16">unsigned integer, 16bit</option>
 		<option value = "readInt32">integer, 32bit</option>
@@ -34,8 +34,30 @@
 	</select>
 	
 	<select id = "order" value = "" title = "Byte order">
-		<option value = "" is-visible = "false"></option>
+		<option value = "" class = "hidden"></option>
 		<option value = "BE" title = "big-endian">BE</option>
-		<option value = "LE" title = "little-endia">LE</option>
+		<option value = "LE" title = "little-endian">LE</option>
 	</select>
 </div>
+
+<style>
+#app *[protocol="modbus-tcp"] #td-address #func {width: 160px; display:inline;}
+#app *[protocol="modbus-tcp"] #td-address #register {width: 49px; display:inline;}
+#app *[protocol="modbus-tcp"] #td-address #type:not([value=""]) {width: 160px; clear: right;}
+#app *[protocol="modbus-tcp"] #td-address #order:not([value=""]) {width: 50px; display:inline;}
+#app *[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
+#app *[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
+</style>
+
+<script>
+$('#app').on('change', '*[protocol="modbus-tcp"] #td-address #func', function() {
+	var row = $(this).closest('#td-address');
+	if (this.value == 'readDiscreteInputs' || this.value == 'readCoils') {
+		row.find('#type').val('').attr('value', '');
+		row.find('#order').val('').attr('value', '');
+	} else {
+		row.find('#type').val('readInt16').attr('value', 'readInt16');
+		row.find('#order').val('BE').attr('value', 'BE');
+	}
+});	
+</script>

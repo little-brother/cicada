@@ -1,0 +1,32 @@
+<div id = "info" name = "http-parser" category = "native"></div>
+
+<div id = "protocol-params">
+	<table>
+	<tr>
+		<td colspan = "2">Basic authentication</td>
+	</tr>
+	<tr>
+		<td>User</td>
+		<td><input type = "text" id = "user" placeholder = "user"></td>
+	</tr>
+	<tr>
+		<td>Password</td>
+		<td><input type = "text" id = "password" placeholder = "password"></td>
+	</tr>
+	</table>
+</div>
+
+<div id = "varbind-address">
+	<input id = "path" type = "text" placeholder = "Url">
+	<select id = "type">
+		<option value = "text">text</option>
+		<option value = "json">json</option>
+		<option value = "xml">xml</option>
+	</select>
+	<input id = "selector" type = "text" placeholder = "Selector">
+</div>
+
+<style>
+#app *[protocol="http-parser"] #td-address #type {width: 50px;}
+#app *[protocol="http-parser"] #td-address #selector {width: 160px;}
+</style>
