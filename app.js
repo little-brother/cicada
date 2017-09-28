@@ -300,7 +300,7 @@ server.on('request', function (req, res) {
 	});
 });
 const port = config.port || 5000;
-server.listen(port, () => console.log(`Chupacabra running on port ${port}...`));	
+server.listen(port, () => console.log(`Cicada running on port ${port}...`));	
 
 // Update checks, init cache and run polling
 async.series([Check.update, Device.cache], function (err) {

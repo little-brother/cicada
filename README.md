@@ -1,6 +1,6 @@
-# Chupacabra
+# Cicada
 
-Chupacabra is a lightweight Node.js application with web browser interface for discovery and monitoring network devices.<br>
+Cicada (started as Chupacabra) is a lightweight Node.js application with web browser interface for discovery and monitoring network devices.<br>
 Supported protocols: ICMP (ping), SNMP v1/2c/3, Modbus TCP, IPMI, WMI and http/s (plain-text, json, xml).<br>
 Also you can polling [**Zabbix**](http://www.zabbix.com/download), [**Check-mk**](https://mathias-kettner.de/checkmk_linuxagent.html) and [**Munin**](https://github.com/munin-monitoring/munin-c) agents and check TCP/UDP ports.
 
@@ -23,12 +23,14 @@ Cross-platform, open source, extendable, free.
 Roadmap
 * Distributed
 * Support for polling VMs, JVM, etc
-* Real-time dashboard
+* Real-time main dashboard
+* Custom pages similar [Cacti Weathermap](https://network-weathermap.com/)
 
 Try [**demo**](http://77.37.160.20:5000/). Remote user has read-only access.<br>
-Visit [**Wiki**](https://github.com/little-brother/chupacabra/wiki) to learn more.<br>
+View [**clip**](https://www.youtube.com/watch?v=yJHko7AQFCM).
+Visit [**Wiki**](https://github.com/little-brother/cicada/wiki) to learn more.<br>
 
-![Screenshots](http://little-brother.ru/images/chupacabra3.gif)<br>
+![Screenshots](http://little-brother.ru/images/cicada.gif)<br>
 
 ## Requirements
 * [**Node.js**](https://nodejs.org/en/download/) (JavaScript runtime engine)
@@ -40,15 +42,15 @@ Optional
 * IPMI: [**IPMItool**](https://sourceforge.net/projects/ipmitool/)
 
 ## Installation
-1. [**Download and unpack**](https://github.com/little-brother/chupacabra/archive/master.zip) or run
+1. [**Download and unpack**](https://github.com/little-brother/cicada/archive/master.zip) or run
    ```
-   git clone --depth=1 https://github.com/little-brother/chupacabra.git
+   git clone --depth=1 https://github.com/little-brother/cicada.git
    ``` 
 2. Run to install dependencies
    ```
    npm i
    ```
-3. Run Chupacabra
+3. Run Cicada
    ```
    node app
    ```
@@ -77,7 +79,7 @@ Optional
   
 * **ping-period** - in seconds. By default `300`.
 
-* **db** - sqlite configuration on start up. By default is `{'synchronous': 0}`. See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+* **db** - sqlite configuration on start up. By default is `{'synchronous': 0}`. See details in [Wiki](https://github.com/little-brother/cicada/wiki/English).
 
 * **publisher** - send data to external server e.g. [`Graphite`](https://graphiteapp.org/) or publish on local tcp-port.
   * **host** - server host. If host is not set then application open local tcp-port and publish data to it.
@@ -93,7 +95,7 @@ Optional
   * **active** - the time when messages are sent in [Zabbix time periods format](https://www.zabbix.com/documentation/3.0/manual/appendix/time_period). By default is `empty` (any time).
   * **tags** - array of optional tags.
   
-  See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+  See details in [Wiki](https://github.com/little-brother/cicada/wiki/English).
  
 * **catchers** - set of event catcher. Each catcher is daemon, eg `snmptrapd`, who catch incoming message.<br>
   Application parse daemon log, extract sender ip by pattern and force device polling with this ip.
@@ -102,7 +104,7 @@ Optional
   * **options** - optional [options](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) for command.
   * **pattern** - regexp pattern to get ip address.
     
-  See details in [Wiki](https://github.com/little-brother/chupacabra/wiki/English).
+  See details in [Wiki](https://github.com/little-brother/cicada/wiki/English).
 
 * **auto-scan** - define params of process to check network on new devices. If `on-detect` is not set then auto-scan is off.
   * **period** - in seconds. By default `600`.

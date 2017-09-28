@@ -90,7 +90,7 @@ function getMany(device_list, period, callback) {
 			return callback(err);
 
 		if (device_list.length == 1) {
-			res.columns.unshift('time');
+			results[0].columns.unshift('time');
 			return callback(null, results[0]);
 		}
 

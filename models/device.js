@@ -155,7 +155,7 @@ function getValue(opts, callback) {
 
 		let res;
 		try {
-			let expressionCode = generateExpressionCode(device, opts.address && opts.address.expression);
+			let expressionCode = Varbind.generateExpressionCode(device, opts.address && opts.address.expression);
 			res = eval(expressionCode);
 			res = applyDivider(res, opts.divider);
 		} catch (err) {

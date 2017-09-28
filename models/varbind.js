@@ -4,7 +4,7 @@ const RRStore = require('rrstore');
 const regression = require('regression');
 
 const mixin = require('./mixin');
-Object.assign(Varbind, mixin.get('varbind'));
+Object.assign(Varbind, mixin.get('varbind'), {generateExpressionCode});
 
 const checkCondition = {
 	'greater' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) > parseFloat(v1),
@@ -34,7 +34,7 @@ function Varbind (data) {
 	}
 	['avg', 'min', 'max', 'sum'].forEach((e) => this[e] = (size) => getStore(size)[e]);
 	this.get = (size) => getStore(size);
-	this.forecast = (size, when, method, skip) => getStore(size).forecast(when, method, skip);
+	this.forecast = (size, when, method) => getStore(size).forecast(when, method);
 
 	Object.assign(this, data);
 	if(this.id)
@@ -123,25 +123,22 @@ Varbind.prototype.calcExpressionValue = function () {
 	return result;
 }
 
-RRStore.prototype.forecast = function (when, a, b) {
-	if (!this._forecast)
-		this._forecast = {};
+RRStore.prototype.forecast = function (when, method) {
+	method = method || 'linear';
+	let arr = this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]));
 
-	let method = isNaN(a) ? a : 'linear';
-	let skip = !isNaN(a) ? a : b;
-	let opts = [when, a, b].join(';'); 
+	if (arr.length < 3)
+		return null;	
 
-	if (skip != undefined && this.i % skip != 0)
-		return this._forecast[opts];
-
+	let res;
 	try {	
-		this._forecast[opts] = regression[method](this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]))).predict(this.arr.length + when - 1)[1];
+		res = regression[method](arr).predict(this.arr.length + when - 1)[1];
 	} catch (err) { 
-		this._forecast[opts] = 'ERR: Bad params';
-		console.error(__filename, err.message, opts);
+		res = 'ERR: Invalid forecast params';
+		console.error(__filename, err.message, `when: ${when}, method: ${method}`);
 	}
 
-	return this._forecast[opts];
+	return res;
 }
 
 module.exports = Varbind;

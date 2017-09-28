@@ -1,6 +1,6 @@
 {
-  "name": "chupacabra",
-  "version": "0.12.0",
+  "name": "Cicada",
+  "version": "0.13.0",
   "description": "Simple network monitoring",
   "main": "app.js",
   "keywords": [],
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/little-brother/chupacabra"
+    "url": "https://github.com/little-brother/cicada"
   },
   "license": "GPL-2.0",
   "dependencies": {

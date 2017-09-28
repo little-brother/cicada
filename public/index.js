@@ -660,7 +660,7 @@ $(function(){
 	$page.on('update-alerts', '#alert-list', function(event, data) {		
 		var $e = $(this);
 		var from = data && data.period && data.period[0]; 
-		var to = data && data.period && data.period[1];
+		var to = data && data.period && (data.period[1] + 24 * 3600 * 1000 - 1);
 
 		$.ajax({
 			method: 'GET',
@@ -773,7 +773,7 @@ $(function(){
 	
 		var template_name = $row.find('#template').val();
 		var template = templates[template_name];
-		if (!template)	
+		if (template_name && !template)	
 			return updateTemplateInfo(template_name, () => $(this).trigger('click'));
 	
 		var data = {
@@ -916,7 +916,7 @@ $(function(){
 			var strings = {};
 			res.ids.forEach((id) => strings[id] = {});
 			
-			var length = data[0].length;
+			var length = data[0] && data[0].length || 0; 
 			for (var i = 1; i < length; i++) {
 				data.filter((row) => isNaN(row[i])).forEach((row) => strings[res.ids[i - 1]][row[0].getTime()] = row[i] + '');
 				normalizeHistory(data, i);
@@ -1192,13 +1192,11 @@ $(function(){
 				.attr('id', device.id)
 				.append('<div id = "name"/>')
 				.append('<div id = "ip"/>')
-				.append('<div id = "mac"/>')
 				.appendTo($device_list);
 		
 		$e.attr('title', device.description).attr('status', device.status || 0);
 		$e.find('#name').html(device.name);
-		$e.find('#ip').html(device.ip);
-		$e.find('#mac').html(device.mac);
+		$e.find('#ip').html(device.ip).attr('title', device.mac);
 		return $e;			
 	}
 
@@ -1467,8 +1465,8 @@ $(function(){
 
 						if (!isNaN(val) && (val < range[0] || val > range[1])) 
 							range = getRange(data);
-
-						graph.updateOptions({file: data, valueRange: range, dateWindow: graph.xAxisExtremes()});
+					
+						graph.updateOptions({file: data, valueRange: range, dateWindow: [data[0][0], data[data.length - 1][0]]});
 						return;
 					}
 
