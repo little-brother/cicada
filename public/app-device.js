@@ -1,5 +1,5 @@
 $(function(){
-	var $app = $('#app').height(window.innerHeight);
+	var $app = $('#app-device').height(window.innerHeight);
 	var $page = $app.find('#page');
 	var $device_list = $app.find('#navigator #device-list');
 	var $dashboard = $app.find('#dashboard');
@@ -8,21 +8,40 @@ $(function(){
 	var graphs = {device: {}, dashboard:{}};
 	var templates = {};
 
-	$app.splitter({orientation: 'horizontal', limit: 200});
+	// INIT
+	$app.splitter({limit: 200, onDragEnd});
 
-	updateGUI();
+	var is_admin = getCookie('access') == 'edit';
+	if (is_admin) {
+		updateTemplates();
+		updateProtocolComponents();
+	} else {
+		$components.find('#page-alert-list-view #alert-list #td-hide').remove();
+	}
+
 	$.ajax({
 		method: 'GET',
 		url: '/device',
 		dataType: 'json',
 		success: function (devices) {
-			devices.forEach(setDevice);
+			devices.forEach(updateNavigatorDevice);
 			setHistoryPeriodSelector($dashboard);
 			updateNavigatorStatus();
-			updateDashboard();
+			updateDashboardTags();
+
+			var path = window.location.pathname || '';
+			if (path.indexOf('/device/') == 0) {
+				var device_id = parseInt(path.substring(8));
+				$device_list.find('#' + device_id).trigger('click');
+			}
+			if (path == '/alert')
+				$app.find('#navigator #alert-block').trigger('click');
+
+			window.history.replaceState(null, null, '/');
 		}
 	});
 
+	// VIEW 
 	$app.on('click', '#page-close', function() {
 		$dashboard.removeAttr('hidden');
 		$page.empty();
@@ -76,6 +95,15 @@ $(function(){
 				$varbind_list.trigger('update-device');
 			}
 		});
+	});
+
+	$app.on('update-device-list', function() {
+		var tag_list = $dashboard.find('#device-tag-list input:checked').map((i, e) => e.id).get();
+		$device_list.find('li').each(function (i, e) {
+			var $e = $(e);
+			var has_tag = !!($e.data('tag-list') || []).filter((e) => tag_list.indexOf(e) != -1).length;
+			$e.toggle(has_tag);
+		})
 	});
 
 	$page.on('update-device', '#page-device-view #varbind-list', function (event, data) {
@@ -218,6 +246,7 @@ $(function(){
 		});
 	});
 
+	// EDIT
 	$app.on('click', '.top-menu .device-add', function() {
 		var $e = $(this); name
 		var template_name = $e.attr('name');
@@ -294,7 +323,6 @@ $(function(){
 		$e.val() ? $e.val($e.val() + ';' + this.innerHTML) : $e.val(this.innerHTML);
 	});
 
-
 	$page.on('change', '#page-device-edit .varbind-list input', function() {
 		$(this).closest('table.varbind-list').attr('changed', true);
 	});
@@ -362,7 +390,7 @@ $(function(){
 		var $menu = $component.find('#protocol-menu');
 		$component.find('.varbind-list tbody:has(tr)').each((i, e) => $menu.find('div[protocol="' + $(e).closest('table').attr('protocol') + '"]').trigger('click'));
 		$component.find('#protocols label:Visible:first').trigger('click');
-		highlightProtocolTabs();
+		updateProtocolTabsState();
 	}
 
 	function getVarbindList(templated) {
@@ -453,7 +481,8 @@ $(function(){
 			dataType: 'text',
 			success: function (id) {
 				data.id = id;
-				setDevice(data).click();
+				updateNavigatorDevice(data).click();
+				$app.trigger('update-device-list');
 			}
 		})
 	});
@@ -505,12 +534,12 @@ $(function(){
 			.removeAttr('id')
 			.appendTo($table.find('tbody'))
 			.find('input:text').each((i, e) => e.value = e.getAttribute('value'));
-		highlightProtocolTabs();
+		updateProtocolTabsState();
 	});
 
 	$page.on('click', '#page-device-edit .varbind-list #varbind-remove', function() {
 		$(this).closest('tr').remove();
-		highlightProtocolTabs();	
+		updateProtocolTabsState();	
 	});
 
 	$page.on('click', '#page-check-list-edit .varbind-list #check-remove', function() {
@@ -602,7 +631,13 @@ $(function(){
 		$component.appendTo($page);
 	});
 
-	$page.on('click', '.top-menu #check-save', function() {		
+	$page.on('click', '.top-menu #check-save', function() {
+		function getValues($e, stringify) {
+			var res = {};
+			$.each($e.find('input, select, textarea'), (i, e) => res[e.id] = trim(e.value));
+			return (stringify) ? JSON.stringify(res) : res;		
+		}		
+		
 		var check_list = $page.find('#check-list > tbody > tr').map(function (i, e) {
 			var $row = $(this);
 
@@ -616,8 +651,8 @@ $(function(){
 				value_type: $row.find('#td-value-type #value-type').val(),
 				tags: $row.find('#td-tags #tags').val()
 			}  
-			check.json_protocol_params = getCellValues($row.find('#td-protocol-params'), true);
-			check.json_address = getCellValues($row.find('#td-address'), true);
+			check.json_protocol_params = getValues($row.find('#td-protocol-params'), true);
+			check.json_address = getValues($row.find('#td-address'), true);
 
 			var condition_list = $row.find('#td-status-conditions .status-condition').map(function() {
 				var $e = $(this);	
@@ -635,7 +670,9 @@ $(function(){
 		$.ajax({
 			method: 'POST',
 			url: '/check',
-			data: {check_list: JSON.stringify(check_list)},	
+			data: {
+				check_list: JSON.stringify(check_list)
+			},	
 			onsuccess: () => $app.find('#page-close').trigger('click')
 		});
 	});
@@ -676,13 +713,7 @@ $(function(){
 
 	$page.on('click', '#alert-list #td-datetime, #alert-list #td-device', function () {
 		var $e = $(this).closest('tr');
-		var time = new Date(parseInt($e.attr('time')));
-		time.setHours(0);
-		time.setMinutes(0);
-		time.setSeconds(0);
-		time.setMilliseconds(0);
-		time = time.getTime();	
-	
+		var time = roundTime($e.attr('time'));
 		$device_list.find('li#' + $e.attr('device-id')).trigger('click', {period: [time, time]});
 	});
 
@@ -794,7 +825,7 @@ $(function(){
 			data: data,
 			success: function(id) {
 				data.id = id;
-				setDevice(data);
+				updateNavigatorDevice(data);
 				$row.find('#td-add').html('&#10004;');
 				$device_list.find('li')
 					.sort((a, b) => a.innerHTML.toLowerCase() > b.innerHTML.toLowerCase())
@@ -844,6 +875,7 @@ $(function(){
 			$device_tag_list.find('input:not(#All)').attr('checked', false).prop('checked', false);
 			$device_tag_list.find('#All').attr('checked', true).prop('checked', true);
 			$varbind_tag_list.find('div').show();
+			$device_list.find('li').show();
 			return;
 		}
 
@@ -855,7 +887,9 @@ $(function(){
 				var id = tag.replace('/ /g', '-');
 				$varbind_tag_list.find('#' + id).closest('div').show();
 			})
-		})
+		});
+
+		$app.trigger('update-device-list');
 	});
 
 	$dashboard.on('click', '#varbind-tag-list label', function(event) {
@@ -1017,7 +1051,7 @@ $(function(){
 			deleteById(id);
 	}
 
-	function updateDashboard () {
+	function updateDashboardTags () {
 		deleteGraph('dashboard');
 
 		$dashboard.find('.history-period').val('').pickmeup('clear');
@@ -1119,42 +1153,6 @@ $(function(){
 		$(this).closest('.dropdown-click').trigger('blur');
 	});
 
-	$('body').on('keydown', function (event) {
-		// Ctrl + Alt + L: Go to to login page
-		if (event.ctrlKey && event.altKey && event.keyCode == 76) {	 
-			window.location = '/login';
-		}
-
-		// Ctrl + Alt + S: Show statistic
-		if (event.ctrlKey && event.altKey && event.keyCode == 83) {	 
-			var $e = $('<a/>').attr('href', '/stats').attr('target', '_blank').appendTo($app); // FF fix
-			$e[0].click();
-			$e.remove();
-		}
-
-		if (!$('.top-menu').is('[admin]'))
-			return;
-
-		// Ctrl + Alt + A: Hide all active alerts
-		if (event.ctrlKey && event.altKey && event.keyCode == 65) {	 
-			var $alert_list = $app.find('#page #alert-list tbody');
-			if ($alert_list.length == 0)
-				return;
-			
-			$.ajax({
-				method: 'POST',
-				url: '/alert/hide',
-				success: () => $alert_list.empty()
-			});
-		}
-
-		// Ctrl + Alt + C: Show check list
-		if (event.ctrlKey && event.altKey && event.keyCode == 67) {
-			$app.find('#check-list-edit').trigger('click');
-			loadCheckList();
-		}
-	});	
-
 	function loadCheckList() {
 		function onDone (check_list) {
 			var $check_list = $page.find('#check-list');
@@ -1182,10 +1180,14 @@ $(function(){
 			})
 		}
 
-		$.ajax({method: 'GET', url: '/check', success: onDone});
+		$.ajax({
+			method: 'GET', 
+			url: '/check', 
+			success: onDone
+		});
 	}
 
-	function setDevice(device) {
+	function updateNavigatorDevice(device) {
 		var $e = $device_list.find('#' + device.id);
 		if ($e.length == 0)	
 			$e = $('<li/>')
@@ -1194,26 +1196,14 @@ $(function(){
 				.append('<div id = "ip"/>')
 				.appendTo($device_list);
 		
+		$e.data('tag-list', device.tag_list || (device.tags || '').split(';').map((tag) => trim(tag)));
 		$e.attr('title', device.description).attr('status', device.status || 0);
 		$e.find('#name').html(device.name);
 		$e.find('#ip').html(device.ip).attr('title', device.mac);
 		return $e;			
 	}
 
-	function getRange(rows) {
-		var min, max;
-		rows.forEach(function (row) {
-			for (var i = 1; i < row.length; i++) {
-				var val = parseFloat(row[i]);
-				min = (min == undefined && !isNaN(val) || !isNaN(val) && !isNaN(min) && min > val) ? val : min;
-				max = (max == undefined && !isNaN(val) || !isNaN(val) && !isNaN(max) && max < val) ? val : max;
-			}
-		})
-		var gap = (max - min) * 0.1;
-		return [min - gap, max + gap];
-	}
-
-	function highlightProtocolTabs () {
+	function updateProtocolTabsState () {
 		$page.find('#protocols > label').removeClass('without-varbind');
 		$page.find('.varbind-list tbody:not(:has(tr))').each(function() {
 			var $e = $(this).closest('table');
@@ -1233,12 +1223,6 @@ $(function(){
 		$row.find('#td-device').html(alert.device_name);
 		$row.find('#td-reason').html(alert.reason);		
 		$row.prependTo($table);
-	}
-
-	function getCellValues($e, stringify) {
-		var res = {};
-		$.each($e.find('input, select, textarea'), (i, e) => res[e.id] = trim(e.value));
-		return (stringify) ? JSON.stringify(res) : res;		
 	}
 
 	function updateTemplates() {
@@ -1261,20 +1245,6 @@ $(function(){
 				});	
 			}
 		});		
-	}
-
-	function updateGUI() {
-		var access = ((document.cookie || '').split(';').map((pair) => pair.split('=')).filter((pair) => trim(pair[0]) == 'access')[0] || [])[1] || '';
-		if (access.indexOf('edit') != -1) {
-			$('.top-menu').attr('admin', true);
-			if (!$.isEmptyObject(templates))
-				return;
-
-			updateTemplates();
-			updateProtocolComponents();
-		} else {
-			$components.find('#page-alert-list-view #alert-list #td-hide').remove();
-		}
 	}
 
 	function updateTemplateInfo(name, callback) {
@@ -1372,240 +1342,133 @@ $(function(){
 		})
 	}
 
-	var socket;
-	function connect() {
-		try {
-			socket = new WebSocket('ws://' + location.hostname + ':' + (parseInt(location.port) + 1));
-		} catch (err) {
-			console.error(err);
-			alert('Websocket disabled: ' + err.message);
+	$app.on('status-updated', function (event, packet) {
+		$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
+		updateNavigatorStatus();
+	});
+
+	$app.on('alert-summary', function (event, packet) {
+		var $alert_block = $app.find('#navigator #alert-block');
+		$alert_block.find('#warning').html(packet.warning);
+		$alert_block.find('#critical').html(packet.critical);
+	});
+
+	$app.on('alert-info', function (event, packet) {
+		var $table = $page.find('#alert-list');
+		if (!$table.length)
 			return;
-		}
 	
-		var timer = setTimeout(function() {
-			alert('Connection broken. Reload page.');
-			console.error(new Date() + ': Notify server disconnected. Page must be reload.');
-			location.reload();
-		}, 5000);	
-	
-		socket.onopen = function() {
-			clearTimeout(timer);
-			console.log(new Date() + ': Notify server is connected.');
-		};
-	
-		socket.onclose = function(event) {
-			console.log(new Date() + ': Notify server is disconnected.');
-			setTimeout(connect, 1000);
-		};
-	
-		socket.onerror = function(error) {
-			// console.log(error.message);
-		};
-	
-		socket.onmessage = function(event) {
-			var packet = JSON.parse(event.data);
+		addAlertListTableRow($table, packet);
+	});
+
+	$app.on('values-updated', function (event, packet) {
+		var $varbind_list = $page.find('#varbind-list');
+		if (!$varbind_list.length || $varbind_list[0].hasAttribute('period'))
+			return;
+
+		var time = new Date(packet.time);
+		var hour = 1000 * 60 * 60;
+		$.each(packet.values, function(i, varbind) {
+			var $row = $varbind_list.find('tr#' + varbind.id);
+			if ($row.length == 0)
+				return;
+
+			var value = cast(varbind.value_type, varbind.value)
+			$row.find('#td-value')
+				.html(value)
+				.attr('status', varbind.status)
+				.attr('title', value + '\nUpdated: ' + cast('datetime', packet.time));
+
+			if (varbind.value_type == 'number') {
+				var val = parseFloat(varbind.value);
+				var graph = graphs.device[varbind.id];
+				if (!graph)
+					return;
+
+				var data = graph.file_;
+				var range = graph.user_attrs_.valueRange;
+
+				data = data.filter((e) => e[0].getTime() + hour > packet.time);
+				data.push([time, !isNaN(val) ? val : data[data.length - 1][1]]);
+
+				if (varbind.status == 2 || varbind.status == 3)
+					graph.alerts[packet.time] = varbind.status;
+
+				if (isNaN(val))
+					graph.strings[packet.time] = varbind.value;
+
+				if (!isNaN(val) && (val < range[0] || val > range[1])) 
+					range = getRange(data);
 			
-			if (packet.event == 'status-updated') {
-				$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
-				updateNavigatorStatus();
-				return;	
-			}
-
-			if (packet.event == 'alert-summary') {
-				var $alert_block = $app.find('#navigator #alert-block');
-				$alert_block.find('#warning').html(packet.warning);
-				$alert_block.find('#critical').html(packet.critical);
+				graph.updateOptions({file: data, valueRange: range, dateWindow: [data[0][0], data[data.length - 1][0]]});
 				return;
 			}
 
-			if (packet.event == 'alert-info') {
-				var $table = $page.find('#alert-list');
-				if (!$table.length)
-					return;
-
-				addAlertListTableRow($table, packet);
+			var $table = $row.find('#td-history table');
+			if ($table.length == 0)
 				return;
+
+			var $last = $table.find('tr:last');
+			var event = {from: packet.time, to: packet.time, prev_value: varbind.prev_value, value: varbind.value};
+			var last_event = $last.data('event');
+
+			if (varbind.value_type != 'duration' && varbind.value_type != 'number') {
+				if ($last.length) {
+					$last.remove();
+					last_event.to = packet.time - 1;
+					createHistoryTableRow(last_event, varbind.value_type).appendTo($table);
+				} 
+
+				if (!$last.length || varbind.value != last_event.value)	
+					createHistoryTableRow(event, varbind.value_type).appendTo($table);
 			}
 
-			if (packet.event == 'values-updated') {
-				var $varbind_list = $page.find('#varbind-list');
-				if (!$varbind_list.length || $varbind_list[0].hasAttribute('period'))
-					return;
-
-				var time = new Date(packet.time);
-				var hour = 1000 * 60 * 60;
-				$.each(packet.values, function(i, varbind) {
-					var $row = $varbind_list.find('tr#' + varbind.id);
-					if ($row.length == 0)
-						return;
-
-					var value = cast(varbind.value_type, varbind.value)
-					$row.find('#td-value')
-						.html(value)
-						.attr('status', varbind.status)
-						.attr('title', value + '\nUpdated: ' + cast('datetime', packet.time));
-
-					if (varbind.value_type == 'number') {
-						var val = parseFloat(varbind.value);
-						var graph = graphs.device[varbind.id];
-						if (!graph)
-							return;
-
-						var data = graph.file_;
-						var range = graph.user_attrs_.valueRange;
-
-						data = data.filter((e) => e[0].getTime() + hour > packet.time);
-						data.push([time, !isNaN(val) ? val : data[data.length - 1][1]]);
-
-						if (varbind.status == 2 || varbind.status == 3)
-							graph.alerts[packet.time] = varbind.status;
-
-						if (isNaN(val))
-							graph.strings[packet.time] = varbind.value;
-
-						if (!isNaN(val) && (val < range[0] || val > range[1])) 
-							range = getRange(data);
-					
-						graph.updateOptions({file: data, valueRange: range, dateWindow: [data[0][0], data[data.length - 1][0]]});
-						return;
-					}
-
-					var $table = $row.find('#td-history table');
-					if ($table.length == 0)
-						return;
-
-					var $last = $table.find('tr:last');
-					var event = {from: packet.time, to: packet.time, prev_value: varbind.prev_value, value: varbind.value};
-					var last_event = $last.data('event');
-
-					if (varbind.value_type != 'duration' && varbind.value_type != 'number') {
-						if ($last.length) {
-							$last.remove();
-							last_event.to = packet.time - 1;
-							createHistoryTableRow(last_event, varbind.value_type).appendTo($table);
-						} 
-
-						if (!$last.length || varbind.value != last_event.value)	
-							createHistoryTableRow(event, varbind.value_type).appendTo($table);
-					}
-
-					if (varbind.value_type == 'duration') {
-						if ($last.length && (!isNaN(last_event.value) && !isNaN(event.value) && event.value - last_event.value > 0))
-							return;	
-						
-						if ($last.length && last_event.value != event.value || !$last.length)
-							createHistoryTableRow(last_event || event, varbind.value_type).appendTo($table);
-					}
-				})
-			}	
-		};
-	}
-	connect();
-
-	$(document).ajaxSend(function(event, request, settings) {
-		try {
-			socket.send(settings.url);
-		} catch(err) {}
+			if (varbind.value_type == 'duration') {
+				if ($last.length && (!isNaN(last_event.value) && !isNaN(event.value) && event.value - last_event.value > 0))
+					return;	
+				
+				if ($last.length && last_event.value != event.value || !$last.length)
+					createHistoryTableRow(last_event || event, varbind.value_type).appendTo($table);
+			}
+		});
 	});
 
-	$.ajaxSetup({
-		error: function(jqXHR, textStatus, errorThrown) {
-			console.log(jqXHR, textStatus, errorThrown);
-			alert(jqXHR.responseText || errorThrown);
-		}
-	});
-	
-	$(document).ajaxComplete(function(event, req, settings) {
-		if ($.active <= 1) // one active request is websocket
-			$('#app').css('cursor', 'initial');
-
-		if (req.status != 200)
-			return;
-
-		if (settings.url == '/device' && settings.method == 'POST') {
-			updateNavigatorStatus();
-			return updateDashboard();
-		}
+	$app.on('ajax-complete', function (event, settings) {
+		if (settings.url == '/device' && settings.method == 'POST') 
+			return updateNavigatorStatus() || updateDashboardTags();
 
 		if (settings.url.indexOf('/device/') == 0 && settings.method == 'DELETE')
-			return updateDashboard();
+			return updateDashboardTags();
 
 		if (/^\/device\/([\d]*)\/varbind-history$/.test(settings.url)) 
-			$app.find('#device-history-period').pickmeup('set_date', new Date());
+			return $app.find('#device-history-period').pickmeup('set_date', new Date());
 
 		if (settings.url.indexOf('/template/') == 0 && (settings.method == 'POST' || settings.method == 'DELETE'))	
-			updateTemplates();
-	});
-	
-	$(document).ajaxStart(function() {
-		$('#app').css('cursor', 'wait');
+			return updateTemplates();		
 	});
 
-	function drawCircle(ctx, x, y, color, size) {
-		ctx.beginPath();
-		ctx.fillStyle = color;
-		ctx.strokeStyle = color;
-		ctx.arc(x, y, size || 1, 0, 2 * Math.PI, false);
-		ctx.fill();
-		ctx.stroke();
-	}
+	$('body').on('keydown', function (event) {
+		if (!is_admin || !$app.is(':visible'))
+			return;
 
-	function trim(x) {
-		return Object.prototype.toString.call(x) === "[object String]" ? x.trim() : x;
-	}	
-
-	function cast(type, value, args) {
-		type = (type + '').toLowerCase();
-	
-		if (!type || (value + '').indexOf('ERR: ') == 0)
-			return value;
-
-		if (value == null || value == undefined)
-			return '';
-	
-		if(type == 'string')
-			return value + '';
-	
-		if (type == 'number' && !isNaN(value)) {
-			var factor = Math.pow(10, 2); // 2 digit after .
-			return Math.round(value * factor) / factor;
-		}	
-	
-		if ((type == 'time' || type == 'date' || type == 'datetime') && !isNaN(value) && !!value) {
-			var datetime = {
-				datetime : "%d.%m.%Y %H:%M",
-				date : "%d.%m.%Y",
-				time : "%H:%M",		
-				pickmeup: "d.m.Y"
-			}
-			return strftime(datetime[type], new Date(parseInt(value) || value));
+		
+		// Ctrl + Shift + A: Hide all active alerts 
+		if (event.ctrlKey && event.altKey && event.keyCode == 65) {
+			var $alert_list = $app.find('#page #alert-list tbody');
+			if ($alert_list.length == 0)
+				return;
+			
+			$.ajax({
+				method: 'POST',
+				url: '/alert/hide',
+				success: () => $alert_list.empty()
+			});
 		}
-	
-		if (type == 'filesize' && !isNaN(value)) {
-			var i = Math.floor(Math.log(value) / Math.log(1024));
-			return (value / Math.pow(1024, i)).toFixed(2) * 1 + ['B', 'kB', 'MB', 'GB', 'TB'][i];		
+
+		// Ctrl + Shift + C: Show check list 
+		if (event.ctrlKey && event.altKey && event.keyCode == 67) {
+			$app.find('#check-list-edit').trigger('click');
+			loadCheckList();
 		}
-	
-		if (type == 'onoff') 
-			return ['On', 'Off'][parseInt(value) ? 0 : 1];
-	
-		if (type == 'yesno') 
-			return ['Yes', 'No'][parseInt(value) ? 0 : 1];
-
-		if (type == 'updown') 
-			return ['Up', 'Down'][parseInt(value) ? 0 : 1];
-
-		if (type == 'status') 
-			return ['Unknown', 'Normal', 'Warning', 'Critical'][parseInt(value)];
-
-		if (type == 'duration' && !isNaN(value)) {
-			var min = 6000;
-			var mhd = [Math.floor((value/min % 60)), Math.floor((value/(60 * min)) % 24), Math.floor(value/(24 * 60 * min))];
-			var txt = ['m','h','d'];
-			var res = (mhd[2] ? mhd[2] + txt[2] + ' ' : '') + (mhd[1] ? mhd[1] + txt[1] + ' ' : '') + ((args != 'short' || mhd[0]) ? mhd[0] + txt[0] : '');
-			return res.trim();
-		}
-	
-		return value;
-	}
+	});
 });

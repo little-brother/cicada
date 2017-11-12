@@ -4,7 +4,7 @@ let collator = new Intl.Collator();
 
 exports.set = function (type, object) {
 	if (!type || !object || !object.id || parseInt(object.id) != object.id) {
-		console.log(type, object)
+		console.error(__filename, type, object)
 		throw new Error('INTERNAL');
 	}
 

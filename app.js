@@ -6,13 +6,17 @@ const qs = require('querystring');
 const crypto = require('crypto');
 const async = require('async');
 
+if (!fs.existsSync('./config.json'))
+	fs.writeFileSync('./config.json', '{}', {flag: 'ax'});
+const config = require('./config.json');
+
 const Alert = require('./models/alert'); 
 const Check = require('./models/check'); 
 const Device = require('./models/device'); 
+const Diagram = require('./models/diagram'); 
 
 const stats = require('./modules/stats');
 const nmap = require('./modules/nmap');
-const config = require('./config.json');
 
 let protocols;
 let scan_processes = [];
@@ -48,7 +52,7 @@ function parsePeriod(query) {
 function send(code, data, mime) {
 	const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
 	this.setHeader('Content-type', mimes[mime] || 'text/plain');
-	this.statusCode = code;
+	this.statusCode = code;	
 	this.end(!(typeof(data) == 'string' || data instanceof Buffer || data == undefined) ? data + '' : (typeof(data) == 'boolean') ? +data : data);
 }
 
@@ -124,6 +128,9 @@ server.on('request', function (req, res) {
 	if (!auth(req, res))	
 		return;
 
+	if (!xhr && (/device\/([\d]+)/g.test(path) || path == '/alert'))
+		path = '/index.html';
+
 	if (path == '/device' && req.method == 'GET') {
 		return res.json(Device.getList().map(function (d) {
 			let obj = {};
@@ -136,7 +143,7 @@ server.on('request', function (req, res) {
 		req.parseBody(function(body) {
 			let d = (body.id) ? Device.get(body.id, true) : new Device();
 			if (!d)
-				return res.send(404, 'Bad device id: ' + id);
+				return res.send(404, 'Bad device id: ' + body.id);
 
 			d.setAttributes(body);
 			d.save(onDone);
@@ -144,28 +151,58 @@ server.on('request', function (req, res) {
 		return;
 	}
 
-	if (/device\/([\d]*)/g.test(path)) {
+	if (/device\/([\d]+)/g.test(path) && xhr) {
 		let id = parseInt(path.substring(8));
 
 		let d = Device.get(id);
 		if (!d)
 			return res.send(404, 'Bad device id: ' + id);
 
-		// If read-only then remove protocol_params
-		if (/device\/([\d]*)$/g.test(path) && req.method == 'GET')
+		// If read-only then remove protocol_params to protect passwords
+		if (path == `/device/${id}` && req.method == 'GET')
 			return res.json(d);	
 
-		if (/device\/([\d]*)$/g.test(path) && req.method == 'DELETE')
+		if (path == `/device/${id}` && req.method == 'DELETE')
 			return d.delete(onDone);
 
-		if (/device\/([\d]*)\/varbind-list$/g.test(path) && req.method == 'GET')
+		if (/device\/([\d]+)\/varbind-list$/g.test(path) && req.method == 'GET')
 			return res.json(d.varbind_list.filter((v) => !v.is_temporary).map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
 
-		if ((/^\/device\/([\d]*)\/varbind-history$/).test(path) && req.method == 'GET') 
+		if ((/^\/device\/([\d]+)\/varbind-history$/).test(path) && req.method == 'GET') 
 			return d.getHistory(parsePeriod(query), query.downsample, onDone);
 
-		if ((/^\/device\/([\d]*)\/varbind-changes$/).test(path) && req.method == 'GET') 
+		if ((/^\/device\/([\d]+)\/varbind-changes$/).test(path) && req.method == 'GET') 
 			return d.getChanges(parsePeriod(query), onDone);
+	}
+
+	if (path == '/diagram' && req.method == 'GET') 
+		return res.json(Diagram.getList().map((d) => new Object({id: d.id, name: d.name, status: d.status})));
+
+	if (path == '/diagram' && req.method == 'POST') {
+		req.parseBody(function(body) {
+			let d = (body.id) ? Diagram.get(body.id, true) : new Diagram();
+			if (!d)
+				return res.send(404, 'Bad diagram id: ' + body.id);
+
+			d.setAttributes(body);
+			d.save(onDone);
+		})
+		return;
+	}
+
+	if (/diagram\/([\d]+)/g.test(path) && xhr) {
+		let id = parseInt(path.substring(9));
+
+		let d = Diagram.get(id);
+		if (!d)
+			return res.send(404, 'Bad diagram id: ' + id);
+
+		if (path == `/diagram/${id}` && req.method == 'GET') 	
+			return res.json({id: d.id, name: d.name, status: d.status, element_list: d.element_list});	
+		
+
+		if (path == `/diagram/${id}` && req.method == 'DELETE')
+			return d.delete(onDone);
 	}
 
 	if (path == '/tag' && req.method == 'GET') 
@@ -177,7 +214,7 @@ server.on('request', function (req, res) {
 	}
 
 	if (path.indexOf('/alert') == 0) {
-		if (path == '/alert' && req.method == 'GET')
+		if (path == '/alert' && req.method == 'GET' && xhr)
 			return Alert.getList(!isNaN(query.from) ? parsePeriod(query) : undefined, onDone);
 
 		if (path == '/alert/summary' && req.method == 'GET')
@@ -281,6 +318,22 @@ server.on('request', function (req, res) {
 		return Device.getValue(opts, (err, val) => res.send(200, (err) ? err.message : val));
 	}
 
+	if (req.url == '/upload' && req.method == 'POST') {		
+		var data = [];
+		req.on('data', (chunk) => data.push(chunk));
+		req.on('end', function () {
+			var buffer = Buffer.concat(data);
+			
+			var from = buffer.indexOf('\r\n\r\n') + 4;
+			var to = buffer.lastIndexOf('\r\n', buffer.length - 4);
+
+			var header = buffer.slice(0, from).toString();
+			var filename = header.match(/\bfilename="(.*?)"/i)[1];
+			fs.writeFile('./public/images/' + filename, buffer.slice(from, to), (err) => (err) ? res.send(500, err.message) : res.send(200, filename));
+		});
+		return;
+	}
+
 	if (path == '/stats') 
 		return stats((err, html) => (err) ? res.send(500, err.message) : res.send(200, html, 'html'));
 
@@ -292,18 +345,26 @@ server.on('request', function (req, res) {
 		path = '/login.html';
 
 	path = (path.indexOf('/protocols') == -1 || path.indexOf('/help.html') == -1) ? './public/' + path : '.' + path ;
-	fs.readFile(path, function(err, data) {
-		if (err) 
-			return (err.code === 'ENOENT') ? res.send(404, 'Page not found.') : res.send(500, `Error getting the file: ${err}.`);
+	path = decodeURI(path);
 
-		res.send(200, data, path.split('.').pop());
-	});
+	fs.stat(path, function (err, stat) {
+		if (err)
+			return res.send(500, err.message);
+
+		if (stat.isDirectory()) 
+			return fs.readdir(path, (err, files) => (err) ? res.send(500, err.message) : res.json(files));
+
+		if (stat.isFile())
+			return fs.readFile(path, (err, data) => (err) ?  res.send(500, err.message) : res.send(200, data, path.split('.').pop()));
+
+		res.send(500, `Error getting the path: ${path}.`);
+	})
 });
 const port = config.port || 5000;
 server.listen(port, () => console.log(`Cicada running on port ${port}...`));	
 
 // Update checks, init cache and run polling
-async.series([Check.update, Device.cache], function (err) {
+async.series([Check.update, Device.cache, Diagram.cache], function (err) {
 	if (err) {
 		console.error(__filename, err.message);
 		process.exit(1);
@@ -312,6 +373,6 @@ async.series([Check.update, Device.cache], function (err) {
 
 	// Run services
 	fs.readdirSync('./services').forEach((file) => require('./services/' + file)(config));
-	
+
 	Device.getList().forEach((device) => device.polling(1000 + Math.random() * 3000));
 });

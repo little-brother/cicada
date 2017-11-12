@@ -2,19 +2,21 @@
 
 // Get history and its downsample is potencial CPU bound operation, so used new instance of V8 for it.
 if (module.parent) {
+	const crypto = require('crypto');
+
 	let worker = require('child_process').fork(__filename);
 	worker.callbacks = {};
 
 	worker.on('message', function (res) {
 		if (!worker.callbacks[res.id])
-			return console.error('Unknown message: ', res);
+			return console.error(__filename, 'Unknown message: ', res);
 	
 		worker.callbacks[res.id](res.err, res.result);
 		delete worker.callbacks[res.id];
 	});
 
 	worker.do = function(req, callback) {
-		req.id = new Date().getTime();
+		req.id = crypto.randomBytes(16).toString('hex');
 		worker.callbacks[req.id] = callback;
 		worker.send(req);
 	}

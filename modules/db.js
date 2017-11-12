@@ -6,11 +6,12 @@ let db = new sqlite3.Database('./db/main.sqlite');
 
 db.serialize(function() {	
 	for (let prop in config)
-		db.run(prop == 'query' ? config[prop] : `pragma ${prop} = ${config[prop]}`, (err) => (err) ? console.error(__filename, err, prop, config[prop]) : null);
+		db.run(prop.indexOf('query') == 0 ? config[prop] : `pragma ${prop} = ${config[prop]}`, (err) => (err) ? console.error(__filename, err, prop, config[prop]) : null);
 
 	db.run('pragma synchronous = 0');
 	db.run('create table if not exists devices (id integer primary key, name text not null, ip text, mac text, tags text, description text, json_protocols text, is_pinged integer, period integer, timeout integer, parent_id integer, force_status_to integer, template text)');
 	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, status integer, check_id integer, updated integer)');
+	db.run('create table if not exists diagrams (id integer primary key, name text not null, json_element_list text not null)');
 	db.run('create table if not exists checks (id integer primary key, name text, include_tags text, exclude_tags text, protocol text not null, json_protocol_params text, json_address text, divider text, value_type text, json_status_conditions text, tags text, updated integer)');
 	db.run('create unique index if not exists idx_check on varbinds (device_id, check_id)', (err) => null);
 	db.run('attach database \"./db/history.sqlite\" as history');

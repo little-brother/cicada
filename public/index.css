@@ -7,185 +7,261 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .clickable {cursor: pointer}
 #template-row {display: none;}
 
-.top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff; display: none;}
+.top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff; display: none; height: 21px;}
 .top-menu[admin] {display: block;}
 .top-menu > div {display: inline-block; cursor: pointer; border-bottom: 1px dashed #eef; margin-left: 10px;}
-
+.top-menu .separator {cursor: initial; margin: 0 10px;	border-left:1px solid #eee; border-right:1px solid #bbb; border-bottom: none; height:100%;}
 .history-period {visibility: hidden; position: absolute; display: none;}
 .history-period-value {cursor: pointer;}
 .history-period-block {position: absolute; right: 20px; padding: 5px 10px; border-radius: 5px; background: #cfc; display: none;}
 
 .top-menu #template-list #template-remove {float: right; position: relative; top: -3px;}
 
-#app {background: url(logo.png) center no-repeat; width: 100%}
-#app #navigator {width: 200px; height: 100%; position: relative;}
-#app #navigator[status="1"] {background: rgba(200,255,200,0.5)}
-#app #navigator[status="2"] {background: rgba(255,255,200,0.5)}
-#app #navigator[status="3"] {background: rgba(255,200,200,0.5)}
-#app #navigator #device-list {position: absolute; overflow-y: auto;left: 0; right: 0; top: 0; bottom: 42px;}
-#app #navigator .top-menu[admin] ~ #device-list {top: 31px !important} 
-#app #navigator #alert-block {cursor: pointer; border: 1px solid #eee; font-size: 24px; line-height: 40px; bottom: 0; height: 40px; position: absolute; left: 0; right: 0; text-align: center; background: #fff}
-#app #navigator #alert-block span:before {display: inline-block; content: '\002639'; margin: 0 5px; font-weight: bold;}
-#app #navigator #alert-block #warning:before {color: gold}
-#app #navigator #alert-block #critical:before {color: #f00}
 
-#app #page-wrapper {background: #fff; height: 100%;}
-#app #page-content {padding: 20px;}
-#app #dashboard {display: none;}
-#app #page:empty ~ #dashboard {display: initial;}
-#app #page-close {position: absolute; right: 10px; top: 5px; cursor: pointer;}
-#app #page:empty ~ #page-close {display: none;}
+.app:not(.current) {display: none}
+//.app {background: url(logo.png) center no-repeat; width: 100%}
+.app #navigator {width: 200px; height: 100%; position: relative;}
+.app #navigator[status="1"] {background: rgba(200,255,200,0.5)}
+.app #navigator[status="2"] {background: rgba(255,255,200,0.5)}
+.app #navigator[status="3"] {background: rgba(255,200,200,0.5)}
 
-#app #dashboard .tag-list {text-align: left; margin: 0 10px; padding: 10px;}
-#app #dashboard[hidden] {display: none;}
-#app #dashboard .tag-list div {display: inline;}
-#app #dashboard .tag-list label {margin-right:10px;padding: 5px 10px 5px 5px; cursor: pointer;}
-#app #dashboard .tag-list input {display: none}
-#app #dashboard .tag-list input:checked + label {background:#eee;}
-#app #dashboard #device-tag-list {border-bottom: 1px solid #eee}
-#app #dashboard .history-period-block {margin-top: -10px;} 
-#app #dashboard #graph-block {padding: 30px;}
-#app #dashboard #graph-block > .graph {display: block;}
-#app #dashboard #graph-block > .graph:first-child:last-child:hover {background-color: initial;} 
-#app #dashboard #graph-block > .graph:hover {background-color: #eff;}
+.app #navigator ul {list-style: none; position: absolute; overflow-y: auto;left: 0; right: 0; top: 0;}
+.app #navigator .top-menu[admin] ~ ul {top: 31px !important} 
+.app #navigator ul li {cursor: pointer; margin: 3px 0; padding: 3px; padding-left: 10px;}
+.app #navigator ul li.active {background-color: #f5f5ff;}
+.app #navigator ul li[status]:before {float: left; width: 10px; height: 10px; border-radius: 50%; border:1px solid #eee; background: white; display: inline-block; content: ''; position: relative; top: 12px; margin-right: 3px;}
+.app #navigator ul li[status="1"]:before {background: #0f0}
+.app #navigator ul li[status="2"]:before {background: gold}
+.app #navigator ul li[status="3"]:before {background: #f00}
 
-#app #device-list {list-style: none;}
-#app #device-list li {cursor: pointer; margin: 3px 0; padding: 3px; padding-left: 10px;}
-#app #device-list li.active {background-color: #f5f5ff;}
-#app #device-list li[status]:before {float: left; width: 10px; height: 10px; border-radius: 50%; border:1px solid #eee; background: white; display: inline-block; content: ''; position: relative; top: 12px; margin-right: 3px;}
-#app #device-list li[status="1"]:before {background: #0f0}
-#app #device-list li[status="2"]:before {background: gold}
-#app #device-list li[status="3"]:before {background: #f00}
-#app #device-list li #ip {margin-left: 15px; font-size: 10px; display: inline-block;}
-#app #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
+#app-device #navigator #device-list {bottom: 42px;}
+#app-device #navigator #device-list li #ip {margin-left: 15px; font-size: 10px; display: inline-block;}
+#app-device #navigator #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
+#app-device #navigator #alert-block {cursor: pointer; border: 1px solid #eee; font-size: 24px; line-height: 40px; bottom: 0; height: 40px; position: absolute; left: 0; right: 0; text-align: center; background: #fff}
+#app-device #navigator #alert-block span:before {display: inline-block; content: '\002639'; margin: 0 5px; font-weight: bold;}
+#app-device #navigator #alert-block #warning:before {color: gold}
+#app-device #navigator #alert-block #critical:before {color: #f00}
 
-#app #page-device-view .history-period-block {top: 5px; right: 30px;} 
-#app #page-device-view .top-menu[admin] ~ .history-period-block {top: 40px; right: 20px;} 
-#app #page-device-view #varbind-list {width: 100%; margin-top: 20px;}
-#app #page-device-view #varbind-list td {padding: 2px 5px;}
-#app #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
-#app #page-device-view #varbind-list #td-name {width: 1px; min-width: 130px;}
-#app #page-device-view #varbind-list #td-value {width: 1px; min-width: 150px; max-width: 150px; width: 150px; text-align: center; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
-#app #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
-#app #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
-#app #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
-#app #page-device-view #varbind-list #td-history {padding: 2px 0;}
-#app #page-device-view #varbind-list #td-history[is-number="true"] {height: 124px;}
-#app #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
-#app #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
-#app #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
-#app #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
-#app #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
+#app-diagram #navigator #diagram-list li {padding-top: 12px; padding-bottom: 12px;}
+#app-diagram #navigator #diagram-list li[status]:before {top: 3px;}
 
-#app #page-device-edit label.without-varbind {color: #bbb;}
-#app #page-device-edit #template-save img {height: 12px;}
-#app #page-device-edit #properties table {display: inline; margin-right: 40px;}
-#app #page-device-edit #properties table tr td:nth-of-type(2) {padding-left: 20px;}
-#app #page-device-edit #properties {margin-bottom: 20px;}
-#app #page-device-edit #properties input[type = "text"].long {width: 360px;}
-#app #page-device-edit #properties input[type = "text"].long {width: 360px;}
-#app #page-device-edit #properties #period {width: 40px; margin: 0; text-align: center;}
-#app #page-device-edit #properties #timeout {width: 40px; margin: 0; text-align: center;}
+.app #page-wrapper {background: #fff; height: 100%;}
+.app #page-content {padding: 20px;}
+.app #page:empty ~ #dashboard {display: initial;}
+.app #page-close {position: absolute; right: 10px; top: 5px; cursor: pointer;}
+.app #page:empty ~ #page-close {display: none;}
 
+#app-device #dashboard {display: none;}
+#app-device #dashboard .tag-list {text-align: left; margin: 0 10px; padding: 10px;}
+#app-device #dashboard[hidden] {display: none;}
+#app-device #dashboard .tag-list div {display: inline;}
+#app-device #dashboard .tag-list label {margin-right:10px;padding: 5px 10px 5px 5px; cursor: pointer;}
+#app-device #dashboard .tag-list input {display: none}
+#app-device #dashboard .tag-list input:checked + label {background:#eee;}
+#app-device #dashboard #varbind-tag-list {border-top: 1px solid #eee;}
 
-#app #page-device-edit details {margin-top: 20px; margin-left: 5px;}
-#app #page-device-edit details summary {cursor: pointer; outline: none;}
-#app #page-device-edit details.help > div {margin-top: 10px;}
-#app #page-device-edit details.help > div > ul {margin-left: 15px;}
-#app #page-device-edit details.help table {width: 100%}
-#app #page-device-edit details.help table tr:hover {background-color: #eff;}
-#app #page-device-edit details.help code {background-color: #eee;}
+#app-device #dashboard .history-period-block {margin-top: -10px;} 
+#app-device #dashboard #graph-block {padding: 30px;}
+#app-device #dashboard #graph-block > .graph {display: block;}
+#app-device #dashboard #graph-block > .graph:first-child:last-child:hover {background-color: initial;} 
+#app-device #dashboard #graph-block > .graph:hover {background-color: #eff;}
+
+#app-device #page-device-view .history-period-block {top: 5px; right: 30px;} 
+#app-device #page-device-view .top-menu[admin] ~ .history-period-block {top: 40px; right: 20px;} 
+#app-device #page-device-view #varbind-list {width: 100%; margin-top: 20px;}
+#app-device #page-device-view #varbind-list td {padding: 2px 5px;}
+#app-device #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
+#app-device #page-device-view #varbind-list #td-name {width: 1px; min-width: 130px;}
+#app-device #page-device-view #varbind-list #td-value {width: 1px; min-width: 150px; max-width: 150px; width: 150px; text-align: center; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
+#app-device #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
+#app-device #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
+#app-device #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
+#app-device #page-device-view #varbind-list #td-history {padding: 2px 0;}
+#app-device #page-device-view #varbind-list #td-history[is-number="true"] {height: 124px;}
+#app-device #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
+#app-device #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
+#app-device #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
+#app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
+#app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
+
+#app-device #page-device-edit label.without-varbind {color: #bbb;}
+#app-device #page-device-edit #template-save img {height: 12px;}
+#app-device #page-device-edit #properties table {display: inline; margin-right: 40px;}
+#app-device #page-device-edit #properties table tr td:nth-of-type(2) {padding-left: 20px;}
+#app-device #page-device-edit #properties {margin-bottom: 20px;}
+#app-device #page-device-edit #properties input[type = "text"].long {width: 360px;}
+#app-device #page-device-edit #properties input[type = "text"].long {width: 360px;}
+#app-device #page-device-edit #properties #period {width: 40px; margin: 0; text-align: center;}
+#app-device #page-device-edit #properties #timeout {width: 40px; margin: 0; text-align: center;}
+
+#app-device #page-device-edit details {margin-top: 20px; margin-left: 5px;}
+#app-device #page-device-edit details summary {cursor: pointer; outline: none;}
+#app-device #page-device-edit details.help > div {margin-top: 10px;}
+#app-device #page-device-edit details.help > div > ul {margin-left: 15px;}
+#app-device #page-device-edit details.help table {width: 100%}
+#app-device #page-device-edit details.help table tr:hover {background-color: #eff;}
+#app-device #page-device-edit details.help code {background-color: #eee;}
 
 /* #page-device-edit, #page-check-list-edit */
-#app #protocol-params td {padding: 0;}
-#app #protocol-params input[type = "text"], 
-#app #protocol-params select {margin-left: 20px; width: initial;}
-#app #protocol-params table {margin-bottom: 10px;}
-#app #protocol-params select.small {width: 60px;}
-#app #protocol-params select.small ~ input {margin-left: -3px;}
+#app-device #protocol-params td {padding: 0;}
+#app-device #protocol-params input[type = "text"], 
+#app-device #protocol-params select {margin-left: 20px; width: initial;}
+#app-device #protocol-params table {margin-bottom: 10px;}
+#app-device #protocol-params select.small {width: 60px;}
+#app-device #protocol-params select.small ~ input {margin-left: -3px;}
 
-#app .varbind-list #td-status-conditions {width: 280px;}
-#app .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
-#app .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
-#app .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
-#app .varbind-list #td-status-conditions #if[if="change"] ~ #value,
-#app .varbind-list #td-status-conditions #if[if="any"] ~ #value,
-#app .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
-#app .varbind-list #td-status-conditions #value {width: 60px;}
-#app .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
-#app .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
+#app-device .varbind-list #td-status-conditions {width: 280px;}
+#app-device .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
+#app-device .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
+#app-device .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
+#app-device .varbind-list #td-status-conditions #if[if="change"] ~ #value,
+#app-device .varbind-list #td-status-conditions #if[if="any"] ~ #value,
+#app-device .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
+#app-device .varbind-list #td-status-conditions #value {width: 60px;}
+#app-device .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
+#app-device .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
 
-#app .varbind-list {width: 100%}
-#app .varbind-list tbody td {vertical-align: top; padding: 5px;}
-#app .varbind-list tbody tr:hover {background-color: #eff;}
+#app-device .varbind-list {width: 100%}
+#app-device .varbind-list tbody td {vertical-align: top; padding: 5px;}
+#app-device .varbind-list tbody tr:hover {background-color: #eff;}
 
-#app .varbind-list tbody tr[check-id] *[readonly] {background-color: #eee;}
-#app .varbind-list tbody tr[check-id] #td-remove #varbind-remove {visibility: hidden;}
-#app .varbind-list tbody tr[check-id] #td-status-conditions #condition-add {visibility: hidden;}
-#app .varbind-list tbody tr[check-id] #td-status-conditions #condition-remove {visibility: hidden;}
+#app-device .varbind-list tbody tr[check-id] *[readonly] {background-color: #eee;}
+#app-device .varbind-list tbody tr[check-id] #td-remove #varbind-remove {visibility: hidden;}
+#app-device .varbind-list tbody tr[check-id] #td-status-conditions #condition-add {visibility: hidden;}
+#app-device .varbind-list tbody tr[check-id] #td-status-conditions #condition-remove {visibility: hidden;}
 
-#app .varbind-list td > input {width: 100%;}
-#app .varbind-list #varbind-add, 
-#app .varbind-list #check-add  {float: left; padding-left: 5px;}
-#app .varbind-list #td-device-tags {width: 200px;}
-#app .varbind-list #td-device-tags #include-tags {color: green}
-#app .varbind-list #td-device-tags #exclude-tags {color: red; margin-top: 2px;}
-#app .varbind-list #td-protocol {width: 100px;}
-#app .varbind-list #td-protocol-params {width: 240px;}
-#app .varbind-list #td-address input {margin-bottom: 2px;}
-#app .varbind-list #td-address {width: 215px;}
-#app .varbind-list #td-address > input {width: 100%; }
-#app .varbind-list #td-address > textarea {width: 100%;}
-#app .varbind-list #td-value-type, 
-#app .varbind-list #td-divider {width: 50px; min-width: 50px;}
-#app .varbind-list #td-divider input {text-align: center;}
-#app .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
-#app .varbind-list #td-value:after {content: '\27f3'; display: block;}
+#app-device .varbind-list td > input {width: 100%;}
+#app-device .varbind-list #varbind-add, 
+#app-device .varbind-list #check-add  {float: left; padding-left: 5px;}
+#app-device .varbind-list #td-device-tags {width: 200px;}
+#app-device .varbind-list #td-device-tags #include-tags {color: green}
+#app-device .varbind-list #td-device-tags #exclude-tags {color: red; margin-top: 2px;}
+#app-device .varbind-list #td-protocol {width: 100px;}
+#app-device .varbind-list #td-protocol-params {width: 240px;}
+#app-device .varbind-list #td-address input {margin-bottom: 2px;}
+#app-device .varbind-list #td-address {width: 215px;}
+#app-device .varbind-list #td-address > input {width: 100%; }
+#app-device .varbind-list #td-address > textarea {width: 100%;}
+#app-device .varbind-list #td-value-type, 
+#app-device .varbind-list #td-divider {width: 50px; min-width: 50px;}
+#app-device .varbind-list #td-divider input {text-align: center;}
+#app-device .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
+#app-device .varbind-list #td-value:after {content: '\27f3'; display: block;}
 
-#app #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
-#app #page-device-edit .ping-button:after {margin-left: 5px;}
-#app #page-device-edit .ping-button[status="0"]:after {content: '\2717';}
-#app #page-device-edit .ping-button[status="1"]:after {content: '\2713';}
+#app-device #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
+#app-device #page-device-edit .ping-button:after {margin-left: 5px;}
+#app-device #page-device-edit .ping-button[status="0"]:after {content: '\2717';}
+#app-device #page-device-edit .ping-button[status="1"]:after {content: '\2713';}
 
-#app #page-device-edit #tags:not([focused]) ~ #tag-list {display: none;}
-#app #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;}
-#app #page-device-edit #tags[focused] ~ #tag-list span {margin-right: 5px;}
+#app-device #page-device-edit #tags:not([focused]) ~ #tag-list {display: none;}
+#app-device #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;}
+#app-device #page-device-edit #tags[focused] ~ #tag-list span {margin-right: 5px;}
 
-#app #page-device-scan #device-scan-result {display: none;}
-#app #page-device-scan #range-wrapper {text-align: center; margin-bottom: 20px;}
-#app #page-device-scan #range-wrapper #range {font-size: 24px; padding: 5px; width: 500px; text-align: center;}
-#app #page-device-scan #range-wrapper #range ~ span {font-size: 24px;}
-#app #page-device-scan #range-wrapper #device-scan-cancel {display: none}
-#app #page-device-scan #range-wrapper #device-scan-cancel #loader {display: inline-block; position: relative; bottom: -5px; margin-left: -35px; border: 6px solid #f3f3f3; border-top: 6px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite;}
+#app-device #page-device-scan #device-scan-result {display: none;}
+#app-device #page-device-scan #range-wrapper {text-align: center; margin-bottom: 20px;}
+#app-device #page-device-scan #range-wrapper #range {font-size: 24px; padding: 5px; width: 500px; text-align: center;}
+#app-device #page-device-scan #range-wrapper #range ~ span {font-size: 24px;}
+#app-device #page-device-scan #range-wrapper #device-scan-cancel {display: none}
+#app-device #page-device-scan #range-wrapper #device-scan-cancel #loader {display: inline-block; position: relative; bottom: -5px; margin-left: -35px; border: 6px solid #f3f3f3; border-top: 6px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite;}
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 
-#app #page-device-scan #range-wrapper #help {font-size: 10px;}
-#app #page-device-scan #device-scan-result {width: 100%}
-#app #page-device-scan #device-scan-result tbody td {padding: 5px;}
-#app #page-device-scan #device-scan-result tbody tr:hover {background-color: #eff;}
-#app #page-device-scan #device-scan-result tbody #td-ping {width: 30px;}
-#app #page-device-scan #device-scan-result tbody #td-period {width: 80px;}
-#app #page-device-scan #device-scan-result tbody #td-ip,
-#app #page-device-scan #device-scan-result tbody #td-mac {width: 150px;}
-#app #page-device-scan #device-scan-result td > input,
-#app #page-device-scan #device-scan-result td > select {width: 100%;}
-#app #page-device-scan #device-scan-result tbody #td-add {text-align: center;}
+#app-device #page-device-scan #range-wrapper #help {font-size: 10px;}
+#app-device #page-device-scan #device-scan-result {width: 100%}
+#app-device #page-device-scan #device-scan-result tbody td {padding: 5px;}
+#app-device #page-device-scan #device-scan-result tbody tr:hover {background-color: #eff;}
+#app-device #page-device-scan #device-scan-result tbody #td-ping {width: 30px;}
+#app-device #page-device-scan #device-scan-result tbody #td-period {width: 80px;}
+#app-device #page-device-scan #device-scan-result tbody #td-ip,
+#app-device #page-device-scan #device-scan-result tbody #td-mac {width: 150px;}
+#app-device #page-device-scan #device-scan-result td > input,
+#app-device #page-device-scan #device-scan-result td > select {width: 100%;}
+#app-device #page-device-scan #device-scan-result tbody #td-add {text-align: center;}
 
-#app #page-alert-list-view #alert-list {width: 100%; padding: 20px; margin-top: 2px; padding-top: 25px;}
-#app #page-alert-list-view #alert-list td {padding: 0 5px;}
-#app #page-alert-list-view #alert-list #td-status {width: 25px; font-size: 24px; font-weight: bold;}
-#app #page-alert-list-view #alert-list #td-datetime {width: 120px; font-size: 10px; cursor: pointer;}
-#app #page-alert-list-view #alert-list #td-device {width: 200px; cursor: pointer;}
-#app #page-alert-list-view #alert-list #td-hide {width: 40px; cursor: pointer;}
-#app #page-alert-list-view #alert-list tr:hover {background-color: #eff; color: #000 !important;}
-#app #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
-#app #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
-#app #page-alert-list-view #alert-list tr[is-hidden="1"] {color: #bbb;}
-#app #page-alert-list-view #alert-list tr[is-hidden="1"] #td-hide {display: none;}
-#app #page-alert-list-view #alert-list tbody:empty:after {content: 'No actual alerts'}
-#app #page-alert-list-view .history-period-block {right: 30px;}
+#app-device #page-alert-list-view #alert-list {width: 100%; padding: 20px; margin-top: 2px; padding-top: 25px;}
+#app-device #page-alert-list-view #alert-list td {padding: 0 5px;}
+#app-device #page-alert-list-view #alert-list #td-status {width: 25px; font-size: 24px; font-weight: bold;}
+#app-device #page-alert-list-view #alert-list #td-datetime {width: 120px; font-size: 10px; cursor: pointer;}
+#app-device #page-alert-list-view #alert-list #td-device {width: 200px; cursor: pointer;}
+#app-device #page-alert-list-view #alert-list #td-hide {width: 40px; cursor: pointer;}
+#app-device #page-alert-list-view #alert-list tr:hover {background-color: #eff; color: #000 !important;}
+#app-device #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
+#app-device #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
+#app-device #page-alert-list-view #alert-list tr[is-hidden="1"] {color: #bbb;}
+#app-device #page-alert-list-view #alert-list tr[is-hidden="1"] #td-hide {display: none;}
+#app-device #page-alert-list-view #alert-list tbody:empty:after {content: 'No actual alerts'}
+#app-device #page-alert-list-view .history-period-block {right: 30px;}
 
-#app #page-check-list-edit #restrictions {font-weight: bold; color: red; margin-left: 10px;}
+#app-device #page-check-list-edit #restrictions {font-weight: bold; color: red; margin-left: 10px;}
+
+
+#app-diagram #page-diagram-view #alert-list {position: absolute; right: 20px; list-style: none; z-index: 10;}
+#app-diagram #page-diagram-view #alert-list:empty {display:none;}
+#app-diagram #page-diagram-view #alert-list::before {content: 'Alerts 24'; display: block; text-align: center;}
+#app-diagram #page-diagram-view #alert-list .alert {max-width: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 10px; cursor: default;}
+#app-diagram #page-diagram-view #alert-list .alert[status="2"] {background: rgba(255,255,200,0.5);}
+#app-diagram #page-diagram-view #alert-list .alert[status="3"] {background: rgba(255,200,200,0.5);}
+#app-diagram #page-diagram-view #alert-list .alert[hidden] {opacity: 0.4;}
+
+#app-diagram #page-diagram-view #diagram {position: relative;}
+#app-diagram #page-diagram-view #diagram .element {position: absolute; background-size: cover; z-index: 2;}
+#app-diagram #page-diagram-view #diagram .element[highlight] {outline: 3px dotted blue;}
+#app-diagram #page-diagram-view #diagram > canvas {position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; pointer-events: none;}
+
+#app-diagram #page-diagram-view #diagram .element.status[status]::before {content: ' '; position: absolute; width: 10px; bottom: 0; right: 0; height: 10px; border-radius: 50%; }
+#app-diagram #page-diagram-view #diagram .element.status[status="1"]::before {background: #0f0;}
+#app-diagram #page-diagram-view #diagram .element.status[status="2"]::before {background: gold;}
+#app-diagram #page-diagram-view #diagram .element.status[status="3"]::before {background: #f00;}
+
+#app-diagram #page-diagram-view #diagram .element[type="device"]::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%;}
+#app-diagram #page-diagram-view #diagram .element[type="status"][status] {border-radius: 50%; border: 1px solid #eee;}
+#app-diagram #page-diagram-view #diagram .element[type="status"][status="1"] {background: #eee;}
+#app-diagram #page-diagram-view #diagram .element[type="status"][status="1"] {background: #0f0;}
+#app-diagram #page-diagram-view #diagram .element[type="status"][status="2"] {background: gold;}
+#app-diagram #page-diagram-view #diagram .element[type="status"][status="3"] {background: #f00;}
+#app-diagram #page-diagram-view #diagram .element[type="value"] {text-align: center;}
+#app-diagram #page-diagram-view #diagram .element[type="value"][status="1"] {background: #0f0;}
+#app-diagram #page-diagram-view #diagram .element[type="value"][status="2"] {background: gold;}
+#app-diagram #page-diagram-view #diagram .element[type="value"][status="3"] {background: #f00;}
+#app-diagram #page-diagram-view #diagram .element[type="graph"] {border: 1px dotted #eee;}
+#app-diagram #page-diagram-view #diagram .element[type="graph"] .dygraph-xlabel {font-size: 10px;}
+#app-diagram #page-diagram-view #diagram #history {position: absolute; border: 1px solid #bbb; z-index: 10; background: #fff;}
+#app-diagram #page-diagram-view #diagram #history > div:nth-child(2n) {background-color: #eee;}
+
+#app-diagram #page-diagram-view #diagram .element[type="link"] {padding: 3px; border: 1px solid #bbb; background: #eee; color: #000 !important;}
+#app-diagram #page-diagram-view #diagram .element[type="link"]:empty {display: none;}
+
+#app-diagram #page-diagram-edit #name {position: relative; top: -1px; margin-left: 10px;}
+#app-diagram #page-diagram-edit #diagram {position: relative;}
+#app-diagram #page-diagram-edit #diagram > canvas {position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; pointer-events: none;}
+#app-diagram #page-diagram-edit #diagram .element {position: absolute; -moz-user-select: none; user-select: none; border: 1px dotted #bbb; z-index: 2;}
+#app-diagram #page-diagram-edit #diagram .element[current] { z-index: 10;} 
+
+#app-diagram #page-diagram-edit #diagram .element:not([current]) #remove {display: none}
+#app-diagram #page-diagram-edit #diagram .element:not([current]) #link-add {display: none}
+
+#app-diagram #page-diagram-edit #diagram .element #remove {position: absolute; right: 0; top: -4px; cursor: pointer; color: #000 !important;}
+#app-diagram #page-diagram-edit #diagram .element #resize {width: 10px; height: 10px; background: red; position: absolute; right: 0; bottom: 0; cursor: se-resize;}
+#app-diagram #page-diagram-edit #diagram .element #link-add {width: 10px; height: 10px; background: green; position: absolute; right: 0; bottom: 0; left: 0; top: 0; margin: auto; border-radius: 50%; cursor: pointer}
+
+
+#app-diagram #page-diagram-edit #diagram .element.link {border-radius: 50%; resize: none;}
+#app-diagram #page-diagram-edit #diagram .element.link #remove {display: none}
+#app-diagram #page-diagram-edit #diagram .element.link #resize {display: none}
+#app-diagram #page-diagram-edit #diagram .element.link #link-add {display: none}
+
+#app-diagram #page-diagram-edit #diagram .element.device::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%;}
+#app-diagram #page-diagram-edit #diagram .element.graph::after {font-size: 20px; content: '1-hour graph';}
+#app-diagram #page-diagram-edit #diagram .element.graph #props input[type="text"] {width: 42px;}
+#app-diagram #page-diagram-edit #diagram .element.text div {font-size: initial;}
+#app-diagram #page-diagram-edit #diagram .element.text::after {content: attr(text);}
+#app-diagram #page-diagram-edit #diagram .element.value div {font-size: initial;}
+#app-diagram #page-diagram-edit #diagram .element.value::after {content: '@V';}
+#app-diagram #page-diagram-edit #diagram .element.status {border-radius: 50%;}
+
+#app-diagram #page-diagram-edit #diagram select, input[type = "text"] {border: 1px solid #bbb; width: 100px; font-size: 10px;}
+#app-diagram #page-diagram-edit #diagram input[type = "text"] {width: 97px; height: 16px;}
+#app-diagram #page-diagram-edit #diagram .element #props label {width: 50px; display: inline-block;font-size: 10px !important;}
+#app-diagram #page-diagram-edit #diagram .element #props {position: absolute; left: 100%; margin-left: 10px; top: -5px; width: 155px; background: #fff; border: 1px dotted #eee; padding: 5px; color: #000 !important;}
 
 #stats {margin: 10px;}
 #stats tr:hover {background-color: #eff;}

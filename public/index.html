@@ -10,12 +10,17 @@
 	<script src = "/vendors/jquery.pickmeup.min.js"></script>
 	<script src = "/vendors/strftime-min.js"></script>
 
-	<script src = "/index.js"></script>
+	<script src = "/app-device.js"></script>
+	<script src = "/app-diagram.js"></script>
+	<script src = "/events.js"></script>
+
+
+	<script src = "/helpers.js"></script>
 	<link href = "/index.css" rel="stylesheet"/>
 </head>
 <body>
 
-<div id = "app">
+<div id = "app-device" class = "app current">
     <div id = "navigator">
 		<div class = "top-menu">
 			<div class="dropdown-click" tabindex = "0">
@@ -37,7 +42,7 @@
 		<div id = "page-close">&#10006;</div>
 		<div id = "dashboard">
 			<div id = "tag-list">	
-				<div id = "device-tag-list" class = "tag-list"></div>
+				<div id = "device-tag-list" class = "tag-list"></div>				
 				<div id = "varbind-tag-list" class = "tag-list" title = "Use Ctrl + Mouse Click to select one more tag"></div>
 			</div>
 			<div class = "history-period-block">
@@ -48,6 +53,22 @@
 		</div>
 	</div>
 </div>
+
+<div id = "app-diagram" class = "app">
+    <div id = "page-wrapper">
+		<div id = "page"></div>
+		<div id = "page-close">&#10006;</div>
+	</div>
+
+    <div id = "navigator">
+		<div class = "top-menu">
+			<div id = "diagram-add" class = "clickable" title = "Add diagram">+ Add</div>	
+		</div>
+
+		<ul id = "diagram-list"></ul>
+	</div>
+</div>
+
 
 <div id = "components" style = "display: none">
 	<div id = "page-alert-list-view">
@@ -309,7 +330,6 @@ Possible options
 		<tbody>
 		</tbody>
 		</table>
-
 	</div>
 
 	<div id = "partial-varbind-condition" class = "status-condition">
@@ -333,7 +353,258 @@ Possible options
 			<option value = "0">unknown</option>
 		</select>
 		<span id = "condition-remove" class = "clickable">&#10006;</span>
-	</div>	
+	</div>
+
+	<div id = "page-diagram-view">
+		<div class = "top-menu">
+			<div id = "diagram-edit">&#9997; Edit</div>
+			<div id = "diagram-remove">&#10006; Remove</div>
+		</div>
+		<div id = "page-content">
+			<ul id = "alert-list"></ul>
+
+			<div id = "diagram">
+				<canvas id = "canvas"></canvas>
+			</div>
+		</div>	
+	</div>
+
+	<div id = "page-diagram-edit">
+		<div class = "top-menu">
+			<div id = "diagram-save">&#10003; Save</div>
+			<div id = "diagram-save-cancel">&#8709; Cancel</div>
+			<span class = "separator"></span>
+			Add: 
+			<div class = "add-element" data-element = '{"type": "device", "label": "@name"}'>Device</div>
+			<div class = "add-element" data-element = '{"type": "diagram", "image": "cloud.png", "width": 100, "height": 70}'>Diagram</div>
+			<div class = "add-element" data-element = '{"type": "text", "width": 200, "height": 50, "font-size": 14}'>Text</div>
+			<div class = "add-element" data-element = '{"type": "image", "z-index": 1}'>Image</div>
+			<div class = "add-element" data-element = '{"type": "value", "font-size": 24, "width": 40, "height": 40}'>Value</div>
+			<div class = "add-element" data-element = '{"type": "status", "width": 30, "height": 30}'>Status</div>
+			<div class = "add-element" data-element = '{"type": "graph", "width": 200, "height": 50}'>Graph</div>
+			<span class = "separator"></span>
+			Name <input id = "name" type = "text" value = "My diagram">
+		</div>
+
+		<div id = "page-content">
+			<div id = "diagram">
+				<canvas id = "canvas"></canvas>
+			</div>
+		</div>	
+	</div>
+
+	<div id = "partial-diagram-device-props">
+		<div>
+			<label>Device</label>
+			<select id = "device-id" store = "/device" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Image</label>
+			<select id = "image" store = "/images" upload = "true"  autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>
+	</div>
+
+	<div id = "partial-diagram-diagram-props">
+		<div>
+			<label>Diagram</label>
+			<select id = "diagram-id" store = "/diagram" autocomplete = "off">
+			</select>
+		</div>
+		<div>
+			<label>Image</label>
+			<select id = "image" store = "/images" none = "true" upload = "true" autocomplete = "off">
+			</select>
+		</div>
+	</div>
+
+	<div id = "partial-diagram-image-props">
+		<div>
+			<label>Image</label>
+			<select id = "image" store = "/images" upload = "true" autocomplete = "off">
+			</select>
+		</div>
+		<div>
+			<label>Z-index</label>
+			<select id = "z-index" autocomplete = "off">
+				<option value = "0">0</option>
+				<option value = "1">1</option>
+				<option value = "2">2</option>
+				<option value = "3">3</option>
+				<option value = "4">4</option>
+			</select>
+		</div>
+	</div>
+
+	<div id = "partial-diagram-text-props">
+		<div>
+			<label>Text</label>
+			<input id = "text" type = "text">
+		</div>
+
+
+		<div>
+			<label>Color</label>
+			<select id = "color" autocomplete = "off">
+				<option value = "#000">black</option>
+				<option value = "#0074d9">blue</option>
+				<option value = "#7fdbff">aqua</option>
+				<option value = "#39cccc">teal</option>
+				<option value = "#3d9970">olive</option>
+				<option value = "#2ecc40">green</option>
+				<option value = "#ffdc00">yellow</option>
+				<option value = "#ff851b">orange</option>
+				<option value = "#ff4136">red</option>
+				<option value = "#f012be">fuchsia</option>
+				<option value = "#b10dc9">purple</option>
+				<option value = "#ddd">silver</option>
+			</select>
+		</div>
+
+		<div>
+			<label>Size</label>
+			<select id = "font-size" autocomplete = "off">
+				<option value = "10">10</option>
+				<option value = "12">12</option>
+				<option value = "14">14</option>
+				<option value = "16">16</option>
+				<option value = "24">24</option>
+				<option value = "32">32</option>
+				<option value = "48">48</option>
+				<option value = "72">72</option>
+			</select>
+		</div>
+	</div>
+
+	<div id = "partial-diagram-value-props">	
+		<div>
+			<label>Device</label>
+			<select id = "device-id" store = "/device" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Varbind</label>
+			<select id = "varbind-id" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Font size</label>
+			<select id = "font-size" autocomplete = "off">
+				<option value = "10">10</option>
+				<option value = "12">12</option>
+				<option value = "14">14</option>
+				<option value = "16">16</option>
+				<option value = "24">24</option>
+				<option value = "32">32</option>
+				<option value = "48">48</option>
+				<option value = "72">72</option>
+			</select>
+		</div>
+	</div>
+
+	<div id = "partial-diagram-status-props">	
+		<div>
+			<label>Device</label>
+			<select id = "device-id" store = "/device" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Varbind</label>
+			<select id = "varbind-id" autocomplete = "off">
+			</select>
+		</div>
+	</div>
+
+	<div id = "partial-diagram-graph-props">	
+		<div>
+			<label>Device</label>
+			<select id = "device-id" store = "/device" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Varbind</label>
+			<select id = "varbind-id" autocomplete = "off">
+			</select>
+		</div>
+
+		<div title = "If not set both, it is calculated automatically">
+			<label>Y-range</label>
+			<input id = "min" type = "text" autocomplete = "off" placeholder = "min"> - <input id = "max" type = "text" autocomplete = "off" placeholder = "max">
+		</div>
+	</div>
+
+	<div id = "partial-diagram-link-props">
+		<div>
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>	
+		<div>
+			<label>Color</label>
+			<select id = "color" autocomplete = "off">
+				<option value = "#000">black</option>
+				<option value = "#0074d9">blue</option>
+				<option value = "#7fdbff">aqua</option>
+				<option value = "#39cccc">teal</option>
+				<option value = "#3d9970">olive</option>
+				<option value = "#f012be">fuchsia</option>
+				<option value = "#b10dc9">purple</option>
+				<option value = "#ddd">silver</option>
+				<option value = "@value" title = "The color of the link will depend on the value. Value must be between 0 and 100.">@value</option>
+				<option value = "@status" title = "The color of the link will depend on the status: gray (unknown), green (normal), yellow (warning) and red (critical)">@status</option>
+			</select>
+		</div>
+		<div>
+			<label>Width</label>
+			<select id = "depth" autocomplete = "off">
+				<option value = "1">1</option>
+				<option value = "2">2</option>
+				<option value = "3">3</option>
+				<option value = "4">4</option>
+				<option value = "5">5</option>
+				<option value = "6">6</option>
+				<option value = "7">7</option>
+				<option value = "8">8</option>
+				<option value = "9">9</option>
+				<option value = "10">10</option>
+				<option value = "11">11</option>
+				<option value = "12">12</option>
+				<option value = "13">13</option>
+				<option value = "14">14</option>
+				<option value = "15">15</option>
+				<option value = "20">20</option>
+				<option value = "25">25</option>
+				<option value = "30">30</option>
+				<option value = "40">40</option>
+				<option value = "60">60</option>
+			</select>
+		</div>
+		<div>
+			<label>Device</label>
+			<select id = "device-id" none = "true" store = "/device" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Varbind</label>
+			<select id = "varbind-id" autocomplete = "off">
+			</select>
+		</div>
+	</div>
+
+	<form id = "upload-form" method = "post" style = "display:none">
+		<input type="file" id = "upload" required/>
+	</form>	
 </div>
 </body>
 </html>

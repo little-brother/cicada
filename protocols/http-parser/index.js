@@ -136,7 +136,7 @@ exports.getValues = function (opts, address_list, callback) {
 
 			response.on('error', (err) => error = err);
 		}).on('error', function (err) {
-			responses[request.url] = {error};
+			responses[request.url] = {error: err};
 			getValue(i + 1);
 		});
 	}

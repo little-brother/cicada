@@ -41,16 +41,16 @@
 </div>
 
 <style>
-#app *[protocol="modbus-tcp"] #td-address #func {width: 160px; display:inline;}
-#app *[protocol="modbus-tcp"] #td-address #register {width: 49px; display:inline;}
-#app *[protocol="modbus-tcp"] #td-address #type:not([value=""]) {width: 160px; clear: right;}
-#app *[protocol="modbus-tcp"] #td-address #order:not([value=""]) {width: 50px; display:inline;}
-#app *[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
-#app *[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
+#app-device *[protocol="modbus-tcp"] #td-address #func {width: 160px; display:inline;}
+#app-device *[protocol="modbus-tcp"] #td-address #register {width: 49px; display:inline;}
+#app-device *[protocol="modbus-tcp"] #td-address #type:not([value=""]) {width: 160px; clear: right;}
+#app-device *[protocol="modbus-tcp"] #td-address #order:not([value=""]) {width: 50px; display:inline;}
+#app-device *[protocol="modbus-tcp"] #td-address #type[value=""] {display:none}
+#app-device *[protocol="modbus-tcp"] #td-address #order[value=""] {display:none}
 </style>
 
 <script>
-$('#app').on('change', '*[protocol="modbus-tcp"] #td-address #func', function() {
+$('#app-device').on('change', '*[protocol="modbus-tcp"] #td-address #func', function() {
 	var row = $(this).closest('#td-address');
 	if (this.value == 'readDiscreteInputs' || this.value == 'readCoils') {
 		row.find('#type').val('').attr('value', '');

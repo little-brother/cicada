@@ -1,6 +1,7 @@
 'use strict'
 const WebSocket = require('ws');
 const events = require('../modules/events');
+const Diagram = require('../models/diagram');
 
 function start(config) {
 	let	wss = new WebSocket.Server({ 
@@ -10,7 +11,8 @@ function start(config) {
 	
 	wss.on('connection', function (ws, req) {
 		ws.on('message', function (msg) {
-			ws.device_id = (/device\/([\d]*)/g).test(msg) ? parseInt(msg.substring(8)) : 0;
+			ws.device_id = (/device\/[\d]+$/g).test(msg) ? parseInt(msg.substring(8)) : (ws.device_id || 0);
+			ws.diagram_id = (/diagram\/[\d]+$/g).test(msg) ? parseInt(msg.substring(9)) : (ws.diagram_id || 0);
 		});
 
 		events.emit('new-connection', ws);
@@ -39,8 +41,17 @@ function start(config) {
 	
 	events.on('values-updated', function (device, time) {
 		let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, status: v.status || 0}));
-		let packet = {event: 'values-updated', id: device.id, values, time}
+		let packet = {event: 'values-updated', id: device.id, status: device.status, values, time};
 		broadcast(packet, (client) => client.device_id == device.id);	
+
+		Diagram.getList()
+			.filter((diagram) => !!diagram.devices[device.id])
+			.forEach(function (diagram) {
+				broadcast(packet, (client) => client.diagram_id == diagram.id);
+
+				diagram.updateStatus();
+				broadcast({event: 'diagram-status-updated', id: diagram.id, status: diagram.status, time});
+			});	
 	});
 	
 	events.on('status-updated', function(device, time) {
