@@ -1,5 +1,3 @@
 node_modules/
-public/images/
-!public/images/cloud.png
 ToDo.txt
 config.json
