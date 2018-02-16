@@ -6,7 +6,7 @@ Supported protocols: ICMP (ping), SNMP v1/2c/3, Modbus TCP, IPMI, WMI and http/s
 Also you can polling [Zabbix](http://www.zabbix.com/download), [Check-mk](https://mathias-kettner.de/checkmk_linuxagent.html) and [Munin](https://github.com/munin-monitoring/munin-c) agents and check TCP ports.
 
 Cross-platform, open source, extendable, free.<br>
-[Demo](http://77.37.160.20:5000/) (read-only), [overview video](https://www.youtube.com/watch?v=yJHko7AQFCM), 
+[Demo](http://77.37.160.20:5000/) (read-only), [overview video](https://www.youtube.com/watch?v=qHYKD5LzBwA), 
 [documentation](https://github.com/little-brother/cicada/wiki).
 
 # Features
