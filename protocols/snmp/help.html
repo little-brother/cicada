@@ -1,10 +1,61 @@
-<h3>Common oids</h3>
+<h3>Common</h3>
 <ul>
 	<li><code>1.3.6.1.2.1.1.1.0</code> - sysDescr</li>
 	<li><code>1.3.6.1.2.1.1.4.0</code> - sysContact</li>
 	<li><code>1.3.6.1.2.1.1.5.0</code> - sysName</li>
 	<li><code>1.3.6.1.2.1.1.6.0</code> - sysLocation</li>
 	<li><code>1.3.6.1.2.1.1.3.0</code> - uptime (value type = <i>duration</i>)</li>
+</ul>
+<br>
+<i>Use 1, 2, 3, ... instead <b>*</b>. Some values can be skipped.</i>
+<br><br>
+<h3>CPU</h3>
+<ul>
+	<li><code>1.3.6.1.2.1.25.3.3.1.2.*</code> - cpu usage</li>
+</ul>
+<br>
+<h3>Disk</h3>
+<ul>
+	<li><code>1.3.6.1.2.1.25.2.3.1.1</code> - list (subtree)</li>
+	<li><code>1.3.6.1.2.1.25.2.3.1.3.*</code> - description</li>
+	<li><code>1.3.6.1.2.1.25.2.3.1.4.*</code> - storage allocation units</li>
+	<li><code>1.3.6.1.2.1.25.2.3.1.5.*</code> - total size</li>
+	<li><code>1.3.6.1.2.1.25.2.3.1.6.*</code> - total used</li>
+	<li><code>1.3.6.1.2.1.25.2.3.1.7.*</code> - allocation failures</li>
+</ul>
+<br>
+<h3>Interfaces</h3>
+<ul>
+	<li><code>1.3.6.1.2.1.2.2.1.1</code> - list (subtree)</li>
+	<li><code>1.3.6.1.2.1.2.2.1.8.*</code> - status</li>
+	<li><code>1.3.6.1.2.1.2.2.1.2.*</code> - description</li>
+	<li><code>1.3.6.1.2.1.31.1.1.1.1.*</code> - name</li>
+	<li><code>1.3.6.1.2.1.31.1.1.1.18.*</code> - alias</li>
+	<li><code>1.3.6.1.2.1.2.2.1.3.*</code> - type</li>
+	<li><code>1.3.6.1.2.1.2.2.1.5.*</code> - speed</li>
+	<li><code>1.3.6.1.2.1.31.1.1.1.15.*</code> - high speed</li>
+	<li><code>1.3.6.1.2.1.2.2.1.6.*</code> - hardware address</li>
+	<li><code>1.3.6.1.2.1.2.2.1.10.*</code> - bytes In</li>
+	<li><code>1.3.6.1.2.1.2.2.1.16.*</code> - bytes Out</li>
+	<li><code>1.3.6.1.2.1.31.1.1.1.6.*</code> - bytes In (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.31.1.1.1.10.*</code> - bytes Out (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.5.1.*</code> - IPv4 bytes In</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.32.1.*</code> - IPv4 bytes Out</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.6.1.*</code> - IPv4 bytes In (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.33.1.*</code> - IPv4 bytes Out (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.5.2.*</code> - IPv6 bytes In</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.32.2.*</code> - IPv6 bytes Out</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.6.2.*</code> - IPv6 bytes In (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.4.31.3.1.33.2.*</code> - IPv6 bytes Out (64-bit counter)</li>
+	<li><code>1.3.6.1.2.1.2.2.1.13.*</code> - discarded packets In</li>
+	<li><code>1.3.6.1.2.1.2.2.1.19.*</code> - discarded packets Out</li>
+	<li><code>1.3.6.1.2.1.2.2.1.12.*</code> - non-unicast packets In</li>
+	<li><code>1.3.6.1.2.1.2.2.1.18.*</code> - non-unicast packets Out</li>
+	<li><code>1.3.6.1.2.1.2.2.1.11.*</code> - unicast packets In</li>
+	<li><code>1.3.6.1.2.1.2.2.1.17.*</code> - unicast packets Out</li>
+	<li><code>1.3.6.1.2.1.2.2.1.14.*</code> - errors In</li>
+	<li><code>1.3.6.1.2.1.2.2.1.20.*</code> - errors Out</li>
+	<li><code>1.3.6.1.2.1.4.20.1.2</code> - IP address (subtree)</li>
 </ul>
 <br>
 <h3>Oid resources</h3>

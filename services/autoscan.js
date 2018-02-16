@@ -1,7 +1,7 @@
 'use strict'
 const exec = require('child_process').exec;
 const Device = require('../models/device');
-const nmap = require('../modules/nmap'); 
+const network = require('../modules/network'); 
 
 function start(config, delay) {
 	let params = config['auto-scan'];
@@ -11,7 +11,7 @@ function start(config, delay) {
 	if (delay)
 		return setTimeout(start, params.period * 1000 || 300000, config);
 
-	nmap.ping(params.range, Device.getIpList().join(','), function(err, result) {
+	network.scan(params.range, Device.getIpList(), function(err, result) {
 		if (err)
 			console.error('Auto-scan: ' + err.message);
 

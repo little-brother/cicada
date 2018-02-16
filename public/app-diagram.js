@@ -1,4 +1,3 @@
-
 $(function() {
 	var $app = $('#app-diagram').height(window.innerHeight);
 	var $page = $app.find('#page');
@@ -46,10 +45,14 @@ $(function() {
 		graphs = {};
 		
 		var $e = $(this);
-		if ($e.hasClass('active') && !!e.originalEvent)
+		if ($e.hasClass('active') && !!e.originalEvent) {
+			$app.trigger('notify', {diagram_id: 0});
 			return $e.removeClass('active');
+		}
 
-		var diagram_id = $e.attr('id');
+		var diagram_id = parseInt($e.attr('id')) || 0;
+		$app.trigger('notify', {diagram_id});
+
 		$.ajax({
 			method: 'GET',
 			url: '/diagram/' + diagram_id,
@@ -67,6 +70,8 @@ $(function() {
 
 				$elements = {};
 				var $diagram = $page.find('#diagram');
+				$diagram.css('background', diagram.bgcolor || '#fff');
+
 				diagram.element_list.forEach(function(e) {
 					var $e = $('<div/>')
 						.attr('id', e.id)
@@ -74,26 +79,21 @@ $(function() {
 						.css({
 							width: e.width || 100,
 							height: e.height || 100,
-							left: e.x || 100,
-							top: e.y || 100
+							left: nvl(e.x, 100),
+							top: nvl(e.y, 100)
 						})
 						.addClass('element')
+						.addClass(e.type)
 						.appendTo($diagram);
 
 					if (e.image)
 						$e.css('background-image', 'url("/images/' + e.image + '")');
 
 					if (e['z-index'])
-						$e.css('z-index', parseInt(e['z-index']) || 2);
-
-					if (e['font-size'])
-						$e.css('font-size', parseInt(e['font-size']) || 14);
+						$e.css('z-index', e['z-index']);
 
 					if (e['color'])
 						$e.css('color', e.color);
-
-					if (e.label)
-						$e.attr('label');
 
 					if (e.text)
 						$e.html(e.text);
@@ -104,17 +104,64 @@ $(function() {
 					if (e.path)
 						$e.attr('title', e.path);
 
-					if (e.type == 'device' && e.label == '@name')
-						$e.attr('label', e.path);
+					if (e.label) {
+						var labels = e.label.split(';').map((label) => label == '@name' ? e.path : label);
+						$e.attr('label', labels[0]);
+						for (var i = 0; i <= 3; i++)
+							$e.attr('label' + i, labels[i] || labels[0]);
+					}
 
-					if (e.type == 'device' || e.type == 'diagram')
+					if (e.type == 'status' && e.label && e.label == '@value')
+						$e.attr('live-value', true);
+
+					if (['diagram', 'device', 'value', 'status'].indexOf(e.type) != -1)
 						$e.addClass('status');
+
+					if (e.type == 'text')
+						$e.css({
+							'font-size': Math.floor(e.height * 0.75) + 'px',
+							'line-height': e.height + 'px',
+							'min-width': e.width || 100,
+							'width': ''	
+						});
 
 					if (e.type == 'diagram')
 						$e.attr('diagram-id', e['diagram-id']);
 
 					if (e.type == 'graph' && !isNaN(e.min) && !isNaN(e.max))
 						$e.range = [parseFloat(e.min), parseFloat(e.max)];
+
+					if (['device', 'status', 'value', 'link'].indexOf(e.type) != -1)	
+						$e.addClass('graph-hint');
+
+					if (e.type == 'value') {
+						if (e.value_type == 'number') {
+							['min', 'max', 'unit'].forEach((prop) => $e.attr(prop, e[prop]));
+							$e.addClass('numeric');
+							$e.addClass(e.height < 30 ? 'hvalue' : e.width < 30 ? 'vvalue' : 'bvalue');
+						} else {
+							$e.addClass('bvalue');
+						}
+						
+						if ($e.hasClass('bvalue')) {
+							$e.css({
+								'font-size': Math.floor(e.height * 0.75) + 'px',
+								'line-height': e.height + 'px',
+								'min-width': e.width || 100,
+								'width': ''	
+							});
+						} else {
+							if ($e.height() < 10 || $e.width() < 10) 
+								$e.addClass('no-label');
+							$('<div/>').appendTo($e);
+						}
+
+						$e.trigger('update-element', e);
+					}
+		
+					['live-label', 'live-label-color', 'live-image', 'live-bgcolor']
+						.filter((prop) => e[prop])
+						.forEach((prop) => $e.attr(prop, true));
 
 					var device_id = parseInt(e['device-id']) || '';
 					var varbind_id = parseInt(e['varbind-id']) || '';
@@ -190,6 +237,7 @@ $(function() {
 
 	$app.on('update-element', '#page-diagram-view #diagram .element[type="status"]', function (event, data, time) {
 		this.setAttribute('status', data.status || 0);
+		this.setAttribute('value', cast(data.value_type || 'number', data.value));
 	});
 
 	$app.on('update-element', '#page-diagram-view #diagram .element[type="diagram"]', function (event, data, time) {
@@ -197,8 +245,20 @@ $(function() {
 	});
 
 	$app.on('update-element', '#page-diagram-view #diagram .element[type="value"]', function (event, data, time) {
-		this.setAttribute('status', data.status || 0);
-		this.innerHTML = cast(data.value_type || 'number', data.value) || '';
+		var $e = $(this);
+		$e.attr('status', data.status || 0);
+			
+		var value = cast(data.value_type || 'number', data.value);
+		if ($e.hasClass('bvalue')) 
+			return $e.html(value);	
+
+		var unit = $e.attr('unit') || '';
+		var min = nvl($e.attr('min'), 0);
+		var max = nvl($e.attr('max'), 100);
+		var size = 100 - Math.round((value - min) * 100 / (max - min));
+		var prop = $e.width() > $e.height() ? 'width' : 'height';	
+		$e.find('div')[prop](size + '%');
+		$e.attr('value', value + unit);
 	});
 
 	$app.on('update-element', '#page-diagram-view #diagram .element[type="graph"]', function (event, data, time) {
@@ -232,82 +292,6 @@ $(function() {
 		drawLink(ctx, link);
 	});
 
-	var popupTimer;
-	$app.on('mouseenter', '#page-diagram-view .element', function (event) {
-		var $e = $(this);
-		var $diagram = $e.parent();
-		$diagram.find('#history').remove();
-		clearTimeout(popupTimer);
-
-		var type = $e.attr('type');
-		var device_id = parseInt($e.attr('device-id')) || '';
-		var varbind_id = parseInt($e.attr('varbind-id')) || '';
-
-		if (!device_id || ['device', 'status', 'value', 'link'].indexOf(type) == -1 || this.hasAttribute('no-history'))
-			return;
-
-		function addGraph ($e, data, name, height) {
-			var opts = { 
-				axes : { 
-					x :  {drawAxis : false, drawGrid: false, valueFormatter: (ms) => cast('datetime', ms)},
-				},
-				labels: ['time', name],
-				height: height,
-				width: 300,
-				valueRange: getRange(data),
-				highlightCircleSize: 2,					
-				drawPoints: true,
-				connectSeparatedPoints: true,
-				legendFormatter: (data) => (data.x !== null && data.series && data.series[0].yHTML) ? data.xHTML + ': <b>' + data.series[0].yHTML + '</b>' : ''
-			};
-
-			if (height < 100)
-				opts.axes.y = {drawAxis : false, drawGrid: false};
-			
-			new Dygraph($('<div/>').attr('title', name).appendTo($e).get(0), data, opts);
-		}
-
-		$.ajax({
-			method: 'GET',
-			url: '/device/' + device_id + '/varbind-history',
-			dataType: 'json',
-			success: function (history) {
-				var idx = history.ids && history.ids.indexOf(varbind_id);
-
-				if (!history.ids || varbind_id && idx == -1)	
-					return $e.attr('no-history', true);
-
-				var position = $e.position();
-				var height = 200;
-				var graph_height = (varbind_id) ? height : height / history.ids.length;
-
-				
-
-				var $history = $('<div/>')
-					.attr('id', 'history')
-					.css('top', $diagram.height() - position.top - $e.height() - 15 < height ? position.top - height - 15 : position.top + $e.height() + 15)
-					.css('left', position.left + 300 < $diagram.width() ? position.left : position.left - 300 + $e.width())
-					.appendTo($diagram);
-
-				if (varbind_id) 
-					addGraph($history, history.rows.map((row) => [new Date(row[0]), row[idx + 1]]), history.columns[idx + 1], graph_height);
-				else 
-					history.ids.forEach((id, idx) => addGraph($history, history.rows.map((row) => [new Date(row[0]), row[idx + 1]]), history.columns[idx + 1], graph_height))	
-
-				$e.one('mouseleave', () => $history.trigger('mouseleave'));
-			}
-		});
-	});
-
-	$app.on('mouseenter', '#page-diagram-view #diagram #history', function (event) {
-		clearTimeout(popupTimer);
-	});
-
-	$app.on('mouseleave', '#page-diagram-view #diagram #history', function (event, delay) {
-		clearTimeout(popupTimer);
-		popupTimer = setTimeout(() => $(this).remove(), delay || 300);
-	});
-
 	$app.on('history-ready', function (event, device_id, history) {
 		($elements[device_id] || [])
 			.filter(($e) => $e.attr('type') == 'graph')
@@ -315,6 +299,7 @@ $(function() {
 			.forEach(function ($e) {
 				var idx = history.ids.indexOf($e.varbind_id);
 				var data = history.rows.map((row) => [new Date(row[0]), row[idx + 1]]).filter((row) => !isNaN(row[1]));
+				normalizeHistory(data);
 				
 				var id = $e.attr('id');
 				if (graphs[id]) {
@@ -329,7 +314,7 @@ $(function() {
 				
 				var opts = { 
 					axes : { 
-						x :  {drawAxis : false, drawGrid: false, valueFormatter: (ms) => cast('datetime', ms)},
+						x :  {drawAxis : false, drawGrid: false, valueFormatter: (ms) => cast('time', ms)},
 						y :  {drawAxis : false, drawGrid: false} 
 					},
 					labels: ['time', history.columns[idx + 1]],
@@ -366,6 +351,16 @@ $(function() {
 			.each((i, e) => $(e).trigger('mouseleave').remove())
 	});
 
+	$app.on('status-updated', function (event, packet) {
+		var $element_list = $elements[packet.id];
+		if (!$element_list)
+			return;
+
+		$element_list
+			.filter(($e) => $e.hasClass('device'))
+			.forEach(($e) => $e.trigger('update-element', [{status: packet.status}, packet.time]));
+	});
+
 	$app.on('values-updated', function (event, packet) {
 		var $element_list = $elements[packet.id];
 		if (!$element_list)
@@ -389,16 +384,19 @@ $(function() {
 		if (!$alert_list.length || !element_list)
 			return;
 
-		$('<li/>')
+		var $li = $('<li/>')
 			.attr('id', alert.id)	
 			.attr('device-id', alert.device_id)
 			.attr('status', alert.status)
 			.attr('time', alert.time)
-			.attr('is-hidden', !!alert.is_hidden)
 			.addClass('alert')	
-			.html(cast('time', alert.time) + ': ' + alert.reason)
-			.attr('title', alert.reason)
-			.appendTo($alert_list);	
+			.html(cast('time', alert.time) + ' ' + alert.path + ': ' + alert.description)
+			.attr('title', alert.description)
+
+		if (!!alert.is_hidden)			
+			$li.attr('is-hidden', true);
+
+		$li.appendTo($alert_list);	
 	});
 
 	$app.on('click', '#page-close', function() {
@@ -408,6 +406,20 @@ $(function() {
 		$diagram_list.find('li.active').removeClass('active');
 	});
 
+	$app.on('click', '.element[diagram-id]', function() {
+		$e = $diagram_list.find('li#' + this.getAttribute('diagram-id'));
+		if (!$e.hasClass('active'))
+			$e.trigger('click');
+	});
+
+	// :(
+	$app.on('click', '.element[device-id]', function() {
+		$(window).trigger('toggle-app');
+		$e = $('#app-device #device-list li#' + this.getAttribute('device-id'));
+		if (!$e.hasClass('active'))
+			$e.trigger('click');
+	});
+
 	// EDIT
 	$app.on('click', '#page-diagram-view #diagram-edit, #navigator #diagram-add', function() {
 		var diagram = $(this).data('diagram') || {element_list: []};
@@ -415,12 +427,15 @@ $(function() {
 		$page.empty();
 		var $component = $components.find('#page-diagram-edit').clone(true, true);
 		$component.find('.top-menu #name').val(diagram.name);
+
 		if (diagram.id)	
 			$component.find('.top-menu #diagram-save, .top-menu #diagram-save-cancel').attr('diagram-id', diagram.id);
 		$component.appendTo($page);
 
 		stores = {};
-		var ids = $components.find('select[store]').map((i, e) => e.getAttribute('store')).get().filter((e, i, arr) => arr.indexOf(e) == i);
+		var ids = $components.find('select[store]')
+			.map((i, e) => e.getAttribute('store')).get()
+			.filter((e, i, arr) => arr.indexOf(e) == i);
 
 		loadStores(ids, function () {
 			$editor = $page.find('#page-diagram-edit #diagram');
@@ -460,13 +475,14 @@ $(function() {
 			var obj = {};
 			fields[type].forEach((e) => obj[e] = props[e]);
 
+			var shift = type == 'link' ? 5 : 0;
 			return $.extend(obj, {
 				id: e.id,
 				type: type,
 				width: $e.width(),
 				height: $e.height(),
-				x: $e.position().left,
-				y: $e.position().top	
+				x: $e.position().left + shift,
+				y: $e.position().top + shift	
 			});
 		}).get();
 
@@ -512,12 +528,34 @@ $(function() {
 		var data = $(this).data('element');
 		data.id = new Date().getTime();
 		$editor.trigger('add-element', [$.extend({}, data), true]);
-	});		
+	});
 
+	$('body').on('keydown', function (event) {
+		// Del: Remove current
+		if (event.keyCode == 46 && $editor) {	 
+			$editor.find('.element[current]').remove();
+		}
+	});	
+	
 	$page.on('update-canvas', '#page-diagram-edit #diagram', function (event, newlink) {
 		var canvas = $editor.find('#canvas').get(0);
 		var ctx = canvas.getContext('2d');
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		var size = $editor.find('#grid-size').val() || 20;
+		ctx.strokeStyle = '#eee';
+		ctx.lineWidth = 1;
+
+		ctx.beginPath();
+		for (var i = 0; i <= canvas.height / size ; i++) {
+			ctx.moveTo(0.5, i * size + 0.5);
+			ctx.lineTo(canvas.width + 0.5, i * size + 0.5); 
+		}
+		for (var i = 0; i <= canvas.width / size; i++) {
+			ctx.moveTo(i * size + 0.5, 0 + 0.5);
+			ctx.lineTo(i * size + 0.5, canvas.height + 0.5); 
+		}
+	    ctx.stroke();
 		
 		var offset = $editor.offset();
 		$editor.find('.link').each(function (i, e) {
@@ -541,11 +579,14 @@ $(function() {
 			drawLink(ctx, newlink);
 	});
 
+	$page.on('change', '#grid-size', () => $editor.trigger('update-canvas'));
+
 	$page.on('add-element', '#page-diagram-edit #diagram', function (event, data, current) {
 		if (!data || !data.id)
 			return console.error('Incorrect request to create object', data);
 
 		//console.log('ADD', data);
+		var shift = data.type == 'link' ? 5 : 0;
 		var $e = $('<div/>')
 			.attr('id', data.id)
 			.attr('parent-id', data['parent-id'])
@@ -553,11 +594,16 @@ $(function() {
 			.attr('title', data.type)
 			.addClass('element')
 			.addClass(data.type)
-			.css({top: data.y || 100, left: data.x || 100, width: data.width || data.type != 'link' && 100 || 10, height: data.height  || data.type != 'link' && 100 || 10})
+			.css({
+				left: nvl(data.x, 100) - shift, 
+				top: nvl(data.y, 100) - shift,
+				width: data.width || data.type != 'link' && 100 || 10, 
+				height: data.height  || data.type != 'link' && 100 || 10
+			})
 			.data('props', data)
 			.appendTo($editor);
 
-		$('<div/>').attr('id', 'remove').html('&#10006;').appendTo($e);
+		$('<div/>').attr('id', 'remove').addClass('icon icon-remove').appendTo($e);
 		if (data.type == 'device' || data.type == 'diagram' || data.type == 'image')
 			$('<div/>').attr('id', 'link-add').attr('title', 'Add link').appendTo($e);
 		$('<div/>').attr('id', 'resize').appendTo($e);
@@ -586,7 +632,15 @@ $(function() {
 		$e.attr('current', true);
 		var props = $e.data('props') || {};
 		$e.find('select[store]').each((i, e) => createSelect($(e), props[e.id]));
-		$.each(props, (prop, value) => $e.find('#props #' + prop).val(value).trigger('change', [true, props['varbind-id']]));
+		$.each(props, function (prop, value) {
+			var $prop = $e.find('#props #' + prop);
+			if ($prop.is('input[type="checkbox"]'))
+				$prop[0].checked = !!value;
+			else
+				$prop.val(value);
+
+			$prop.trigger('change', [true, props['varbind-id']])
+		});
 
 		if (mode == 'hidden')
 			$e.removeAttr('current').find('#props').remove();
@@ -595,6 +649,7 @@ $(function() {
 	$page.on('mousedown', '#page-diagram-edit #diagram', (event) => stop(event) || $editor.trigger('set-current')); 
 	$page.on('mousedown', '#page-diagram-edit #diagram .element', function (event) {
 		stop(event);
+		
 		var $e = $(event.target);
 		var mode = $e.hasClass('link') || (Math.pow($e.width() - event.offsetX, 2) + Math.pow($e.height() - event.offsetY, 2) >= 200) ? 'move' : 'resize';
 		$editor.data('click', {x: event.offsetX, y: event.offsetY}).trigger('set-current', [event.currentTarget.id, mode]);
@@ -640,14 +695,21 @@ $(function() {
 		if (!$e.length || !mode)		
 			return;
 
+		var click = $editor.data('click'); 
+		if (click.x == event.offsetX && click.y == event.offsetY) // Fix: Chrome mousedown + mousemove bug
+			return;
+
+		var size = event.ctrlKey ? 1 : $editor.find('#grid-size').val();
 		if (mode == 'move') {
-			var click = $editor.data('click');
-			$e.offset({top: event.pageY - click.y, left: event.pageX - click.x});
-			$editor.trigger('update-canvas');
+			var offset = $editor.offset();
+			var shift = $e.hasClass('link') ? 5 : 0;
+			$e.offset({left: round(event.pageX - click.x - offset.left, size) + offset.left - shift, top: round(event.pageY - click.y - offset.top, size) + offset.top - shift});
+			if ($e.find('#link-add').length || $e.hasClass('link'))
+				$editor.trigger('update-canvas');
 		}
 
 		if (mode == 'resize') {
-			$e.css({width: event.clientX - $e.offset().left, height: event.clientY - $e.offset().top});
+			$e.css({width: round(event.clientX - $e.offset().left, size), height: round(event.clientY - $e.offset().top, size)});
 			$editor.trigger('update-canvas');
 		}		
 	});
@@ -655,7 +717,11 @@ $(function() {
 
 	$page.on('mouseup', '#page-diagram-edit #diagram', function (event) {
 		var click = $editor.data('click');
-		$editor.trigger('set-current', [$editor.attr('current'), click && (click.x != event.offsetX || click.y != event.offsetY) ? 'hidden' : ''])
+		var is_click = click && click.x == event.offsetX && click.y == event.offsetY;
+		var current = $editor.attr('current');
+		var id = $editor.find('.element[current]').attr('id');
+
+		$editor.trigger('set-current', [is_click && current != id || !is_click && current == id ? current : null, '']);
 	});
 
 	$page.on('mousedown', '#page-diagram-edit #diagram .element #props', (event) => stop(event));
@@ -675,7 +741,7 @@ $(function() {
 	});
 
 	$page.on('change', '#page-diagram-edit #diagram .element #props #label', function () {
-		$(this).closest('.element').attr('label', this.value);
+		$(this).closest('.element').attr('label', (this.value || '').split(';')[0]);
 	});
 
 	$page.on('change', '#page-diagram-edit #diagram .element #props #text', function () {
@@ -701,7 +767,7 @@ $(function() {
 
 		var $e = $(this).closest('.element');
 		var props = $e.data('props');
-		props[this.id] = this.value;
+		props[this.id] = this.type == 'checkbox' ? +this.checked || 0: this.value;
 		$e.data('props', props);
 
 		if ($e.hasClass('link'))
@@ -801,5 +867,4 @@ $(function() {
 			$e.trigger('change');
 		}
 	}
-
 });

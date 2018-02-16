@@ -22,8 +22,7 @@ if (module.parent) {
 	}
 
 	return module.exports = {
-		get: (device_list, period, downsample, callback) => worker.do({func: 'get', device_list, period, downsample}, callback),
-		getLatency: (device_list, period, downsample, callback) => worker.do({func: 'getLatency', device_list, period, downsample}, callback)
+		get: (device_list, period, downsample, callback) => worker.do({func: 'get', device_list, period, downsample}, callback)
 	};
 }
 
@@ -45,45 +44,59 @@ process.on('message', function (req) {
 	if (req.func == 'get')
 		return getMany(req.device_list, req.period, callback);
 
-	if (req.func == 'getLatency')
-		return getLatency(req.device_list, req.period, callback);
-
 	throw new Error('Bad request: ', req);
 });
 
 function getOne(device, period, callback) {
-	let varbind_list = device.varbind_list;
-	if (varbind_list.length == 0)
+	let varbind_list = device.varbind_list || [];
+	if (varbind_list && varbind_list.length == 0 && !device.latency)
 		return callback(null, {columns:[], rows: [], alerts: {}});
 
-	let columns = ['time'];
+	let columns = device.latency ? ['time', 'latency'] : ['time'];
 	columns.push.apply(columns, varbind_list.map((v) => `varbind${v.id}`));
 
-	let cols = ['time'];
+	let cols = device.latency ? ['time', 'latency'] : ['time'];
 	varbind_list.forEach((v) => cols.push(`varbind${v.id}`) && cols.push(`varbind${v.id}_status`));
 	
-	db.all(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, function (err, rows) {
-		if (err)	
-			return callback(err);
+	async.series([
+		(callback) => db.all(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, callback),
+		(callback) => db.all(`select time, varbind_id from alerts where device_id = ? and status = 4 and time between ? and ?`, [device.id, period[0], period[1]], callback)
+		], function (err, results) {
+			if (err)
+				return callback(err);
 
-		let alerts = {};
-		varbind_list.forEach((v) => alerts[v.id] = {});
-		rows.forEach(function (row) {
-			varbind_list.forEach(function (v) {
-				let status = row[`varbind${v.id}_status`];
-				if (status == 2 || status == 3)
-					alerts[v.id][row.time] = status;
+			let history = results[0];
+			let anomalies = results[1];
+
+			let alerts = {};
+			varbind_list.forEach((v) => alerts[v.id] = {});
+			history.forEach(function (row) {
+				varbind_list.forEach(function (v) {
+					let status = row[`varbind${v.id}_status`];
+					if (status == 2 || status == 3)
+						alerts[v.id][row.time] = status;
+				});
 			});
-		});
 
-		let res = {
-			ids: varbind_list.map((v) => v.id),
-			columns: varbind_list.map((v) => device.name + '/' + v.name), 
-			rows: rows.map((row) => columns.map((c) => isNaN(row[c]) ? row[c] : parseFloat(row[c]))), 
-			alerts
-		};
-		callback(null, res);
-	});
+			anomalies
+				.filter((a) => !!alerts[a.varbind_id])
+				.forEach((a) => alerts[a.varbind_id][a.time] = 4);
+		
+			let res = {
+				ids: varbind_list.map((v) => v.id),
+				columns: varbind_list.map((v) => device.name + '/' + v.name), 
+				rows: history.map((row) => columns.map((c) => isNaN(row[c]) ? row[c] : parseFloat(row[c]))), 
+				alerts
+			};
+
+			if (device.latency) {
+				res.ids.unshift('latency');
+				res.columns.unshift(device.name + '/' + 'latency');
+			}
+
+			callback(null, res);			
+		}
+	);
 }
 
 function getMany(device_list, period, callback) { 
@@ -131,21 +144,6 @@ function getMany(device_list, period, callback) {
 
 		callback(null, {ids, columns, rows, alerts});
 	})	
-}
-
-function getLatency(device_list, period, callback) {
-	db.all(`select "time", ${device_list.map((d) => 'device' + d.id).join(', ')} from latencies where time between ? and ? order by "time"`, period, function (err, rows) {
-		if (err)
-			return callback(err);
-
-		let res = {
-			ids: device_list.map((d) => d.id),
-			columns: ['time'].concat(device_list.map((d) => d.name)),
-			rows: rows.map((row) => [row.time].concat(device_list.map((d) => row['device' + d.id]))),
-			alerts: {}
-		}
-		callback(null, res);
-	});
 }
 
 function downsampleData(res, threshold) {

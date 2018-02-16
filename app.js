@@ -3,7 +3,6 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const qs = require('querystring');
-const crypto = require('crypto');
 const async = require('async');
 
 if (!fs.existsSync('./config.json'))
@@ -12,67 +11,22 @@ const config = require('./config.json');
 
 const Alert = require('./models/alert'); 
 const Check = require('./models/check'); 
-const Device = require('./models/device'); 
+const Device = require('./models/device');
 const Diagram = require('./models/diagram'); 
 
 const stats = require('./modules/stats');
-const nmap = require('./modules/nmap');
+const network = require('./modules/network');
+
+const Http = require('./modules/http');
+const Session = require('./modules/session');
 
 let protocols;
-let scan_processes = [];
-
-function parseBody(callback) {
-	let body = '';
-	this.on('data', (data) => body += data);
-	this.on('end', () => callback(qs.parse(body)))
-}
-
-// req.headers.cookie
-function parseCookies(cookies) {
-    return cookies && cookies.split(';').reduce(function(res, cookie) {
-        var pair = cookie.split('=');
-        res[pair.shift().trim()] = decodeURI(pair.join('='));
-		return res;
-    }, {}) || {};
-}
-
-function parsePeriod(query) {
-	let time = new Date().getTime();
-	let q = {from: parseInt(query.from), to: parseInt(query.to)};
-
-	if (!q.from)
-		return [time - 1000 * 3600, time];
-
-	if (!q.to)
-		return [q.from, q.from + 1000 * 3600 * 24];
-
-	return [q.from, q.to];
-}
-
-function send(code, data, mime) {
-	const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
-	this.setHeader('Content-type', mimes[mime] || 'text/plain');
-	this.statusCode = code;	
-	this.end(!(typeof(data) == 'string' || data instanceof Buffer || data == undefined) ? data + '' : (typeof(data) == 'boolean') ? +data : data);
-}
-
-function json (obj) {
-	this.send(200, JSON.stringify(obj), 'json')
-}
-
-let sessions = {};
-function Session(props) {
-	Object.assign(this, props);
-	let sid = crypto.randomBytes(32).toString('hex');
-	this.id = sid;
-	sessions[sid] = this;
-}
 
 function auth(req, res) {
 	let pwd_edit = config.access && config.access.edit || '';
 	let pwd_view = config.access && config.access.view || '';
 
-	let cookies = req.headers.cookie && parseCookies(req.headers.cookie);
+	let cookies = req.headers.cookie && req.parseCookies(req.headers.cookie);
 
 	if (req.url == '/login' && req.method == 'GET')
 		res.setHeader('Set-Cookie', [`sid=; expired; httpOnly`, `access=;expired`]);
@@ -90,7 +44,7 @@ function auth(req, res) {
 		return false;
 	}
 
-	req.session = cookies && cookies.sid ? sessions[cookies.sid] : null;
+	req.session = cookies && cookies.sid ? Session.get(cookies.sid) : null;
 
 	if (req.url != '/login' && !req.session) {		
 		let access = !pwd_edit ? 'edit' : !pwd_view ? 'view' : null;
@@ -106,18 +60,21 @@ function auth(req, res) {
 		return false;
 	}
 
-	if (req.session && req.session.access == 'view' && req.method != 'GET') {
+	if (req.session && req.session.access == 'view' && (req.method != 'GET' || /device\/([\d]+)$/g.test(req.url))) {
 		res.send(401, 'Access denied');
 		return false;
 	}
 
 	return true;
-} 
+}
 
 let server = http.createServer();
 server.on('request', function (req, res) {
-	Object.assign(res, {send, json});
-	req.parseBody = parseBody;
+	req.parseBody = Http.parseBody;
+	req.parseCookies = Http.parseCookies;
+	req.parsePeriod = Http.parsePeriod;
+	res.send = Http.send;
+	res.json = Http.json;
 
 	let onDone = (err, data) => err ? res.send(500, err.message) : data instanceof Object ? res.json(data) : res.send(200, data);
 	
@@ -134,7 +91,7 @@ server.on('request', function (req, res) {
 	if (path == '/device' && req.method == 'GET') {
 		return res.json(Device.getList().map(function (d) {
 			let obj = {};
-			['id', 'name', 'description', 'tag_list', 'status', 'mac', 'ip', 'is_pinged', 'parent_id', 'force_status_to'].forEach((prop) => obj[prop] = d[prop]);
+			['id', 'name', 'description', 'tag_list', 'status', 'mac', 'ip', 'is_pinged', 'parent_id', 'force_status_to', 'alive'].forEach((prop) => obj[prop] = d[prop]);
 			return obj;	
 		}));
 	}
@@ -169,10 +126,10 @@ server.on('request', function (req, res) {
 			return res.json(d.varbind_list.filter((v) => !v.is_temporary).map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
 
 		if ((/^\/device\/([\d]+)\/varbind-history$/).test(path) && req.method == 'GET') 
-			return d.getHistory(parsePeriod(query), query.downsample, onDone);
+			return d.getHistory(req.parsePeriod(query), query.only, query.downsample, onDone);
 
 		if ((/^\/device\/([\d]+)\/varbind-changes$/).test(path) && req.method == 'GET') 
-			return d.getChanges(parsePeriod(query), onDone);
+			return d.getChanges(req.parsePeriod(query), onDone);
 	}
 
 	if (path == '/diagram' && req.method == 'GET') 
@@ -205,28 +162,35 @@ server.on('request', function (req, res) {
 			return d.delete(onDone);
 	}
 
-	if (path == '/tag' && req.method == 'GET') 
-		return res.json(Device.getTagList());
+	if (path == '/tag/lists' && req.method == 'GET') 
+		return res.json(Device.getTagLists());
+
+	if (path == '/tags' && req.method == 'GET') 
+		return res.json(Device.getTags());
 	
 	if (path.indexOf('/tag/') == 0 && req.method == 'GET') {
 		let tag = path.substring(5);
-		return Device.getHistoryByTag(tag, query.tags, parsePeriod(query), query.downsample, onDone);
+		return Device.getHistoryByTag(tag, query.tags, req.parsePeriod(query), query.downsample, onDone);
 	}
 
 	if (path.indexOf('/alert') == 0) {
 		if (path == '/alert' && req.method == 'GET' && xhr)
-			return Alert.getList(!isNaN(query.from) ? parsePeriod(query) : undefined, onDone);
+			return Alert.getList(!isNaN(query.from) ? req.parsePeriod(query) : undefined, onDone);
 
 		if (path == '/alert/summary' && req.method == 'GET')
 			return Alert.getSummary(onDone);
 
-		if (path == '/alert/hide' && req.method == 'POST')
-			return Alert.hide(null, onDone);
+		if (path == '/alert/hide' && req.method == 'POST') 
+			return Alert.hide(query.ids, onDone);
+
+		if (/alert\/([\d]*)$/g.test(path) && req.method == 'DELETE') {
+			let id = parseInt(path.substring(7));
+			return Alert.delete(id, onDone);
+		}
 
 		if (/alert\/([\d]*)\/hide/g.test(path) && req.method == 'POST') {
 			let id = parseInt(path.substring(7));
-			Alert.hide(id, onDone);
-			return;
+			return Alert.hide(id, onDone);
 		}
 	}
 
@@ -261,18 +225,18 @@ server.on('request', function (req, res) {
 			return fs.unlink(template, onDone);
 	}
 
-	if (path == '/scan' && req.method == 'GET') {
-		let proc = nmap.ping(query.range, Device.getIpList().join(','), onDone);
-		scan_processes.push(proc);	
-		return;	
-	}
-
 	if (path == '/ping' && req.method == 'GET')
-		return nmap.ping(query.ip, null, function (err, result) {
-			if (err)	
-				return res.send(500, err.message);
-			res.send(200, result[0] && +result[0].alive || 0);
+		return network.ping(query.ip, function (err, latency) {
+			res.send(200, !err && !isNaN(latency) ? 1 : 0);
 		});	
+
+	if (path == '/scan' && req.method == 'GET') 
+		return network.scan(query.range, Device.getIpList(), onDone);
+
+	if (path == '/scan/cancel' && req.method == 'GET') {
+		network.stopScan();
+		return res.send(200);
+	}
 
 	if (path == '/protocols' && req.method == 'GET') {
 		if (!protocols) {
@@ -287,21 +251,6 @@ server.on('request', function (req, res) {
 		}
 
 		return res.json(protocols);
-	}
-
-	if (path == '/scan/cancel' && req.method == 'GET' || scan_processes.length > 0) {
-		scan_processes.forEach(function (proc) {
-			try {
-				proc.stdin.pause(); 
-				proc.kill();
-			} catch (err) {
-				console.error(__filename, err);
-			}
-		});
-		scan_processes = [];
-
-		if (path == '/scan/cancel' && req.method == 'GET')
-			return res.send(200);
 	}
 
 	if (path == '/value' && req.method == 'GET') {
@@ -352,19 +301,19 @@ server.on('request', function (req, res) {
 			return res.send(500, err.message);
 
 		if (stat.isDirectory()) 
-			return fs.readdir(path, (err, files) => (err) ? res.send(500, err.message) : res.json(files));
+			return fs.readdir(path, (err, files) => (err) ? res.send(500, err.message) : res.json(files.filter((f) => f != '.gitignore')));
 
 		if (stat.isFile())
 			return fs.readFile(path, (err, data) => (err) ?  res.send(500, err.message) : res.send(200, data, path.split('.').pop()));
 
-		res.send(500, `Error getting the path: ${path}.`);
+		res.send(500, `Error getting the path: ${path}`);
 	})
 });
 const port = config.port || 5000;
-server.listen(port, () => console.log(`Cicada running on port ${port}...`));	
+server.listen(port, () => console.log(`Cicada running on port ${port}... at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`));	
 
 // Update checks, init cache and run polling
-async.series([Check.update, Device.cache, Diagram.cache], function (err) {
+async.series([Check.update, Device.cache, Diagram.cache, Alert.cacheAnomalies], function (err) {
 	if (err) {
 		console.error(__filename, err.message);
 		process.exit(1);
@@ -374,5 +323,6 @@ async.series([Check.update, Device.cache, Diagram.cache], function (err) {
 	// Run services
 	fs.readdirSync('./services').forEach((file) => require('./services/' + file)(config));
 
+	network.setCommands(config['network-commands'] || {});
 	Device.getList().forEach((device) => device.polling(1000 + Math.random() * 3000));
 });

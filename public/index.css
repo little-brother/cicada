@@ -1,6 +1,7 @@
 * {margin: 0px; padding: 0px;} 
 html,body { padding: 0; margin: 0; font: normal 14px "Helvetica Neue", Helvetica, Arial, sans-serif; overflow:hidden;}
 input[type="text"] {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
+select {border: 1px solid #bbb; height: 20px;}
 textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .hidden {display: none;}
 .a {color: #337ab7; cursor: pointer; text-decoration: none;}
@@ -34,13 +35,41 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .app #navigator ul li[status="2"]:before {background: gold}
 .app #navigator ul li[status="3"]:before {background: #f00}
 
+.app #navigator .top-menu > div:nth-child(1) {margin-left: 0;}
+
+.icon::before {background: url(icons.png) no-repeat; content: ''; display: inline-block; width: 16px; height: 16px; position: relative; margin-right: 2px; top: 2px;} 
+.icon:empty::before {margin-right: 0;}
+.icon-add::before {background-position: 0;}
+.icon-remove::before {background-position: -16px 0;}
+.icon-ok::before {background-position: -32px 0;}
+.icon-cancel::before {background-position: -48px 0;}
+.icon-scan::before {background-position: -64px 0;}
+.icon-chart::before {background-position: -80px 0;}
+.icon-clone::before {background-position: -96px 0;}
+.icon-edit::before {background-position: -112px 0;}
+.icon-save::before {background-position: -128px 0;}
+.icon-agent::before {background-position: -192px 0;}
+.icon-expression::before {background-position: -208px 0;}
+.icon-external::before {background-position: -224px 0;}
+.icon-native::before {background-position: -240px 0;}
+.icon-collector::before {background-position: -256px 0;}
+.icon-label::before {background-position: -272px 0;}
+.icon-label-color::before {background-position: -288px 0;}
+.icon-image::before {background-position: -304px 0;}
+.icon-bgcolor::before {background-position: -320px 0;}
+
 #app-device #navigator #device-list {bottom: 42px;}
+#app-device #navigator #device-list li[is-hidden] {display: none;}
+#app-device #navigator #device-list li[is-hidden]:not(.active) {display: none;}
+#app-device #navigator #device-list li:not([alive="true"]) {color: #bbb;}
 #app-device #navigator #device-list li #ip {margin-left: 15px; font-size: 10px; display: inline-block;}
 #app-device #navigator #device-list li #mac {margin-left: 10px; font-size: 10px; display: inline-block;}
-#app-device #navigator #alert-block {cursor: pointer; border: 1px solid #eee; font-size: 24px; line-height: 40px; bottom: 0; height: 40px; position: absolute; left: 0; right: 0; text-align: center; background: #fff}
-#app-device #navigator #alert-block span:before {display: inline-block; content: '\002639'; margin: 0 5px; font-weight: bold;}
-#app-device #navigator #alert-block #warning:before {color: gold}
-#app-device #navigator #alert-block #critical:before {color: #f00}
+#app-device #navigator #alert-block {cursor: pointer; border: 1px solid #eee; font-size: 24px; line-height: 40px; bottom: 0; height: 40px; position: absolute; left: 0; right: 0; text-align: center; background: #fff; white-space: nowrap;}
+#app-device #navigator #alert-block span:before {display: inline-block; width: 18px; height: 18px; content: ''; margin: 0 3px; font-weight: bold; border-radius: 50%; box-shadow: 1px 1px 2px #bbb;}
+#app-device #navigator #alert-block > * {position: relative; top: 2px;}
+#app-device #navigator #alert-block #anomaly:before {background: rgb(150, 150, 255);}
+#app-device #navigator #alert-block #warning:before {background: gold;}
+#app-device #navigator #alert-block #critical:before {background: #f00;}
 
 #app-diagram #navigator #diagram-list li {padding-top: 12px; padding-bottom: 12px;}
 #app-diagram #navigator #diagram-list li[status]:before {top: 3px;}
@@ -83,6 +112,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
 #app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
 #app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
+#app-device #page-device-view #varbind-list::after {content: attr(updated); display: inline-block; position: absolute; bottom: 10px; right: 20px; font-size: 10px;}
 
 #app-device #page-device-edit label.without-varbind {color: #bbb;}
 #app-device #page-device-edit #template-save img {height: 12px;}
@@ -117,7 +147,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device .varbind-list #td-status-conditions #if[if="change"] ~ #value,
 #app-device .varbind-list #td-status-conditions #if[if="any"] ~ #value,
 #app-device .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
-#app-device .varbind-list #td-status-conditions #value {width: 60px;}
+#app-device .varbind-list #td-status-conditions #value {width: 60px; position: relative; top: -2px;}
 #app-device .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
 #app-device .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
 
@@ -130,6 +160,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device .varbind-list tbody tr[check-id] #td-status-conditions #condition-add {visibility: hidden;}
 #app-device .varbind-list tbody tr[check-id] #td-status-conditions #condition-remove {visibility: hidden;}
 
+#app-device .varbind-list td input {height: 20px; position: relative; top: -1px;}
 #app-device .varbind-list td > input {width: 100%;}
 #app-device .varbind-list #varbind-add, 
 #app-device .varbind-list #check-add  {float: left; padding-left: 5px;}
@@ -149,9 +180,10 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device .varbind-list #td-value:after {content: '\27f3'; display: block;}
 
 #app-device #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
-#app-device #page-device-edit .ping-button:after {margin-left: 5px;}
-#app-device #page-device-edit .ping-button[status="0"]:after {content: '\2717';}
-#app-device #page-device-edit .ping-button[status="1"]:after {content: '\2713';}
+#app-device #page-device-edit .ping-button:after {background: url(icons.png); width: 16px; height: 14px; content: ''; display: inline-block; margin-left: 2px;}
+#app-device #page-device-edit .ping-button:not([status]):after {display: none;}
+#app-device #page-device-edit .ping-button[status="0"]:after {background-position: -176px 0;}
+#app-device #page-device-edit .ping-button[status="1"]:after {background-position: -160px 0;}
 
 #app-device #page-device-edit #tags:not([focused]) ~ #tag-list {display: none;}
 #app-device #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;}
@@ -177,22 +209,35 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #page-device-scan #device-scan-result td > select {width: 100%;}
 #app-device #page-device-scan #device-scan-result tbody #td-add {text-align: center;}
 
-#app-device #page-alert-list-view #alert-list {width: 100%; padding: 20px; margin-top: 2px; padding-top: 25px;}
+#app-device #page-alert-list-view #alert-list {width: 100%; padding: 20px; margin-top: 2px; padding-top: 35px;}
 #app-device #page-alert-list-view #alert-list td {padding: 0 5px;}
 #app-device #page-alert-list-view #alert-list #td-status {width: 25px; font-size: 24px; font-weight: bold;}
 #app-device #page-alert-list-view #alert-list #td-datetime {width: 120px; font-size: 10px; cursor: pointer;}
-#app-device #page-alert-list-view #alert-list #td-device {width: 200px; cursor: pointer;}
+#app-device #page-alert-list-view #alert-list #td-path {width: 200px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; max-width: 200px;}
+#app-device #page-alert-list-view #alert-list #td-hint {width: 20px; cursor: pointer;}
 #app-device #page-alert-list-view #alert-list #td-hide {width: 40px; cursor: pointer;}
 #app-device #page-alert-list-view #alert-list tr:hover {background-color: #eff; color: #000 !important;}
-#app-device #page-alert-list-view #alert-list tr[status="2"] #td-status {color: gold;}
-#app-device #page-alert-list-view #alert-list tr[status="3"] #td-status {color: #f00;}
+#app-device #page-alert-list-view #alert-list tr[status] #td-status {text-align: center;}
+#app-device #page-alert-list-view #alert-list tr[status] #td-status::after {width: 16px; height: 16px; display: inline-block; content: ''; border-radius: 50%; box-shadow: 1px 1px 2px #bbb;}
+#app-device #page-alert-list-view #alert-list tr[status="2"] #td-status::after {background: gold;}
+#app-device #page-alert-list-view #alert-list tr[status="3"] #td-status::after {background: red;}
+#app-device #page-alert-list-view #alert-list tr[status="4"] #td-status::after {background: rgb(100, 100, 255);}
 #app-device #page-alert-list-view #alert-list tr[is-hidden="1"] {color: #bbb;}
 #app-device #page-alert-list-view #alert-list tr[is-hidden="1"] #td-hide {display: none;}
-#app-device #page-alert-list-view #alert-list tbody:empty:after {content: 'No actual alerts'}
 #app-device #page-alert-list-view .history-period-block {right: 30px;}
+#app-device #page-alert-list-view #alert-list .reject {float: right; cursor: pointer; color: #f00}
+
+#app-device #page-alert-list-view #alert-list-filter {position: absolute; left: 60px; top: 2px; font-size: 0;}
+#app-device #page-alert-list-view #alert-list-filter input[type="checkbox"] {display: none;}
+#app-device #page-alert-list-view #alert-list-filter input[type="checkbox"] ~ label {width: 18px; height: 18px; border-radius: 50%; display: inline-block; cursor: pointer; margin-right: 7px; position: relative; top: 3px;}
+#app-device #page-alert-list-view #alert-list-filter input[type="checkbox"] + label {box-shadow: 1px 1px 2px #bbb;}
+#app-device #page-alert-list-view #alert-list-filter input[type="checkbox"]:checked + label {box-shadow: 0px 0px 3px 3px #ddd;}
+#app-device #page-alert-list-view #alert-list-filter input[value="4"] + label {background: rgb(150, 150, 255);}
+#app-device #page-alert-list-view #alert-list-filter input[value="2"] + label {background: gold;}
+#app-device #page-alert-list-view #alert-list-filter input[value="3"] + label {background: #f00;}
+#app-device #page-alert-list-view #alert-list-filter #filter-text {width: 500px; position: relative; top: -2px; margin-left: 55px; font-size: initial; border: none; border-bottom: solid 1px #eee; }
 
 #app-device #page-check-list-edit #restrictions {font-weight: bold; color: red; margin-left: 10px;}
-
 
 #app-diagram #page-diagram-view #alert-list {position: absolute; right: 20px; list-style: none; z-index: 10;}
 #app-diagram #page-diagram-view #alert-list:empty {display:none;}
@@ -200,47 +245,87 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-diagram #page-diagram-view #alert-list .alert {max-width: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 10px; cursor: default;}
 #app-diagram #page-diagram-view #alert-list .alert[status="2"] {background: rgba(255,255,200,0.5);}
 #app-diagram #page-diagram-view #alert-list .alert[status="3"] {background: rgba(255,200,200,0.5);}
-#app-diagram #page-diagram-view #alert-list .alert[hidden] {opacity: 0.4;}
+#app-diagram #page-diagram-view #alert-list .alert[status="4"] {background: rgba(200,200,255,0.5);}
+#app-diagram #page-diagram-view #alert-list .alert[is-hidden] {display: none;}
 
 #app-diagram #page-diagram-view #diagram {position: relative;}
 #app-diagram #page-diagram-view #diagram .element {position: absolute; background-size: cover; z-index: 2;}
-#app-diagram #page-diagram-view #diagram .element[highlight] {outline: 3px dotted blue;}
+#app-diagram #page-diagram-view #diagram .element[highlight] {outline: 1px dashed blue;}
+#app-diagram #page-diagram-view #diagram .element[device-id] {cursor: pointer;}
+#app-diagram #page-diagram-view #diagram .element[diagram-id] {cursor: pointer;}
 #app-diagram #page-diagram-view #diagram > canvas {position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; pointer-events: none;}
 
-#app-diagram #page-diagram-view #diagram .element.status[status]::before {content: ' '; position: absolute; width: 10px; bottom: 0; right: 0; height: 10px; border-radius: 50%; }
-#app-diagram #page-diagram-view #diagram .element.status[status="1"]::before {background: #0f0;}
-#app-diagram #page-diagram-view #diagram .element.status[status="2"]::before {background: gold;}
-#app-diagram #page-diagram-view #diagram .element.status[status="3"]::before {background: #f00;}
+#app-diagram #page-diagram-view #diagram .element[label]:not(.link)::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%; font-size: 10px;}
+#app-diagram #page-diagram-view #diagram .element[live-label].status[status="0"]::after {content: attr(label0);}
+#app-diagram #page-diagram-view #diagram .element[live-label].status[status="1"]::after {content: attr(label1);}
+#app-diagram #page-diagram-view #diagram .element[live-label].status[status="2"]::after {content: attr(label2);}
+#app-diagram #page-diagram-view #diagram .element[live-label].status[status="3"]::after {content: attr(label3);}
 
-#app-diagram #page-diagram-view #diagram .element[type="device"]::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%;}
-#app-diagram #page-diagram-view #diagram .element[type="status"][status] {border-radius: 50%; border: 1px solid #eee;}
-#app-diagram #page-diagram-view #diagram .element[type="status"][status="1"] {background: #eee;}
-#app-diagram #page-diagram-view #diagram .element[type="status"][status="1"] {background: #0f0;}
-#app-diagram #page-diagram-view #diagram .element[type="status"][status="2"] {background: gold;}
-#app-diagram #page-diagram-view #diagram .element[type="status"][status="3"] {background: #f00;}
+#app-diagram #page-diagram-view #diagram .element[live-label-color].status[status]::after {color: #000;}
+#app-diagram #page-diagram-view #diagram .element[live-label-color].status[status="1"]::after {background: #0f0;}
+#app-diagram #page-diagram-view #diagram .element[live-label-color].status[status="2"]::after {background: gold;}
+#app-diagram #page-diagram-view #diagram .element[live-label-color].status[status="3"]::after {background: #f00; color: #fff;}
+
+#app-diagram #page-diagram-view #diagram .element[live-bgcolor].status[status] {background: #fff;}
+#app-diagram #page-diagram-view #diagram .element[live-bgcolor].status[status="1"] {background: #0f0;}
+#app-diagram #page-diagram-view #diagram .element[live-bgcolor].status[status="2"] {background: gold;}
+#app-diagram #page-diagram-view #diagram .element[live-bgcolor].status[status="3"] {background: #f00;}
+
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status] {background-position-x: 0;}
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status="1"] {background-position-x: -100%;}
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status="2"] {background-position-x: -67%;}
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status="3"] {background-position-x: -33%;}
+
+#app-diagram #page-diagram-view #diagram .element[type="status"][live-value]::after {content: attr(value) !important;}
+
 #app-diagram #page-diagram-view #diagram .element[type="value"] {text-align: center;}
-#app-diagram #page-diagram-view #diagram .element[type="value"][status="1"] {background: #0f0;}
-#app-diagram #page-diagram-view #diagram .element[type="value"][status="2"] {background: gold;}
-#app-diagram #page-diagram-view #diagram .element[type="value"][status="3"] {background: #f00;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"] {border: 1px solid #000;}
+#app-diagram #page-diagram-view #diagram .element[type="value"].bvalue::before {content: attr(unit); text-align: right; line-height: initial; font-size: initial; position: absolute; bottom: 3px; right: 5px;}
+#app-diagram #page-diagram-view #diagram .element[type="value"].bvalue {padding: 0 5px;}
+#app-diagram #page-diagram-view #diagram .element[type="value"]::after {left: 0; font-size: initial; line-height: initial;}
+
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue:not([live-bgcolor]) {background: blue;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue::before {content: attr(value); text-align: center;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue div {position: absolute; right: 0; top: 0; bottom: 0; background: #fff; z-index: -1;}
+
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue:not([live-bgcolor]) {background: blue;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue::before {content: attr(value); position: relative; top: -20px; font-size: 10px;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue::after {left: -50%;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue div {position: absolute; right: 0; left: 0; top: 0; background: #fff; z-index: -1;}
+
+#app-diagram #page-diagram-view #diagram .element[type="value"].no-label {font-size: 0}
+#app-diagram #page-diagram-view #diagram .element[type="value"].no-label::before{font-size: 0}
+#app-diagram #page-diagram-view #diagram .element[type="value"].no-label::after{font-size: 0}
+
+
+#app-diagram #page-diagram-view #diagram .element[type="status"] {z-value: 4;}
+#app-diagram #page-diagram-view #diagram .element[type="value"] {z-value: 5;}
+#app-diagram #page-diagram-view #diagram .element[type="graph"] {z-value: 3;}
+#app-diagram #page-diagram-view #diagram .element[type="text"] {z-value: 10;}
+
 #app-diagram #page-diagram-view #diagram .element[type="graph"] {border: 1px dotted #eee;}
 #app-diagram #page-diagram-view #diagram .element[type="graph"] .dygraph-xlabel {font-size: 10px;}
-#app-diagram #page-diagram-view #diagram #history {position: absolute; border: 1px solid #bbb; z-index: 10; background: #fff;}
-#app-diagram #page-diagram-view #diagram #history > div:nth-child(2n) {background-color: #eee;}
+
+.app .graph-hint-parent {position: relative;}
+.app .graph-hint-parent #graph-hint {position: absolute; border: 1px solid #bbb; z-index: 10; background: #fff;}
+.app .graph-hint-parent #graph-hint > div:nth-child(2n) {background-color: #eee;}
 
 #app-diagram #page-diagram-view #diagram .element[type="link"] {padding: 3px; border: 1px solid #bbb; background: #eee; color: #000 !important;}
 #app-diagram #page-diagram-view #diagram .element[type="link"]:empty {display: none;}
 
+#app-diagram #page-diagram-edit #grid-size {position: absolute; top: 0; right: 0; z-index: 1;}
 #app-diagram #page-diagram-edit #name {position: relative; top: -1px; margin-left: 10px;}
 #app-diagram #page-diagram-edit #diagram {position: relative;}
 #app-diagram #page-diagram-edit #diagram > canvas {position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; pointer-events: none;}
-#app-diagram #page-diagram-edit #diagram .element {position: absolute; -moz-user-select: none; user-select: none; border: 1px dotted #bbb; z-index: 2;}
-#app-diagram #page-diagram-edit #diagram .element[current] { z-index: 10;} 
+#app-diagram #page-diagram-edit #diagram .element {position: absolute; -moz-user-select: none; user-select: none; border: 1px dashed #bbb; z-index: 2;}
+#app-diagram #page-diagram-edit #diagram .element.link {z-index: 5;}
+#app-diagram #page-diagram-edit #diagram .element[current] { z-index: 10; border-color: #000;} 
 
 #app-diagram #page-diagram-edit #diagram .element:not([current]) #remove {display: none}
 #app-diagram #page-diagram-edit #diagram .element:not([current]) #link-add {display: none}
 
-#app-diagram #page-diagram-edit #diagram .element #remove {position: absolute; right: 0; top: -4px; cursor: pointer; color: #000 !important;}
-#app-diagram #page-diagram-edit #diagram .element #resize {width: 10px; height: 10px; background: red; position: absolute; right: 0; bottom: 0; cursor: se-resize;}
+#app-diagram #page-diagram-edit #diagram .element #remove {position: absolute; right: 0; top: -4px; cursor: pointer; z-index: 1;}
+#app-diagram #page-diagram-edit #diagram .element #resize {width: 10px; height: 10px; background: url(icons.png); background-position: -148px -5px; position: absolute; right: 0; bottom: 0; cursor: se-resize;}
 #app-diagram #page-diagram-edit #diagram .element #link-add {width: 10px; height: 10px; background: green; position: absolute; right: 0; bottom: 0; left: 0; top: 0; margin: auto; border-radius: 50%; cursor: pointer}
 
 
@@ -249,19 +334,25 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-diagram #page-diagram-edit #diagram .element.link #resize {display: none}
 #app-diagram #page-diagram-edit #diagram .element.link #link-add {display: none}
 
-#app-diagram #page-diagram-edit #diagram .element.device::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%;}
-#app-diagram #page-diagram-edit #diagram .element.graph::after {font-size: 20px; content: '1-hour graph';}
-#app-diagram #page-diagram-edit #diagram .element.graph #props input[type="text"] {width: 42px;}
+#app-diagram #page-diagram-edit #diagram .element:not(.link)::after {content: attr(label); position: absolute; width: 100%; text-align: center; top: 100%; font-size: 10px;}
+#app-diagram #page-diagram-edit #diagram .element.graph::after {content: '1-hour chart'; top: 0;}
 #app-diagram #page-diagram-edit #diagram .element.text div {font-size: initial;}
-#app-diagram #page-diagram-edit #diagram .element.text::after {content: attr(text);}
-#app-diagram #page-diagram-edit #diagram .element.value div {font-size: initial;}
-#app-diagram #page-diagram-edit #diagram .element.value::after {content: '@V';}
-#app-diagram #page-diagram-edit #diagram .element.status {border-radius: 50%;}
+#app-diagram #page-diagram-edit #diagram .element.text::after {content: attr(text); top: 0;}
+#app-diagram #page-diagram-edit #diagram .element.value::after {content: 'value'; top: 0;}
 
 #app-diagram #page-diagram-edit #diagram select, input[type = "text"] {border: 1px solid #bbb; width: 100px; font-size: 10px;}
-#app-diagram #page-diagram-edit #diagram input[type = "text"] {width: 97px; height: 16px;}
+#app-diagram #page-diagram-edit #diagram input[type = "text"] {width: 99px; height: 20px;}
+#app-diagram #page-diagram-edit #diagram .element #props {position: absolute; left: 100%; margin-left: 10px; width: 155px; background: #fff; border: 1px solid #bbb; padding: 5px; color: #000 !important;}
+#app-diagram #page-diagram-edit #diagram .element #props > div {margin-bottom: 3px;}
 #app-diagram #page-diagram-edit #diagram .element #props label {width: 50px; display: inline-block;font-size: 10px !important;}
-#app-diagram #page-diagram-edit #diagram .element #props {position: absolute; left: 100%; margin-left: 10px; top: -5px; width: 155px; background: #fff; border: 1px dotted #eee; padding: 5px; color: #000 !important;}
+
+#app-diagram #page-diagram-edit #diagram .element #props label.icon {width: 30px; position: relative; top: 2px; border-radius: 3px; text-align: center; cursor: pointer;}
+#app-diagram #page-diagram-edit #diagram .element #props input[type="checkbox"] {display: none;}
+#app-diagram #page-diagram-edit #diagram .element #props input[type="checkbox"]:checked + label {background: #eee;}
+
+#app-diagram #page-diagram-edit #diagram .element #props #min {width: 43px;}
+#app-diagram #page-diagram-edit #diagram .element #props #max {width: 43px;}
+
 
 #stats {margin: 10px;}
 #stats tr:hover {background-color: #eff;}
@@ -291,10 +382,10 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .tabs > label .remove {margin-left: 10px; cursor: pointer;}
 .tabs #protocol-menu .button span {margin-left: 5px; font-size: 18px;}
 .tabs #protocol-menu #protocol-list div {cursor: pointer;}
-.tabs .agent:before {content: '\25c6'; margin-right: 5px;}
-.tabs .external:before {content: '\2327'; margin-right: 5px;}
-.tabs .expression:before {content: '\3a3'; margin-right: 5px;}
-.tabs .collector:before {content: '\203b'; margin-right: 5px;}
+//.tabs .agent:before {content: ''; margin-right: 5px;}
+//.tabs .external:before {content: '\2327'; margin-right: 5px;}
+//.tabs .expression:before {content: '\3a3'; margin-right: 5px;}
+//.tabs .collector:before {content: '\203b'; margin-right: 5px;}
 .tabs .native:before {}
 
 .tabs > input.hidden {display: none !important;}

@@ -1,7 +1,6 @@
 'use strict'
 const async = require('async');
 const RRStore = require('rrstore');
-const regression = require('regression');
 
 const mixin = require('./mixin');
 Object.assign(Varbind, mixin.get('varbind'), {generateExpressionCode});
@@ -94,11 +93,11 @@ function generateExpressionCode (curr_device, expression) {
 	let expr = (expression + '').replace(/\n/g, '');
 	expr = expr.replace(/(\$\[([^\]]*)\]|\$(\w*))/g, function(matched, p1, p2, p3, pos, exp) {
 		let names = (p2 || p3 || '').split('=>').map((name) => (name || '').trim());
-		let device = (names.length == 1) ? curr_device : Device.getList().find((d) => d.name == names[0]) || {varbind_list: []};
+		let device = (names.length == 1) ? curr_device : mixin.get('device').getList().find((d) => d.name == names[0]) || {varbind_list: []};
 		let name = (names.length == 1) ? names[0] : names[1];
 		if (name[0] == '@') {
 			let prop = name.substring(1);
-			return (device[prop] !== undefined) ? `Device.get(${device.id}).${prop}` : ' null ';
+			return (device[prop] !== undefined) ? `(mixin.get('device').get(${device.id}) || {}).${prop}` : ' null ';
 		}
 		
 		let varbind = device.varbind_list.find((v) => v.name == name);
@@ -123,22 +122,26 @@ Varbind.prototype.calcExpressionValue = function () {
 	return result;
 }
 
-RRStore.prototype.forecast = function (when, method) {
-	method = method || 'linear';
+// Forecast value by linear regression
+RRStore.prototype.forecast = function (when) {
 	let arr = this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]));
 
 	if (arr.length < 3)
 		return null;	
 
-	let res;
-	try {	
-		res = regression[method](arr).predict(this.arr.length + when - 1)[1];
-	} catch (err) { 
-		res = 'ERR: Invalid forecast params';
-		console.error(__filename, err.message, `when: ${when}, method: ${method}`);
-	}
+	let mean = (arr) => arr.reduce((sum, e) => sum + e, 0) / arr.length;
+	let res = null;
 
-	return res;
+	let x = arr.map((e) => e[0]);
+	let y = arr.map((e) => e[1]);
+	let meanX = mean(x);
+	let meanY = mean(y);		
+
+	let beta = arr.reduce((sum, e) => sum + (e[0] - meanX) * (e[1] - meanY), 0) / arr.reduce((sum, e) => sum + (e[0] - meanX) * (e[0] - meanX), 0);
+	let alpha = meanY - beta * meanX;
+
+	// y = beta * x + alpha
+	return beta * (arr.length + when - 1) + alpha;
 }
 
 module.exports = Varbind;

@@ -11,11 +11,24 @@ function start(config) {
 	
 	wss.on('connection', function (ws, req) {
 		ws.on('message', function (msg) {
-			ws.device_id = (/device\/[\d]+$/g).test(msg) ? parseInt(msg.substring(8)) : (ws.device_id || 0);
-			ws.diagram_id = (/diagram\/[\d]+$/g).test(msg) ? parseInt(msg.substring(9)) : (ws.diagram_id || 0);
+			try {
+				let data = JSON.parse(msg);
+				if (data.device_id)
+					ws.device_id = parseInt(data.device_id) || 0;
+
+				if (data.diagram_id)
+					ws.diagram_id = parseInt(data.diagram_id) || 0;
+			} catch (err) {
+				console.error(__filename, err);
+			}
 		});
 
-		events.emit('new-connection', ws);
+		function sender (packet) {
+			try {
+				ws.send(JSON.stringify(packet));
+			} catch (err) { }
+		}
+		events.emit('new-connection', sender);
 	});
 	
 	function broadcast(packet, filter) {
@@ -41,8 +54,8 @@ function start(config) {
 	
 	events.on('values-updated', function (device, time) {
 		let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, status: v.status || 0}));
-		let packet = {event: 'values-updated', id: device.id, status: device.status, values, time};
-		broadcast(packet, (client) => client.device_id == device.id);	
+		let packet = {event: 'values-updated', id: device.id, status: device.status, values, latency: device.latency, time};
+		broadcast(packet, (client) => client.device_id == device.id);
 
 		Diagram.getList()
 			.filter((diagram) => !!diagram.devices[device.id])
@@ -55,7 +68,7 @@ function start(config) {
 	});
 	
 	events.on('status-updated', function(device, time) {
-		let packet = {event: 'status-updated', id: device.id, status: device.status, time}
+		let packet = {event: 'status-updated', id: device.id, status: device.status, alive: device.alive, time}
 		broadcast(packet);
 	});
 	

@@ -11,7 +11,7 @@ exports.getValues = function(opts, address_list, callback) {
 
 	function parseData(data) {
 	    let header, check, length;
-	
+
 	    if (data.length < (4 + 1 + 8 + 1)) 
 	        return new Error("Incorrect response size");
 	

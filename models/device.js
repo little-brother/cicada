@@ -5,14 +5,14 @@ const async = require('async');
 const db = require('../modules/db');
 const mixin = require('./mixin');
 const protocols = fs.readdirSync('./protocols').reduce((r, f) => {r[f] = require('../protocols/' + f); return r;}, {});
-const nmap = require('../modules/nmap');
+const network = require('../modules/network');
 const history = require('../modules/history');
 const events = require('../modules/events');
 const Varbind = require('./varbind');
 
 let timers = {};
 
-Object.assign(Device, mixin.get('device'), {cache: cacheAll, getValue, getIpList, updateLatencies, getHistoryByTag, getTagList});
+Object.assign(Device, mixin.get('device'), {cache: cacheAll, getValue, getIpList, getHistoryByTag, getTags, getTagLists});
 
 function cacheAll (callback) {
 	async.series([
@@ -55,59 +55,27 @@ function getIpList (is_pinged) {
 		.filter((e, idx, r) => r.indexOf(e) == idx); // unique
 }
 
-function updateLatencies (data, callback) {
-	if (!data || !data.length)
-		return callback();
-
-	let odata = {};
-	data.forEach((row) => odata[row.ip] = row);
-
-	let columns = ['time'];
-	let values = [new Date().getTime()];
-	Device.getList().filter((d) => !!d.is_pinged).forEach(function(d, i) {
-		let res = odata[d.ip] || data[i] && data[i].for == d.ip && data[i];
-		if (!res || !d.is_pinged)
-			return;
-
-		d.alive = res.alive;
-		d.latency = res.latency;
-
-		columns.push('device' + d.id);
-		let latency = res.latency;
-		values.push(isNaN(latency) ? 'null' : latency);
-
-		if (!d.is_status) {
-			let prev_prev_status = d.prev_status;
-			d.prev_status = d.status;
-			d.status = res.alive ? 1 : (device.force_status_to || 3);
-			events.emit('status-updated', d);
-			if (prev_prev_status != undefined && d.prev_status != d.status)
-				events.emit('status-changed', d, 'ping');
-		}
-	})
-
-	db.run(`insert into history.latencies ("${columns.join('","')}") values (${values.join(',')})`, callback);
-}
-
 // Return object: keys is device tag, values is array of varbind tags
-function getTagList () {
+function getTags () {
 	let tags = {All: []};
 	let device_list = Device.getList();
 	device_list.forEach((d) => d.is_pinged && d.tag_list.forEach((tag) => tags[tag] = ['latency']));
+
+	let push = (target, list) => target.push.apply(target, list.filter((tag) => tag[0] != '$') || []);
 	device_list.forEach(function(d) {
 		d.tag_list.filter((tag) => tag[0] != '$').forEach(function(tag) {
 			if (!tags[tag])
 				tags[tag] = [];
 
-			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => tags[tag].push.apply(tags[tag], v.tag_list || []));
+			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => push(tags[tag], v.tag_list));
 		})
 
 		if (d.tag_list.length == 0)
-			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => tags.All.push.apply(tags.All, v.tag_list || []));
+			d.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).forEach((v) => push(tags.All, v.tag_list));
 	});
 
 	for (let tag in tags)
-		if (tags[tag].length == 0 && tag != 'All')
+		if (tags[tag].length == 0 && tag != 'All' || tag[0] == '$')
 			delete tags[tag];	
 
 	for (let tag in tags)
@@ -119,6 +87,20 @@ function getTagList () {
 	return tags;
 }
 
+// Return all device and varbind tag lists
+function getTagLists() {
+	let device_tag_list = [];
+	let varbind_tag_list = [];
+
+	Device.getList().forEach((d) => device_tag_list.push.apply(device_tag_list, d.tag_list || []));
+	Varbind.getList().forEach((v) => varbind_tag_list.push.apply(varbind_tag_list, v.tag_list || []));
+
+	return {
+		device: device_tag_list.filter((e, idx, r) => r.indexOf(e) == idx),
+		varbind:  varbind_tag_list.filter((e, idx, r) => r.indexOf(e) == idx)
+	}
+}
+
 function getHistoryByTag(tag, device_tags, period, downsample, callback) {
 	let device_list = Device.getList();
 	let device_tag_list = (device_tags || '').split(';');
@@ -126,7 +108,7 @@ function getHistoryByTag(tag, device_tags, period, downsample, callback) {
 	if (device_tag_list.length && device_tag_list.indexOf('All') == -1) {
 		device_list = device_list.filter((d) => device_tag_list.some(function (tag) {
 			let re = new RegExp('\\b' + tag + '\\b');
-			return re.test(d.tag_list.join(' '))
+			return re.test(d.tag_list.join(' '));
 		}));
 	}
 
@@ -134,11 +116,11 @@ function getHistoryByTag(tag, device_tags, period, downsample, callback) {
 		return callback(new Error('Device list is empty')); 
 
 	if (tag == 'latency')
-		return history.getLatency(device_list.filter((d) => d.is_pinged).map((d) => new Object({id: d.id, name: d.name})), period, downsample, callback);
+		return history.get(device_list.filter((d) => d.is_pinged).map((d) => new Object({id: d.id, name: d.name, latency: true})), period, downsample, callback);
 
 	let dl = device_list.map(function (d) {
 		let varbind_list = d.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.value_type == 'number' && !v.is_temporary).map((v) => new Object({id: v.id, name: v.name})); 
-		return {id: d.id, name: d.name, varbind_list};
+		return {id: d.id, name: d.name, latency: false, varbind_list};
 	});
 
 	history.get(dl, period, downsample, callback);
@@ -176,7 +158,9 @@ function Device() {
 	this.__type__ = 'device';
 	this.varbind_list = [];
 	this.status = 0;
+	this.latency = null;
 	Object.defineProperty(this, 'is_status', {get: () => this.varbind_list.some((v) => v.is_status)});
+	Object.defineProperty(this, 'alive', {get: () => this.is_pinged && +this.latency == this.latency || !this.is_pinged});
 }
 
 Device.prototype.setAttributes = function (data) {
@@ -187,11 +171,14 @@ Device.prototype.setAttributes = function (data) {
 	if (this.id) 
 		this.id = parseInt(this.id);
 
+	this.force_status_to = parseInt(this.force_status_to) || 0;
+
 	['name', 'ip', 'mac', 'description'].forEach((prop) => this[prop] = (this[prop] || '').trim());
 	this.timeout = parseInt(this.timeout) || 3;
+	this.name = this.name || 'Unnamed';
 
 	try {
-		this.protocols = JSON.parse(data.json_protocols) || {};
+		this.protocols = data.json_protocols && JSON.parse(data.json_protocols) || {};
 		delete this.protocols.expression;
 		for (let protocol in this.protocols)
 			this.protocols[protocol].timeout = this.timeout;
@@ -225,9 +212,11 @@ Device.prototype.updateVarbindList = function () {
 	return this;
 }
 
-Device.prototype.getHistory = function (period, downsample, callback) {
-	let varbind_list = this.varbind_list.filter((v) => v.value_type == 'number' && !v.is_temporary).map((v) => new Object({id: v.id, name: v.name}));
-	history.get([{id: this.id, name: this.name, varbind_list}], period, downsample, callback);
+Device.prototype.getHistory = function (period, only_varbind_id, downsample, callback) {
+	let varbind_list = this.varbind_list
+		.filter((v) => v.value_type == 'number' && !v.is_temporary && (!only_varbind_id || v.id == only_varbind_id))
+		.map((v) => new Object({id: v.id, name: v.name}));
+	history.get([{id: this.id, name: this.name, latency: false, varbind_list}], period, downsample, callback);
 }
 
 Device.prototype.getChanges = function (period, callback) {
@@ -259,7 +248,12 @@ Device.prototype.updateParent = function (callback) {
 		return callback(null, null);		
 	}
 
-	nmap.route(device.ip, function(err, ips) {
+	network.trace(device.ip, function(err, ips) {
+		if (err || !ips || !ips.length) {
+			device.parent_id = null;
+			return callback(null, null);			
+		}
+			
 		let res;
 		Device.getList().forEach(function(d) {
 			let hop = ips.indexOf(d.ip);
@@ -290,11 +284,39 @@ Device.prototype.polling = function (delay) {
 		delete timers[device.id];
 	}
 
-	if (!device.varbind_list || device.varbind_list.length == 0)
+	if ((!device.varbind_list || device.varbind_list.length == 0) && !device.is_pinged)
 		return;
 
-	if (delay)
+	if (delay > 0)
 		return timers[device.id] = setTimeout(() => device.polling(), delay);
+
+	if (device.is_pinged && delay != -1) {
+		network.ping(device.ip, function(err, latency) {
+			device.latency = err ? NaN : latency;
+			let prev_prev_status = device.prev_status;
+
+			if (isNaN(device.latency)) {
+				device.prev_status = device.status;
+				device.status = device.force_status_to;
+			}
+
+			if (!isNaN(device.latency) && device.varbind_list.length == 0) {
+				device.prev_status = device.status;
+				device.status = 1;
+			}
+
+			if (isNaN(device.latency) || device.varbind_list.length == 0) {
+				events.emit('status-updated', device);
+				if (prev_prev_status != undefined && device.prev_status != device.status)
+					events.emit('status-changed', device, new Date().getTime(), 'ERR: ping');
+				
+				device.polling(device.period * 1000 || 60000); // reset polling
+			} else {
+				device.polling(-1);	// continue polling
+			}
+		})
+		return;
+	}
 
 	let values = {};
 	let errors = [];
@@ -308,8 +330,18 @@ Device.prototype.polling = function (delay) {
 
 			opts.ip = device.ip;	
 			protocol.getValues(opts, address_list, function(err, res) {
-				errors.push(err);
-				varbind_list.forEach((v, i) => values[v.id] = (err) ? {isError: true, value: err.message} : res[i]);
+				if (err) {
+					errors.push(err);
+					varbind_list.forEach((v, i) => values[v.id] = {isError: true, value: err.message});
+				} else if (!err && res.length && res.every((r) => r.isError)) {
+					err = new Error(res[0] && res[0].value || 'Unknown');
+					errors.push(err);
+					varbind_list.forEach((v, i) => values[v.id] = {isError: true, value: res[i] && res[i].value || err.message});
+				} else {
+					errors.push(false);
+					varbind_list.forEach((v, i) => values[v.id] = res[i]);
+				}
+
 				callback();
 			})
 		}, 
@@ -345,31 +377,29 @@ Device.prototype.polling = function (delay) {
 
 			events.emit('values-updated', device, time);
 
-			let isError = errors.every((e) => e instanceof Error);
-			device.alive = !isError;
-
+			let isError = errors.length && errors.every((e) => e instanceof Error);
 			if (isError) {
 				device.prev_status = device.status;
 				device.status = device.force_status_to;
 			} else {
-				device.updateStatus();
-			}	 
+				if (device.is_status)
+					device.updateStatus();
+				else 
+					device.status = 1;
+			}
 
 			events.emit('status-updated', device, time);
 
-			if (device.prev_status != device.status) {
-				let reason = isError ? 
-					errors.map((e) => e.message).join(';') :
-					device.varbind_list.filter((v) => v.is_status && v.status == device.status).map((v) => v.name + ': ' + v.value).join(';');
-				events.emit('status-changed', device, time, reason);
-			}
-	
+			if (device.prev_status != device.status) 
+				events.emit('status-changed', device, time, isError ? 'ERR: ' + errors.map((e) => e.message).join('; ') : null);
+
 			let query_list = [];
 			let params_list = [];
 
 			// number
-			let columns = ['time'];
-			let params = [time];
+			let columns = (device.is_pinged) ? ['time', 'latency'] : ['time'];
+			let params = (device.is_pinged) ? [time, device.latency] : [time];
+
 			let varbind_list = device.varbind_list.filter((v) => !v.is_temporary && v.value_type == 'number');
 
 			varbind_list.forEach(function(v) {
@@ -396,13 +426,14 @@ Device.prototype.polling = function (delay) {
 					params_list.push([time - 1, v.id]);
 
 					query_list.push(`insert into changes.device${device.id} (varbind_id, prev_value, value, status, start_date) values (?, ?, ?, ?, ?)`);
-					params_list.push([v.id, v.value_type == 'duration' ? v.prev_value : null, v.value || null, v.status, time]);
+					// params_list.push([v.id, v.value_type == 'duration' ? v.prev_value : null, v.value || null, v.status, time]);
+					params_list.push([v.id, v.prev_value == undefined ? null : v.prev_value, v.value == undefined ? null : v.value, v.status, time]);	
 				});
 
 			async.eachOfSeries(
 				query_list, 
 				(query, idx, callback) => db.run(query, params_list[idx], callback), 
-				(err) => (err) ? console.error(__filename, query, params_list[idx], err) : null
+				(err) => (err) ? console.error(__filename, err) : null
 			);
 	
 			device.polling(device.period * 1000 || 60000);
@@ -421,7 +452,8 @@ Device.prototype.delete = function (callback) {
 		function(err) {
 			if (err) 
 				return db.run('rollback transaction', (err2) => callback(err));
-		
+
+			events.emit('device-deleted', device);		
 			device.varbind_list.forEach((varbind) => varbind.cache('CLEAR'));
 			device.varbind_list = [];
 			device.polling();
@@ -496,6 +528,15 @@ Device.prototype.save = function (callback) {
 		},
 
 		function (callback) {
+			let ids = delete_varbind_ids.filter((id) => (Varbind.get(id) || {}).value_type == 'number')
+			if (!ids.length)	 
+				return callback();
+
+			let set = ids.map((id) => `varbind${id} = null, varbind${id}_status = null`).join(', ');
+			db.run(`update history.device${device.id} set ${set}`, callback);
+		},
+
+		function (callback) {
 			db.run('commit transaction', callback); 
 		}
 	], function(err) {
@@ -513,11 +554,10 @@ Device.prototype.save = function (callback) {
 		if (!!device.parent_id)
 			device.updateParent((err) => (err) ? console.error(err) : null);
 
-		if (isNew)
-			db.run(`alter table history.latencies add column device${device.id} real`, (err) => null);
+		events.emit('device-updated', device, time);
+		device.polling(2000);
 
 		db.checkHistoryTable(device, (err) => callback(err, device.id));
-		device.polling(2000);
 	});
 }
 

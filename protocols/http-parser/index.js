@@ -61,7 +61,7 @@ exports.getValues = function (opts, address_list, callback) {
 	function onDone() {
 		let res = address_list.map(function(address) {
 			let selector = address.selector;
-			let response = responses[address.url];
+			let response = responses[address.url] || {};
 			
 			if (response.error)  
 				return {value: response.error.message, isError: true};

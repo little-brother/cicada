@@ -7,11 +7,12 @@
 			<li><code>$X.value</code> or <code>$[X].value</code></li>
 			<li><code>$X.prev_value</code>, <code>$X.status</code>, <code>$X.value_type</code></li>
 			<li><code>$X.avg(10)</code>, <code>$X.sum(10)</code>, <code>$X.min(10)</code> and <code>$X.max(10)</code> to get average, summa, minimun and maximum of last 10 (any) values</li>
-			<li><code>$X.forecast(10, 3)</code> or <code>$X.forecast(10, 3, 'linear')</code> to get peredicted value based on linear method and 10 values on third measurement. Available methods: <code>linear</code> (default), <code>exponential</code>, <code>logarithmic</code>, <code>power</code> and <code>polynomial</code>.</li>	
+			<li><code>$X.forecast(10, 3)</code> to get predicted value by linear regression based on prev 10 values for third future measurement.</li>	
 			<li><code>$X.speed</code> to get speed (per seconds) of value changing between measurements.</li>
 		</ul>
 	</li>
-	<li>Use <code>$[@PROP]</code> to get device property, e.g. <code>$[@status]</code>, <code>$[@latency]</code>, <code>$[A => @alive]</code>.</li>
+	<li>Use <code>$[@PROP]</code> to get device property, e.g. <code>$[@status]</code> or <code>$[@latency]</code>.</li>
+	<li>Use <code>$[A => @B]</code> to get non-current device property, e.g. <code>$[My switch #1 => @latency]</code>.</li>
 	<li>Values of these varbinds updated after each device poll.</li>
 	<li>You can use any valid js-expression, e.g:
 		<ul style = "list-style-type: circle; margin-left: 20px;">	

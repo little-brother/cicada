@@ -3,6 +3,8 @@
 <head>
 	<meta charset="UTF-8"/>    
 	<title>Cicada</title>
+	<link href = "/index.css" rel="stylesheet"/>
+
 	<script src = "/vendors/jquery-1.11.0.min.js"></script>
 	<script src = "/vendors/jquery.splitter.js"></script>
 	<script src = "/vendors/dygraph.min.js"></script>
@@ -12,11 +14,10 @@
 
 	<script src = "/app-device.js"></script>
 	<script src = "/app-diagram.js"></script>
+
+	<script src = "/graph-hint.js"></script>
 	<script src = "/events.js"></script>
-
-
 	<script src = "/helpers.js"></script>
-	<link href = "/index.css" rel="stylesheet"/>
 </head>
 <body>
 
@@ -24,22 +25,23 @@
     <div id = "navigator">
 		<div class = "top-menu">
 			<div class="dropdown-click" tabindex = "0">
-				<div class = "button clickable" title = "Add device">+ Add</div>	
+				<div class = "button clickable icon icon-add" title = "Add device">Add</div>	
 				<div id = "template-list" class = "content"></div>
 			</div>
-			<div id = "device-scan" title = "Discovery devices">&#9973; Scan</div>
+			<div id = "device-scan" class = "icon icon-scan" title = "Discovery devices">Scan</div>
 			<div id = "check-list-edit" class = "hidden"></div>
 		</div>
 
 		<ul id = "device-list"></ul>
 		<div id = "alert-block">
-			<span id = "warning">--</span>
-			<span id = "critical">--</span>
+			<span id = "anomaly" title = "Anomaly">--</span>	
+			<span id = "warning" title = "Warning">--</span>
+			<span id = "critical" title = "Critical">--</span>
 		</div>
 	</div>
     <div id = "page-wrapper">
 		<div id = "page"></div>
-		<div id = "page-close">&#10006;</div>
+		<div id = "page-close" class = "icon icon-remove"></div>
 		<div id = "dashboard">
 			<div id = "tag-list">	
 				<div id = "device-tag-list" class = "tag-list"></div>				
@@ -57,12 +59,12 @@
 <div id = "app-diagram" class = "app">
     <div id = "page-wrapper">
 		<div id = "page"></div>
-		<div id = "page-close">&#10006;</div>
+		<div id = "page-close" class = "icon icon-remove"></div>
 	</div>
 
     <div id = "navigator">
 		<div class = "top-menu">
-			<div id = "diagram-add" class = "clickable" title = "Add diagram">+ Add</div>	
+			<div id = "diagram-add" class = "clickable icon icon-add" title = "Add diagram">Add</div>	
 		</div>
 
 		<ul id = "diagram-list"></ul>
@@ -71,7 +73,14 @@
 
 
 <div id = "components" style = "display: none">
-	<div id = "page-alert-list-view">
+	<div id = "page-alert-list-view" class = "graph-hint-parent">
+		<div id = "alert-list-filter">
+			<input type = "checkbox" id = "filter-status-4" value = "4" autocomplete = "off" ><label for = "filter-status-4" title = "Anomaly"></label>
+			<input type = "checkbox" id = "filter-status-2" value = "2" autocomplete = "off" ><label for = "filter-status-2" title = "Warning"></label>
+			<input type = "checkbox" id = "filter-status-3" value = "3" autocomplete = "off" ><label for = "filter-status-3" title = "Critical"></label>
+
+			<input id = "filter-text" type = "text" placeholder = "Input text">
+		</div>
 		<div class = "history-period-block">
 			<input class = "history-period" autocomplete = "off">
 			<span class = "history-period-value">Actual</span>
@@ -79,10 +88,11 @@
 		<table id = "alert-list">
 		<thead>
 			<tr id = "template-row">
-				<td id = "td-status">&#9785;</td>
+				<td id = "td-status"></td>
 				<td id = "td-datetime"></td>
-				<td id = "td-device"></td>
-				<td id = "td-reason"></td>
+				<td id = "td-path"></td>
+				<td id = "td-description"></td>
+				<td id = "td-hint" class = "graph-hint icon icon-chart"></td>
 				<td id = "td-hide" title = "Hide alert from list">Hide</td>
 			</tr>	
 		</thead>
@@ -92,9 +102,9 @@
 
 	<div id = "page-device-view">
 		<div class = "top-menu">
-			<div id = "device-edit">&#9997; Edit</div>
-			<div id = "device-clone">&#9775; Clone</div>
-			<div id = "device-remove">&#10006; Remove</div>
+			<div id = "device-edit" class = "icon icon-edit">Edit</div>
+			<div id = "device-clone" class = "icon icon-clone">Clone</div>
+			<div id = "device-remove" class = "icon icon-remove">Remove</div>
 		</div>
 		<div class = "history-period-block">
 			<input class = "history-period" autocomplete = "off">
@@ -105,8 +115,8 @@
 
 	<div id = "page-device-edit">
 		<div class = "top-menu">
-			<div id = "device-save">&#10003; Save</div>
-			<div id = "device-save-cancel">&#8709; Cancel</div>
+			<div id = "device-save" class = "icon icon-ok">Save</div>
+			<div id = "device-save-cancel" class = "icon icon-cancel">Cancel</div>
 		</div>
 
 		<div id = "page-content">
@@ -118,8 +128,7 @@
 					<td>Name</td>
 					<td>
 						<input id = "name" type = "text" class = "long">
-						<span id = "template-save" class = "clickable" title = "Save as template. Use device name as template name.">
-							<img src = "save.bmp" alt="&#128190;">
+						<span id = "template-save" class = "clickable icon icon-save" title = "Save as template. Use device name as template name.">
 						</span>
 					</td>
 				</tr>	
@@ -135,9 +144,7 @@
 					<td>Tags</td>
 					<td>
 						<input id = "tags" type = "text"  class = "long" placeholder = "Split tag by semicolon">					
-						<div id = "tag-list">
-							<span class = "a">CPU</span> <span class = "a">CPU2</span>
-						</div>
+						<div id = "tag-list"></div>
 					</td>
 				</tr>	
 				<tr>
@@ -147,10 +154,10 @@
 				</table>			
 				<table>
 				<tr>
-					<td><input id = "is-pinged" type = "checkbox" checked> Ping check</td>
+					<td title = "The device is pinged before polling.&#10;If device is down then the poll stops."><input id = "is-pinged" type = "checkbox" checked> Ping check</td>
 				</tr>
 				<tr>
-					<td>On polling error force status to 
+					<td title = "Triggered when device is down or all values are errors">On polling error force status to 
 						<select id="force-status-to">
 							<option value = "3">critical</option>
 							<option value = "2">warning</option>
@@ -173,7 +180,7 @@
 	
 			<div id = "protocols" class="tabs">
 				<span id = "protocol-menu" class = "dropdown-click" tabindex = "0">
-					<div class = "button clickable"><span>&#43;</span> Add poller</div>
+					<div class = "button clickable icon icon-add">Add poller</div>
 					<div id = "protocol-list" class = "content"></div>
 				</span>
 			</div>	
@@ -189,7 +196,7 @@
 					<span id = "device-scan-cancel" class = "clickable"><div id = "loader"></div> Cancel</span>
 				</div>
 				<div id = "help">
-					Use nmap ip-range definition, e.g. <b>192.168.0.1-255</b> or <b>192.168.0.0/24 127.0.0.1</b><br>
+					Use next ip-range definition: <b>192.168.0.1-255</b> or <b>192.168.10-20.*, 127.0.0.1</b><br>
 					Scan is a long time operation. Be patient or use smaller range. 
 				</div>	
 			</div>
@@ -230,8 +237,8 @@
 
 	<div id = "page-check-list-edit">
 		<div class = "top-menu">
-			<div id = "check-save">&#10003; Save</div>
-			<div id = "check-cancel">&#8709; Cancel</div>
+			<div id = "check-save" class = "icon icon-ok">Save</div>
+			<div id = "check-cancel" class = "icon icon-cancel">Cancel</div>
 			<div id = "restrictions">Restrictions: you must reboot application to apply changes or after creating/editing device with checks.</div>
 		</div>
 	
@@ -263,7 +270,7 @@
 					<td id = "td-value-type"></td>
 					<td id = "td-status-conditions"></td>
 					<td id = "td-tags"><input id = "tags" type = "text"></td>
-					<td id = "td-remove"><span id = "check-remove" class = "clickable">&#10006;</span></td>
+					<td id = "td-remove"><span id = "check-remove" class = "clickable icon icon-remove"></span></td>
 				</tr>
 			</thead>	
 			<tbody></tbody>
@@ -275,7 +282,7 @@
 		<table class = "varbind-list">
 		<thead>
 			<tr>
-				<th> <a id = "varbind-add"  class = "clickable" title = "Add"> + </a> Name </th>
+				<th> <a id = "varbind-add"  class = "clickable icon icon-add" title = "Add"></a> Name </th>
 				<th>Address</th>
 				<th title = "Value divider
 
@@ -299,9 +306,9 @@ Possible options
 				<td id = "td-address"></td>
 				<td id = "td-divider"><input id = "divider" type = "text" value = "1"></td>
 				<td id = "td-value-type">
-					<select id = "value-type">	
-						<option value = "string" selected>string</option>
-						<option value = "number">number</option>
+					<select id = "value-type" autocomplete = "off">	
+						<option value = "string">string</option>
+						<option value = "number" selected>number</option>
 						<option value = "datetime">datetime</option>
 						<option value = "date">date</option>
 						<option value = "time">time</option>
@@ -324,7 +331,7 @@ Possible options
 					<input id = "tags" type = "text">
 					<div id = "tag-list"></div>
 				</td>
-				<td id = "td-remove"><span id = "varbind-remove" class = "clickable">&#10006;</span></td>
+				<td id = "td-remove"><span id = "varbind-remove" class = "clickable icon icon-remove"></span></td>
 			</tr>
 		</thead>
 		<tbody>
@@ -352,18 +359,18 @@ Possible options
 			<option value = "3">critical</option>
 			<option value = "0">unknown</option>
 		</select>
-		<span id = "condition-remove" class = "clickable">&#10006;</span>
+		<span id = "condition-remove" class = "clickable icon icon-remove"></span>
 	</div>
 
 	<div id = "page-diagram-view">
 		<div class = "top-menu">
-			<div id = "diagram-edit">&#9997; Edit</div>
-			<div id = "diagram-remove">&#10006; Remove</div>
+			<div id = "diagram-edit"  class = "icon icon-edit">Edit</div>
+			<div id = "diagram-remove" class = "icon icon-remove">Remove</div>
 		</div>
 		<div id = "page-content">
 			<ul id = "alert-list"></ul>
 
-			<div id = "diagram">
+			<div id = "diagram" class = "graph-hint-parent">
 				<canvas id = "canvas"></canvas>
 			</div>
 		</div>	
@@ -371,17 +378,17 @@ Possible options
 
 	<div id = "page-diagram-edit">
 		<div class = "top-menu">
-			<div id = "diagram-save">&#10003; Save</div>
-			<div id = "diagram-save-cancel">&#8709; Cancel</div>
+			<div id = "diagram-save" class = "icon icon-ok">Save</div>
+			<div id = "diagram-save-cancel" class = "icon icon-cancel">Cancel</div>
 			<span class = "separator"></span>
 			Add: 
-			<div class = "add-element" data-element = '{"type": "device", "label": "@name"}'>Device</div>
-			<div class = "add-element" data-element = '{"type": "diagram", "image": "cloud.png", "width": 100, "height": 70}'>Diagram</div>
-			<div class = "add-element" data-element = '{"type": "text", "width": 200, "height": 50, "font-size": 14}'>Text</div>
-			<div class = "add-element" data-element = '{"type": "image", "z-index": 1}'>Image</div>
-			<div class = "add-element" data-element = '{"type": "value", "font-size": 24, "width": 40, "height": 40}'>Value</div>
-			<div class = "add-element" data-element = '{"type": "status", "width": 30, "height": 30}'>Status</div>
-			<div class = "add-element" data-element = '{"type": "graph", "width": 200, "height": 50}'>Graph</div>
+			<div class = "add-element" data-element = '{"type": "diagram", "label": "@name", "image": "diagram.png"}' title = "Diagram with status as image or text">Diagram</div>
+			<div class = "add-element" data-element = '{"type": "device", "label": "@name"}' title = "Device with status as image or text">Device</div>
+			<div class = "add-element" data-element = '{"type": "status", "label": "@name", "width": 30, "height": 30}' title = "Varbind status as image or text">Varbind</div>
+			<div class = "add-element" data-element = '{"type": "value", "width": 40, "height": 40}' title = "Varbind value as text or bar">Value</div>
+			<div class = "add-element" data-element = '{"type": "graph", "width": 200, "height": 50}' title = "1 hour history of varbind">Chart</div>
+			<div class = "add-element" data-element = '{"type": "text", "width": 200, "height": 50}' title = "Static text">Text</div>
+			<div class = "add-element" data-element = '{"type": "image", "z-index": 2}' title = "Static image">Image</div>
 			<span class = "separator"></span>
 			Name <input id = "name" type = "text" value = "My diagram">
 		</div>
@@ -389,11 +396,42 @@ Possible options
 		<div id = "page-content">
 			<div id = "diagram">
 				<canvas id = "canvas"></canvas>
+				<input id = "grid-size" type="range" min = "5" max = "50" value = "20" step = "5" title = "Grid size&#10;Hold Ctrl to ignore the snap to grid.">
 			</div>
 		</div>	
 	</div>
 
+	<div id = "partial-diagram-diagram-props">
+		<div>
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>
+
+		<div>
+			<label>Diagram</label>
+			<select id = "diagram-id" store = "/diagram" autocomplete = "off">
+			</select>
+		</div>
+		<div>
+			<label>Image</label>
+			<select id = "image" store = "/images" none = "true" upload = "true" autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Live</label>
+			<input id = "live-label" type = "checkbox" autocomplete = "off"><label class = "icon icon-label" for = "live-label" title = "Change label by status.&#10Label must contain 4 text for each status e.g. N/A;Normal;Warning;Broken"></label>
+			<input id = "live-label-color" type = "checkbox" autocomplete = "off"><label class = "icon icon-label-color" for = "live-label-color" title = "Change label color by status - black/green/yellow/red"></label>
+			<input id = "live-image" type = "checkbox" autocomplete = "off"><label class = "icon icon-image" for = "live-image" title = "Change image by status.&#10Source image must be sprite pack.&#10See /public/images/circle-live.png."></label>
+		</div>
+	</div>
+
 	<div id = "partial-diagram-device-props">
+		<div>
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>
+
 		<div>
 			<label>Device</label>
 			<select id = "device-id" store = "/device" autocomplete = "off">
@@ -407,21 +445,10 @@ Possible options
 		</div>
 
 		<div>
-			<label>Label</label>
-			<input type = "text" id = "label">
-		</div>
-	</div>
-
-	<div id = "partial-diagram-diagram-props">
-		<div>
-			<label>Diagram</label>
-			<select id = "diagram-id" store = "/diagram" autocomplete = "off">
-			</select>
-		</div>
-		<div>
-			<label>Image</label>
-			<select id = "image" store = "/images" none = "true" upload = "true" autocomplete = "off">
-			</select>
+			<label>Live</label>
+			<input id = "live-label" type = "checkbox" autocomplete = "off"><label class = "icon icon-label" for = "live-label" title = "Change label by status.&#10Label must contain 4 text for each status e.g. N/A;Normal;Warning;Broken"></label>
+			<input id = "live-label-color" type = "checkbox" autocomplete = "off"><label class = "icon icon-label-color" for = "live-label-color" title = "Change label color by status - black/green/yellow/red"></label>
+			<input id = "live-image" type = "checkbox" autocomplete = "off"><label class = "icon icon-image" for = "live-image" title = "Change image by status.&#10Source image must be sprite pack.&#10See /public/images/circle-live.png."></label>
 		</div>
 	</div>
 
@@ -434,11 +461,10 @@ Possible options
 		<div>
 			<label>Z-index</label>
 			<select id = "z-index" autocomplete = "off">
-				<option value = "0">0</option>
-				<option value = "1">1</option>
-				<option value = "2">2</option>
-				<option value = "3">3</option>
-				<option value = "4">4</option>
+				<option value = "0">Background</option>
+				<option value = "1">Pre-back</option>
+				<option value = "2">Normal</option>
+				<option value = "10">Foreground</option>
 			</select>
 		</div>
 	</div>
@@ -467,24 +493,15 @@ Possible options
 				<option value = "#ddd">silver</option>
 			</select>
 		</div>
-
-		<div>
-			<label>Size</label>
-			<select id = "font-size" autocomplete = "off">
-				<option value = "10">10</option>
-				<option value = "12">12</option>
-				<option value = "14">14</option>
-				<option value = "16">16</option>
-				<option value = "24">24</option>
-				<option value = "32">32</option>
-				<option value = "48">48</option>
-				<option value = "72">72</option>
-			</select>
-		</div>
 	</div>
 
 	<div id = "partial-diagram-value-props">	
 		<div>
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>
+
+		<div>
 			<label>Device</label>
 			<select id = "device-id" store = "/device" autocomplete = "off">
 			</select>
@@ -497,21 +514,29 @@ Possible options
 		</div>
 
 		<div>
-			<label>Font size</label>
-			<select id = "font-size" autocomplete = "off">
-				<option value = "10">10</option>
-				<option value = "12">12</option>
-				<option value = "14">14</option>
-				<option value = "16">16</option>
-				<option value = "24">24</option>
-				<option value = "32">32</option>
-				<option value = "48">48</option>
-				<option value = "72">72</option>
-			</select>
+			<label>Range</label>
+			<input id = "min" type = "text" autocomplete = "off" placeholder = "min"> - <input id = "max" type = "text" autocomplete = "off" placeholder = "max">
+		</div>
+
+		<div>
+			<label>Unit</label>
+			<input type = "text" id = "unit" autocomplete = "off">
+		</div>
+
+		<div>
+			<label>Live</label>
+			<input id = "live-label" type = "checkbox" autocomplete = "off"><label class = "icon icon-label" for = "live-label" title = "Change label by status.&#10Label must contain 4 text for each status e.g. N/A;Normal;Warning;Broken"></label>
+			<input id = "live-label-color" type = "checkbox" autocomplete = "off"><label class = "icon icon-label-color" for = "live-label-color" title = "Change label color by status - black/green/yellow/red"></label>
+			<input id = "live-bgcolor" type = "checkbox" autocomplete = "off"><label class = "icon icon-bgcolor" for = "live-bgcolor" title = "Change background by status"></label>
 		</div>
 	</div>
 
 	<div id = "partial-diagram-status-props">	
+		<div title = "You can use special labels: @name and @value">
+			<label>Label</label>
+			<input type = "text" id = "label">
+		</div>
+
 		<div>
 			<label>Device</label>
 			<select id = "device-id" store = "/device" autocomplete = "off">
@@ -522,6 +547,19 @@ Possible options
 			<label>Varbind</label>
 			<select id = "varbind-id" autocomplete = "off">
 			</select>
+		</div>
+
+		<div>
+			<label>Image</label>
+			<select id = "image" store = "/images" upload = "true"  autocomplete = "off">
+			</select>
+		</div>
+
+		<div>
+			<label>Live</label>
+			<input id = "live-label" type = "checkbox" autocomplete = "off"><label class = "icon icon-label" for = "live-label" title = "Change label by status.&#10Label must contain 4 text for each status e.g. N/A;Normal;Warning;Broken"></label>
+			<input id = "live-label-color" type = "checkbox" autocomplete = "off"><label class = "icon icon-label-color" for = "live-label-color" title = "Change label color by status - black/green/yellow/red"></label>
+			<input id = "live-image" type = "checkbox" autocomplete = "off"><label class = "icon icon-image" for = "live-image" title = "Change image by status.&#10Source image must be sprite pack.&#10See /public/images/circle-live.png."></label>
 		</div>
 	</div>
 

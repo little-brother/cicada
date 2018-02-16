@@ -6,9 +6,8 @@ let db = new sqlite3.Database('./db/main.sqlite');
 
 db.serialize(function() {	
 	for (let prop in config)
-		db.run(prop.indexOf('query') == 0 ? config[prop] : `pragma ${prop} = ${config[prop]}`, (err) => (err) ? console.error(__filename, err, prop, config[prop]) : null);
+		db.run(`pragma ${prop} = ${config[prop]}`, (err) => (err) ? console.error(__filename, err, prop, config[prop]) : null);
 
-	db.run('pragma synchronous = 0');
 	db.run('create table if not exists devices (id integer primary key, name text not null, ip text, mac text, tags text, description text, json_protocols text, is_pinged integer, period integer, timeout integer, parent_id integer, force_status_to integer, template text)');
 	db.run('create table if not exists varbinds (id integer primary key, device_id integer not null, name text not null, protocol text not null, json_address text, json_status_conditions text, tags text, value text, prev_value text, divider text, value_type text, status integer, check_id integer, updated integer)');
 	db.run('create table if not exists diagrams (id integer primary key, name text not null, json_element_list text not null)');
@@ -16,8 +15,7 @@ db.serialize(function() {
 	db.run('create unique index if not exists idx_check on varbinds (device_id, check_id)', (err) => null);
 	db.run('attach database \"./db/history.sqlite\" as history');
 	db.run('attach database \"./db/changes.sqlite\" as changes');
-	db.run('create table if not exists history.latencies (\"time\" integer primary key) without rowid');
-	db.run('create table if not exists history.alerts (id integer primary key autoincrement not null unique, \"time\" integer, status integer, device_id integer, reason text, is_hidden integer)');
+	db.run('create table if not exists history.alerts (id integer primary key autoincrement not null unique, \"time\" integer, status integer, path text, device_id integer, varbind_id integer, description text, is_hidden integer)');
 	db.run('create index if not exists history.idx_alerts on alerts (is_hidden)');
 
 	// migration 0.8 => 0.9
@@ -30,6 +28,13 @@ db.serialize(function() {
 
 	// migration 0.11 => 0.12
 	db.run('alter table varbinds add column check_id integer', (err) => null);
+
+	// migration 0.14 => 0.15
+	db.run('alter table history.alerts add column path text', (err) => null);
+	db.run('alter table history.alerts add column varbind_id integer', (err) => null);
+	db.run('alter table history.alerts add column description text', (err) => null);
+	db.run('drop table history.latencies', (err) => null);
+
 });
 
 db.checkHistoryTable = function (device, callback) {
@@ -49,6 +54,10 @@ db.checkHistoryTable = function (device, callback) {
 	
 			if (results[0].length) {
 				columns = results[0].map((row) => row.name);
+
+				if (columns.indexOf('latency') == -1)
+					query_list.push(`alter table history.device${device.id} add column latency real`);
+
 				varbind_list.forEach(function (varbind) {
 					if (columns.indexOf('varbind' + varbind.id) == -1)
 						query_list.push(`alter table history.device${device.id} add column varbind${varbind.id} real`);
@@ -56,7 +65,7 @@ db.checkHistoryTable = function (device, callback) {
 						query_list.push(`alter table history.device${device.id} add column varbind${varbind.id}_status integer`);
 				})
 			} else {
-				columns = ['"time" integer primary key', 'is_significant number'];
+				columns = ['"time" integer primary key', 'latency real'];
 				varbind_list.forEach(function(varbind) {
 					columns.push(`varbind${varbind.id} real`);
 					columns.push(`varbind${varbind.id}_status integer`);

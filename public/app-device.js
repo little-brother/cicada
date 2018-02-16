@@ -52,12 +52,16 @@ $(function(){
 		$dashboard.attr('hidden', true);
 
 		var $e = $(this);
+
 		if ($e.hasClass('active') && !!e.originalEvent) {
 			$dashboard.removeAttr('hidden');
+			$app.trigger('notify', {device_id: 0});
 			return $e.removeClass('active');
 		}
-	
-		var device_id = $e.attr('id');
+
+		var device_id = parseInt($e.attr('id')) || 0;	
+		$app.trigger('notify', {device_id});
+
 		$.ajax({
 			method: 'GET',
 			url: '/device/' + device_id + '/varbind-list',
@@ -83,7 +87,7 @@ $(function(){
 					$('<tr/>')
 						.attr('id', varbind.id)
 						.append($('<td id = "td-name"/>').html(varbind.name))
-						.append($('<td id = "td-value"/>').text(cast(varbind.value_type, varbind.value)).attr('status', varbind.status))
+						.append($('<td id = "td-value"/>').text(cast(varbind.value_type, varbind.value)).attr('title', cast(varbind.value_type, varbind.value)).attr('status', varbind.status))
 						.append($('<td id = "td-history"/>').attr('value-type', varbind.value_type))
 						.appendTo($varbind_list);
 				});
@@ -99,10 +103,11 @@ $(function(){
 
 	$app.on('update-device-list', function() {
 		var tag_list = $dashboard.find('#device-tag-list input:checked').map((i, e) => e.id).get();
+
 		$device_list.find('li').each(function (i, e) {
 			var $e = $(e);
-			var has_tag = !!($e.data('tag-list') || []).filter((e) => tag_list.indexOf(e) != -1).length;
-			$e.toggle(has_tag);
+			var has_tag = tag_list[0] == 'All' || !!($e.data('tag-list') || []).filter((e) => tag_list.indexOf(e) != -1).length;
+			return (has_tag) ? $e.removeAttr('is-hidden') : $e.attr('is-hidden', true);
 		})
 	});
 
@@ -124,9 +129,6 @@ $(function(){
 		}
 
 		function onHistoryData(res) {
-			if (!res.rows.length)
-				return;
-
 			deleteGraph('device');
 		
 			$.each(varbind_list.filter((varbind) => varbind.value_type == 'number'), function(i, varbind) {
@@ -134,14 +136,15 @@ $(function(){
 				if (idx == -1)
 					return;
 
-				var data = res.rows.map((row) => [new Date(row[0]), row[idx + 1]]).filter((row) => !!row[1] || row[1] === 0);
-				if (data.length == 0)
-					return;
+				var data = res.rows.map((row) => [new Date(row[0]), row[idx + 1]]).filter((row) => !!row[1] || row[1] === 0) || [];
 
-				var alerts = res.alerts[varbind.id];
+				var alerts = res.alerts[varbind.id] || {};
 				var strings = {};
 				data.filter((row) => !$.isNumeric(row[1])).forEach((row) => strings[row[0].getTime()] = row[1] + '');
 				normalizeHistory(data);
+
+				if (data.length == 0)
+					data = [[new Date(), parseFloat(varbind.value) || 0]]; // fake data to create graph
 
 				var opts = {
 					animatedZooms: true,
@@ -159,7 +162,7 @@ $(function(){
 						var time = g.getValue(row, 0);
 						var status = alerts[time];
 						if (status)	
-							return drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+							return drawCircle(canvasContext, cx, cy, getStatusColor(status), 3);
 
 						if (strings[time])
 							return drawCircle(canvasContext, cx, cy, '#000', 2);
@@ -263,6 +266,7 @@ $(function(){
 
 	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block, #check-list-edit', function() {
 		$device_list.find('li.active').removeClass('active');
+		$app.trigger('notify', {device_id: 0});
 	});
 
 	$page.on('click', '.top-menu #device-edit, .top-menu #device-clone', function() {
@@ -326,17 +330,6 @@ $(function(){
 	$page.on('change', '#page-device-edit .varbind-list input', function() {
 		$(this).closest('table.varbind-list').attr('changed', true);
 	});
-
-	// set non-numeric element to one of nearest
-	function normalizeHistory(data, col) {
-		col = parseInt(col) || 1;
-		data.forEach(function (row, no) {
-			if ($.isNumeric(row[col])) // ? row[col] == null
-				return;	
-
-			row[col] = data[no - 1] != undefined && $.isNumeric(data[no - 1][col]) && data[no - 1][col] || data[no + 1] != undefined && $.isNumeric(data[no + 1][col]) && data[no + 1][col] || 0;
-		});
-	}
 
 	function buildConditionList(condition_list) {
 		var $template_row = $components.find('#partial-varbind-condition');
@@ -458,6 +451,9 @@ $(function(){
 			force_status_to:  trim($props.find('#force-status-to').val()),
 			template: trim($props.find('#template').val())
 		};
+
+		if (!data.id)
+			delete data.id;	
 
 		var protocol_params = {};
 		$protocols.find('input:radio[name="tab"]')
@@ -691,7 +687,8 @@ $(function(){
 		$selector = setHistoryPeriodSelector($component);
 		$component.find('.history-period-block').show();
 		$component.appendTo($page);
-		$component.find('#alert-list').trigger('update-alerts');		
+		$component.find('#alert-list').trigger('update-alerts');
+		$app.trigger('notify', {device_id: 0});		
 	});
 
 	$page.on('update-alerts', '#alert-list', function(event, data) {		
@@ -707,11 +704,12 @@ $(function(){
 			success: function (alerts) {
 				$e.find('tbody').empty();
 				$.each(alerts, (i, alert) => addAlertListTableRow($e, alert));
+				updateAlertList();
 			}
 		})
 	});
 
-	$page.on('click', '#alert-list #td-datetime, #alert-list #td-device', function () {
+	$page.on('click', '#alert-list #td-datetime, #alert-list #td-hint', function () {
 		var $e = $(this).closest('tr');
 		var time = roundTime($e.attr('time'));
 		$device_list.find('li#' + $e.attr('device-id')).trigger('click', {period: [time, time]});
@@ -727,6 +725,21 @@ $(function(){
 			success: () => $alert_list.is('[period]') ? $e.attr('is-hidden', 1) : $e.remove()
 		})
 	});
+
+	$page.on('click', '#alert-list .reject', function () {
+		var $e = $(this).closest('tr');
+		var $alert_list = $page.find('#alert-list');
+		$.ajax({
+			method: 'DELETE',
+			url: '/alert/' + $e.attr('id'),
+			dataType: 'text',
+			success: () => $e.remove()
+		})
+	});
+
+	$app.on('change', '#alert-list-filter input[type="checkbox"]', updateAlertList);
+	$app.on('keyup', '#alert-list-filter input[type="text"]', updateAlertList);
+
 
 	$app.on('click', '.top-menu #device-scan', function() {
 		$page.empty();
@@ -792,7 +805,7 @@ $(function(){
 					$row.find('#name').val(device.name || ('Unknown #' + i));
 					$row.find('#ip').val(device.ip);
 					$row.find('#mac').val(device.mac);
-					$row.find('#description').val(device.description);
+					$row.find('#description').val(device.vendor);
 					$row.appendTo($result);
 				})
 			}	
@@ -826,7 +839,7 @@ $(function(){
 			success: function(id) {
 				data.id = id;
 				updateNavigatorDevice(data);
-				$row.find('#td-add').html('&#10004;');
+				$row.find('#td-add').addClass('icon icon-ok').html('');
 				$device_list.find('li')
 					.sort((a, b) => a.innerHTML.toLowerCase() > b.innerHTML.toLowerCase())
 					.detach().appendTo($device_list);
@@ -875,7 +888,7 @@ $(function(){
 			$device_tag_list.find('input:not(#All)').attr('checked', false).prop('checked', false);
 			$device_tag_list.find('#All').attr('checked', true).prop('checked', true);
 			$varbind_tag_list.find('div').show();
-			$device_list.find('li').show();
+			$app.trigger('update-device-list');
 			return;
 		}
 
@@ -983,7 +996,7 @@ $(function(){
 
 					var status = alerts[varbind_id] && res.alerts[varbind_id][time];
 					if (status)	
-						return drawCircle(canvasContext, cx, cy, status == 2 ? 'gold' : '#f00', 3);
+						return drawCircle(canvasContext, cx, cy, getStatusColor(status), 3);
 
 					if (strings[varbind_id] && strings[varbind_id][time])
 						return drawCircle(canvasContext, cx, cy, '#000', 2);
@@ -1056,6 +1069,7 @@ $(function(){
 
 		$dashboard.find('.history-period').val('').pickmeup('clear');
 		
+		
 		function addTag($target, tag, data) {
 			var id = tag.replace('/ /g', '-');
 
@@ -1069,8 +1083,10 @@ $(function(){
 
 		$.ajax({
 			method: 'GET',
-			url: '/tag',
+			url: '/tags',
 			success: function(tags) {
+				var prev_checked_list = $dashboard.find('#device-tag-list input:checked').map((i, e) => e.id).get();
+
 				var $device_tag_list = $dashboard.find('#device-tag-list').empty();
 				$.each(tags, (tag, value) => addTag($device_tag_list, tag, value));				
 				$device_tag_list.find('#All').attr('checked', true).closest('div').prependTo($device_tag_list);
@@ -1079,11 +1095,36 @@ $(function(){
 				$.each(tags.All, (i, tag) => addTag($varbind_tag_list, tag));
 				$varbind_tag_list.find('#latency').closest('div').prependTo($varbind_tag_list);
 
+				prev_checked_list.forEach((tag) => $device_tag_list.find('#' + tag).trigger('click'));
+			}	
+		});
+
+		$.ajax({
+			method: 'GET',
+			url: '/tag/lists',
+			success: function(lists) {
 				var $tag_list = $components.find('#page-device-edit #properties #tag-list').empty();
-				Object.keys(tags).filter((e) => e != 'All').forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list))
+				lists.device.forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list));
+
 				$tag_list = $components.find('#partial-varbind-list-edit #tag-list').empty();
-				(tags.All || []).filter((e) => e != 'latency').forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list));
+				lists.varbind.forEach((tag) => $('<span/>').addClass('a').html(tag).appendTo($tag_list));
 			}
+		});
+	}
+
+	function updateAlertList(event) {
+		var $alert_list = $page.find('#alert-list tbody');
+		var $filter = $page.find('#alert-list-filter');
+
+		if (!$alert_list.length || !$filter.length)
+			return;
+
+		var status_list = $filter.find('input:checkbox:checked').map((i, e) => e.value).get();
+		var text = $filter.find('#filter-text').val().toLowerCase();
+
+		$alert_list.find('tr').each(function (i, e) {
+			var $e = $(e);
+			$e.toggle((!status_list.length || status_list.indexOf($e.attr('status')) != -1) && (!text || e.innerHTML.toLowerCase().indexOf(text) != -1));
 		});
 	}
 
@@ -1197,7 +1238,9 @@ $(function(){
 				.appendTo($device_list);
 		
 		$e.data('tag-list', device.tag_list || (device.tags || '').split(';').map((tag) => trim(tag)));
-		$e.attr('title', device.description).attr('status', device.status || 0);
+		$e.attr('title', device.description)
+			.attr('status', device.status || 0)
+			.attr('alive', device.alive);
 		$e.find('#name').html(device.name);
 		$e.find('#ip').html(device.ip).attr('title', device.mac);
 		return $e;			
@@ -1220,8 +1263,20 @@ $(function(){
 		$row = $table.find('#template-row').clone();
 		$row.attr('id', alert.id).attr('status', alert.status).attr('time', alert.time).attr('device-id', alert.device_id).attr('is-hidden', alert.is_hidden);
 		$row.find('#td-datetime').html(cast('datetime', alert.time));
-		$row.find('#td-device').html(alert.device_name);
-		$row.find('#td-reason').html(alert.reason);		
+		$row.find('#td-path').html(alert.path).attr('title', alert.path);
+		$row.find('#td-description').html(alert.description);
+		$row.find('#td-hint')
+			.attr('device-id', alert.device_id)
+			.attr('varbind-id', alert.varbind_id)
+			.attr('time', alert.time)
+			.css('visibility', alert.value_type == 'number' ? 'visible' : 'hidden')
+			.css('pointer-events', !!alert.varbind_id ? '' :  'none');
+
+		if (is_admin && !!alert.varbind_id && alert.status == 4) {
+			var $reject = $('<div/>').addClass('reject icon icon-remove').attr('title', 'Reject. This is not an anomaly.');
+			$row.find('#td-description').append($reject);
+		}
+
 		$row.prependTo($table);
 	}
 
@@ -1239,7 +1294,7 @@ $(function(){
 						.addClass('device-add')
 						.attr('name', name)
 						.html(name)
-						.append($('<span/>').attr('id', 'template-remove').attr('title', 'Remove template').html('&#10006;'))
+						.append($('<span/>').attr('id', 'template-remove').attr('title', 'Remove template').addClass('icon icon-remove'))
 						.appendTo($list);
 					templates[name] = false;
 				});	
@@ -1298,14 +1353,14 @@ $(function(){
 				var $varbind_list = $components.find('#partial-varbind-list-edit');
 				protocol_list.forEach(function (protocol) {
 					$('<input type = "radio" name = "tab" autocomplete = "off"/>').attr('id', 'tab-' + protocol.id).addClass('hidden').appendTo($tabs);
-					$('<label/>').attr('for', 'tab-' + protocol.id).addClass(protocol.category).addClass('hidden').html(protocol.name)
-						.append($('<span/>').addClass('remove').attr('protocol', protocol.id).html('&#10006;'))
+					$('<label/>').attr('for', 'tab-' + protocol.id).addClass('hidden icon icon-' + protocol.category).html(protocol.name)
+						.append($('<span/>').addClass('remove icon icon-remove').attr('protocol', protocol.id))
 						.appendTo($tabs);
 					$tabs.append(' ');
 				});	
 
 				var $menu = $tabs.find('#protocol-menu');
-				$menu.find('.content').append(protocol_list.map((p) => $('<div/>').attr('protocol', p.id).addClass(p.category).html(p.name)));
+				$menu.find('.content').append(protocol_list.map((p) => $('<div/>').attr('protocol', p.id).addClass('icon icon-' + p.category).html(p.name)));
 				$menu.appendTo($tabs);
 											
 				protocol_list.forEach(function (protocol) {
@@ -1342,29 +1397,42 @@ $(function(){
 		})
 	}
 
+	$app.on('no-anomaly-detector', function (event, packet) {
+		$app.find('#navigator #alert-block #anomaly').hide();
+		$components.find('#page-alert-list-view #alert-list-filter label[for="filter-status-4"]').hide();
+	});
+
 	$app.on('status-updated', function (event, packet) {
-		$device_list.find('li#' + packet.id).attr('status', packet.status || 0);
+		$device_list.find('li#' + packet.id).attr('status', packet.status || 0).attr('alive', packet.alive);
 		updateNavigatorStatus();
 	});
 
 	$app.on('alert-summary', function (event, packet) {
 		var $alert_block = $app.find('#navigator #alert-block');
+		$alert_block.find('#anomaly').html(packet.anomaly);
 		$alert_block.find('#warning').html(packet.warning);
 		$alert_block.find('#critical').html(packet.critical);
 	});
 
 	$app.on('alert-info', function (event, packet) {
+		var graph = graphs.device[packet.varbind_id];
+		if (graph)
+			graph.alerts[packet.time] = packet.status;
+
 		var $table = $page.find('#alert-list');
 		if (!$table.length)
 			return;
-	
-		addAlertListTableRow($table, packet);
+
+		addAlertListTableRow($table, packet);	
+		updateAlertList();
 	});
 
 	$app.on('values-updated', function (event, packet) {
 		var $varbind_list = $page.find('#varbind-list');
 		if (!$varbind_list.length || $varbind_list[0].hasAttribute('period'))
 			return;
+
+		$varbind_list.attr('updated', 'Updated: ' + cast('datetime', packet.time));
 
 		var time = new Date(packet.time);
 		var hour = 1000 * 60 * 60;
@@ -1450,18 +1518,26 @@ $(function(){
 	$('body').on('keydown', function (event) {
 		if (!is_admin || !$app.is(':visible'))
 			return;
-
-		
-		// Ctrl + Shift + A: Hide all active alerts 
+	
+		// Ctrl + Shift + A: Hide all visible active alerts 
 		if (event.ctrlKey && event.altKey && event.keyCode == 65) {
 			var $alert_list = $app.find('#page #alert-list tbody');
 			if ($alert_list.length == 0)
 				return;
 			
+			var is_period = $alert_list.is('[period]');
 			$.ajax({
 				method: 'POST',
-				url: '/alert/hide',
-				success: () => $alert_list.empty()
+				url: '/alert/hide?ids=' + $alert_list.find('tr:visible:not([is-hidden="1"])').map((i, e) => parseInt(e.id)).get().join(';'),
+				dataType: 'json',
+				success: function (ids) {
+					$alert_list.find('tr')
+						.filter((i, e) => ids.indexOf(parseInt(e.id)) != -1)
+						.each(function (i, e) {
+							var $e = $(e);
+							return is_period ? $e.attr('is-hidden', 1) : $e.remove();
+						});
+				}
 			});
 		}
 

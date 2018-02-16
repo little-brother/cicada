@@ -17,7 +17,7 @@ module.exports = function (callback) {
 	async.series([
 		(callback) => db.all(history, callback),
 		(callback) => db.all(changes, callback),
-		(callback) => db.all('select count(1) cnt from history.latencies', callback),
+		(callback) => db.all('select 1', callback),
 		(callback) => db.all('select count(1) cnt from history.alerts', callback),
 		(callback) => fs.stat('./db/main.sqlite', callback),
 		(callback) => fs.stat('./db/history.sqlite', callback),
@@ -50,8 +50,7 @@ module.exports = function (callback) {
 		res.push([]);
 		res.push(total);
 		res.push([]);
-		res.push(['latency: ' + results[2][0].cnt +  'rows', 'alerts: ' + results[3][0].cnt + 'rows']);
-		res.push(['main: ' + size(results[4].size), 'history: ' + size(results[5].size), 'changes: ' + size(results[6].size)]);
+		res.push(['main: ' + size(results[4].size), 'history: ' + size(results[5].size), 'changes: ' + size(results[6].size), 'alerts: ' + results[3][0].cnt + 'rows']);
 
 		callback(null, 
 			'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link href = "/index.css" rel="stylesheet"/></head><body>' + 

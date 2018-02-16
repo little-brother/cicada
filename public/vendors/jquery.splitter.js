@@ -116,7 +116,7 @@
 		
 		manager.add(this);
 		var self = this,
-			limit = 0,
+			limit = parseInt(opts.limit) || 0,
 			parent = $(opts.parent),
 			div1 = $(opts.div1),
 			div2 = $(opts.div2),
@@ -137,6 +137,7 @@
 
 		var w1 = div1.outerWidth(true);
 		var w2 = parent.width() - w1;
+			
 		div1.css({
 			'position' : 'absolute',
 			'overflow-x' : 'auto',
@@ -202,8 +203,8 @@
 		
 		$.extend(opts, options || {});
 
-		this.css('width', '100%');		
-		if (!div1.width() || div1.width() === this.width() && div2.width() != this.width()) 
+		this.css('width', '100%');	
+		if (!div1.width() || div1.width() === this.width() && div2.width() != this.width())  
 			div1.width((this.width() - div2.width() - opts.barwidth) || 200);
 
 		return new Splitter(opts);
