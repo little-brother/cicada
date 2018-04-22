@@ -2,12 +2,13 @@ $(function() {
 	var $body = $('body');	
 	var $app = $('.app');
 
-	if (getCookie('access') == 'edit')
-		$('.top-menu').attr('admin', true);
+	if (getCookie('access') == 'edit') 
+		$('.app').attr('admin', true);
 	
 	var socket;
 	var subscription = {device_id: 0, diagram_id: 0};
 
+	var timer;
 	function connect() {
 		try {
 			socket = new WebSocket('ws://' + location.hostname + ':' + (parseInt(location.port) + 1));
@@ -17,11 +18,13 @@ $(function() {
 			return;
 		}
 	
-		var timer = setTimeout(function() {
-			alert('Connection broken. Reload page.');
-			console.error(new Date() + ': Notify server disconnected. Page must be reload.');
-			location.reload();
-		}, 10000);	
+		if (!timer) {
+			timer = setTimeout(function() {
+				alert('Connection broken. Reload page.');
+				console.error(new Date() + ': Notify server disconnected. Page must be reload.');
+				location.reload();
+			}, 15000);	
+		}
 	
 		socket.onopen = function() {
 			clearTimeout(timer);
@@ -31,7 +34,7 @@ $(function() {
 	
 		socket.onclose = function(event) {
 			console.log(new Date() + ': Notify server is disconnected.');
-			setTimeout(connect, 1000);
+			setTimeout(connect, 2000);
 		};
 	
 		socket.onerror = function(error) {

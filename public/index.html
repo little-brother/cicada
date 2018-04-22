@@ -26,10 +26,19 @@
 		<div class = "top-menu">
 			<div class="dropdown-click" tabindex = "0">
 				<div class = "button clickable icon icon-add" title = "Add device">Add</div>	
-				<div id = "template-list" class = "content"></div>
+				<div id = "template-list" class = "content">
+					<div id = "new" class = "device-add">New...</div>
+					<div id = "import">Import...</div>
+				</div>
+				<input id = "import-upload" name = "import-upload" type = "file" accept=".json"/>
 			</div>
-			<div id = "device-scan" class = "icon icon-scan" title = "Discovery devices">Scan</div>
+			<div id = "device-scan" class = "icon icon-search" title = "Discovery devices">Scan</div>
 			<div id = "check-list-edit" class = "hidden"></div>
+		</div>
+
+		<div id = "device-filter" class="dropdown-click" tabindex = "0">
+			<div class = "button clickable">All</div>	
+			<div id = "device-tag-list" class = "content"></div>
 		</div>
 
 		<ul id = "device-list"></ul>
@@ -43,11 +52,9 @@
 		<div id = "page"></div>
 		<div id = "page-close" class = "icon icon-remove"></div>
 		<div id = "dashboard">
-			<div id = "tag-list">	
-				<div id = "device-tag-list" class = "tag-list"></div>				
-				<div id = "varbind-tag-list" class = "tag-list" title = "Use Ctrl + Mouse Click to select one more tag"></div>
-			</div>
+			<div id = "varbind-tag-list" class = "tag-list"></div>
 			<div class = "history-period-block">
+				<span id = "alert" class = "icon icon-alert" title = "Querying data for ALL devices can be very slow"></span>
 				<input class = "history-period" autocomplete = "off">
 				<span class = "history-period-value">Last hour</span>
 			</div>
@@ -121,8 +128,7 @@
 
 		<div id = "page-content">
 			<div id = "properties">
-				<input id = "id" value = "" class = "hidden">
-				<input id = "template" value = "" class = "hidden">	
+				<input id = "id" value = "" class = "hidden">	
 				<table>
 				<tr>
 					<td>Name</td>
@@ -253,7 +259,7 @@
 					<th>Address</th>
 					<th>Divider</th>
 					<th>Value type</th>
-					<th>Status conditions</th>
+					<th>Status condition</th>
 					<th>Tags</th>
 					<th></th>	
 				</tr>
@@ -268,7 +274,7 @@
 					<td id = "td-address"></td>
 					<td id = "td-divider"><input id = "divider" type = "text"></td>
 					<td id = "td-value-type"></td>
-					<td id = "td-status-conditions"></td>
+					<td id = "td-condition"></td>
 					<td id = "td-tags"><input id = "tags" type = "text"></td>
 					<td id = "td-remove"><span id = "check-remove" class = "clickable icon icon-remove"></span></td>
 				</tr>
@@ -278,11 +284,50 @@
 		</div>
 	</div>
 
+	<div id = "partial-dashboard-summary">
+		<table id = "summary">
+			<thead>
+				<tr>
+					<th></th>
+					<th id = "th-name">Name</th>
+					<th>cur</th>
+					<th class = "sortable">min</th>
+					<th class = "sortable">avg</th>
+					<th class = "sortable">max</th>
+					<th class = "sortable" title = "Uptime percentage">up</th>
+				</tr>
+				<tr id = "template-row">
+					<td id = "td-color"></td>	
+					<td id = "td-name"></td>
+					<td id = "td-cur" class = "value"></td>
+					<td id = "td-min" class = "value"></td>
+					<td id = "td-avg" class = "value"></td>
+					<td id = "td-max" class = "value"></td>
+					<td id = "td-up" class = "value"></td>
+				</tr>
+			</thead>			
+			<tbody></tbody>
+		</table>
+		<div id = "overflow"></div>	
+		<div id = "export">Export to CSV</div>	
+	</div>
+
+	<div id = "partial-varbind-discovery" class = "varbind-discovery">
+		<div class="dropdown-click" tabindex = "0">
+			<div class = "button clickable icon icon-discovery a" title = "Auto-discovery by predefined rules"> Discovery</div>	
+			<div id = "discovery-list" class = "content">
+			</div>
+		</div>
+	</div>
+
 	<div id = "partial-varbind-list-edit">
 		<table class = "varbind-list">
 		<thead>
 			<tr>
-				<th> <a id = "varbind-add"  class = "clickable icon icon-add" title = "Add"></a> Name </th>
+				<th> 
+					<a id = "varbind-add"  class = "clickable icon icon-add" title = "Add"></a>
+					Name 
+				</th>
 				<th>Address</th>
 				<th title = "Value divider
 
@@ -291,13 +336,18 @@ Possible options
 * Number + char:
   20C - divide the value by 20 and convert Fahrenheit degree to Celsius 
   1F - convert Celsius degree to Fahrenheit
-  3.1R - divide the value by 3.1 and round the result to two decimal
+  3.1R - divide the value by 3.1 and discard a fractional part
+  10R2 - divide the value by 10 and round up to two digits. Also you can use 10R3, 10R4, etc.
+  5P300 - divide the value by 5 and define how many percent is the value in 300. 
+    E.g. if value is 500 then result is (500 / 5) / 300 ~ 33%
+  5p300 - divide the value by 5 and define how many reverse percent is the value in 300.
+    E.g. if value is 500 then result is (500 / 5) / 300 ~ 66%
   2.3rMemory ([\d]*) - extract value by pattern &#34;Memory ([\d]*)&#34; and divide by 2.3 
 * Empty or 1 if not required.
 "> x / y</th>
 				<th>Type</th>
 				<th>Value</th>
-				<th>Status conditions</th>
+				<th>Status condition</th>
 				<th>Tags</th>
 				<th></th>
 			</tr>
@@ -316,16 +366,16 @@ Possible options
 						<option value = "yesno">yes/no</option>
 						<option value = "onoff">on/off</option>
 						<option value = "updown">up/down</option>
-						<option value = "filesize">filesize</option>
+						<option value = "size" title = "Store all history">size</option>
+						<option value = "size2" title = "Store only changes">size2</option>
 						<option value = "status">status</option>
 					</select>
 				</td>
 
 				<td id = "td-value" class = "clickable"></td>
 
-				<td id = "td-status-conditions">
-					<div id = "condition-list"></div>
-					<span id = "condition-add" class = "a">Add</span>
+				<td id = "td-condition">
+					
 				</td>
 				<td id = "td-tags">
 					<input id = "tags" type = "text">
@@ -339,13 +389,35 @@ Possible options
 		</table>
 	</div>
 
-	<div id = "partial-varbind-condition" class = "status-condition">
+	<div id = "partial-varbind-condition-list">
+		<select id = "condition-list">
+			<option value = "0">None</option>
+			<option value = "">New...</option>
+		</select>
+		<div id = "condition-edit" class = "a">Edit</div>	
+	</div>	
+
+	<div id = "partial-varbind-condition-block">
+		<label>Name</label>
+		<input id = "name" type = "text">
+		<label title = "Ignore the oscillations at the boundary values">Gap</label>
+		<input id = "gap" type = "text" value = "0">
+		
+		<div class = "condition-list"></div>
+		<span id = "add" class = "a">Add</span>
+		<span id = "save" class = "a">Save</span>
+		<span id = "cancel" class = "a">Cancel</span>
+	</div>
+
+	<div id = "partial-varbind-condition" class = "condition">
 		If
 		<select id = "if">
-			<option value = "greater"> &#62; </option>
-			<option value = "equals"> &#61; </option>
-			<option value = "smaller"> &#60; </option>
-			<option value = "not-equals"> &#60;&#62; </option>
+			<option value = ">"> &#62; </option>
+			<option value = ">="> &#62;= </option>
+			<option value = "="> &#61; </option>
+			<option value = "<"> &#60; </option>
+			<option value = "<="> &#60;= </option>
+			<option value = "<>"> &#60;&#62; </option>
 			<option value = "empty" title = "Null, undefined, empty string">empty</option>
 			<option value = "change">change</option>
 			<option value = "any">any</option>

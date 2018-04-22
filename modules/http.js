@@ -1,5 +1,6 @@
 'use strict'
 const qs = require('querystring');
+const zlib = require('zlib');
 
 function parseBody(callback) {
 	let body = '';
@@ -29,10 +30,17 @@ function parsePeriod(query) {
 	return [q.from, q.to];
 }
 
+const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
 function send(code, data, mime) {
-	const mimes = {'ico': 'image/x-icon', 'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json'};
+	this.statusCode = code;
 	this.setHeader('Content-type', mimes[mime] || 'text/plain');
-	this.statusCode = code;	
+
+	if (mime == 'json') {
+		this.setHeader('Content-Encoding', 'gzip');
+		zlib.gzip(data, (_, zipped) => this.end(zipped))
+		return;
+	}
+
 	this.end(!(typeof(data) == 'string' || data instanceof Buffer || data == undefined) ? data + '' : (typeof(data) == 'boolean') ? +data : data);
 }
 

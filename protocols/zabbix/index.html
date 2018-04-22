@@ -10,5 +10,79 @@
 </div>
 
 <div id = "varbind-address">
-	<input id = "item" type = "text" placeholder = "Item">
+	<input id = "item" type = "search" list = "zabbix-item-list" placeholder = "Item">
 </div>
+
+<div id = "include">
+	<datalist id = "zabbix-item-list">
+		<option value = "agent.hostname" />
+		<option value = "agent.ping" />
+		<option value = "agent.version" />
+		<option value = "kernel.maxfiles" />
+		<option value = "kernel.maxproc" />
+		<option value = "log[file,<regexp>,<encoding>,<maxlines>,<mode>,<output>]" />
+		<option value = "logrt[file_regexp,<regexp>,<encoding>,<maxlines>,<mode>,<output>]" />
+		<option value = "net.dns[<ip>,name,<type>,<timeout>,<count>]" />
+		<option value = "net.dns.record[<ip>,name,<type>,<timeout>,<count>]" />
+		<option value = "net.if.collisions[if]" />
+		<option value = "net.if.discovery" />
+		<option value = "net.if.in[if,<mode>]" />
+		<option value = "net.if.out[if,<mode>]" />
+		<option value = "net.if.total[if,<mode>]" />
+		<option value = "net.tcp.listen[port]" />
+		<option value = "net.tcp.port[<ip>,port]" />
+		<option value = "net.tcp.service[service,<ip>,<port>]" />
+		<option value = "net.tcp.service.perf[service,<ip>,<port>]" />
+		<option value = "net.udp.listen[port]" />
+		<option value = "proc.mem[<name>,<user>,<mode>,<cmdline>]" />
+		<option value = "proc.num[<name>,<user>,<state>,<cmdline>]" />
+		<option value = "sensor[device,sensor,<mode>]" />
+		<option value = "system.boottime" />
+		<option value = "system.cpu.discovery" />
+		<option value = "system.cpu.intr" />
+		<option value = "system.cpu.load[<cpu>,<mode>]" />
+		<option value = "system.cpu.num[<type>]" />
+		<option value = "system.cpu.switches" />
+		<option value = "system.cpu.util[<cpu>,<type>,<mode>]" />
+		<option value = "system.hostname[<type>]" />
+		<option value = "system.hw.chassis[<info>]" />
+		<option value = "system.hw.cpu[<cpu>,<info>]" />
+		<option value = "system.hw.devices[<type>]" />
+		<option value = "system.hw.macaddr[<interface>,<format>]" />
+		<option value = "system.localtime[<type>]" />
+		<option value = "system.run[command,<mode>]" />
+		<option value = "system.stat[resource,<type>]" />
+		<option value = "system.sw.arch" />
+		<option value = "system.sw.os[<info>]" />
+		<option value = "system.sw.packages[<package>,<manager>,<format>]" />
+		<option value = "system.swap.in[<device>,<type>]" />
+		<option value = "system.swap.out[<device>,<type>]" />
+		<option value = "system.swap.size[<device>,<type>]" />
+		<option value = "system.uname" />
+		<option value = "system.uptime" />
+		<option value = "system.users.num" />
+		<option value = "vfs.dev.read[<device>,<type>,<mode>]" />
+		<option value = "vfs.dev.write[<device>,<type>,<mode>]" />
+		<option value = "vfs.file.cksum[file]" />
+		<option value = "vfs.file.contents[file,<encoding>]" />
+		<option value = "vfs.file.exists[file]" />
+		<option value = "vfs.file.md5sum[file]" />
+		<option value = "vfs.file.regexp[file,regexp,<encoding>,<start line>,<end line>,<output>]" />
+		<option value = "vfs.file.regmatch[file,regexp,<encoding>,<start line>,<end line>]" />
+		<option value = "vfs.file.size[file]" />
+		<option value = "vfs.file.time[file,<mode>]" />
+		<option value = "vfs.fs.discovery" />
+		<option value = "vfs.fs.inode[fs,<mode>]" />
+		<option value = "vfs.fs.size[fs,<mode>]" />
+		<option value = "vm.memory.size[<mode>]" />
+		<option value = "web.page.get[host,<path>,<port>]" />
+		<option value = "web.page.perf[host,<path>,<port>]" />
+		<option value = "web.page.regexp[host,<path>,<port>,<regexp>,<length>,<output>]" />
+	</datalist>
+</div>
+
+
+
+
+		
+ 

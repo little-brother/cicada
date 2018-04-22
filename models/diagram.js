@@ -75,6 +75,7 @@ Diagram.prototype.setAttributes = function (data) {
 					Object.defineProperty(e, 'status', {get: () => varbind.status || 0, enumerable: true});
 					Object.defineProperty(e, 'value', {get: () => varbind.value, enumerable: true});
 					Object.defineProperty(e, 'value_type', {get: () => varbind.value_type, enumerable: true});
+					Object.defineProperty(e, 'is_history', {get: () => varbind.is_history, enumerable: true});
 					Object.defineProperty(e, 'path', {get: () => device.name + '/' + varbind.name, enumerable: true});
 				}	 				
 			});

@@ -1,0 +1,16 @@
+[
+	{
+		"enum": "logicaldisk",
+		"filter": "{drivetype} < 5",
+		"prototypes": [
+			{
+				"name": "Disk {caption} ({filesystem}) usage, %",
+				"address": {"alias" : "logicaldisk", "property": "freespace@{INDEX}"},
+				"value_type": "number",
+				"divider": "1p{size}",
+				"condition": "",
+				"tags": "DISK"	
+			}
+		]
+	}
+]

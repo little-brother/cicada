@@ -125,8 +125,10 @@ $(function() {
 							'width': ''	
 						});
 
-					if (e.type == 'diagram')
-						$e.attr('diagram-id', e['diagram-id']);
+					if (e.type == 'diagram') {
+						var status = $diagram_list.find('#' + e['diagram-id']).attr('status');
+						$e.attr('diagram-id', e['diagram-id']).attr('status', status);
+					}
 
 					if (e.type == 'graph' && !isNaN(e.min) && !isNaN(e.max))
 						$e.range = [parseFloat(e.min), parseFloat(e.max)];
@@ -135,7 +137,7 @@ $(function() {
 						$e.addClass('graph-hint');
 
 					if (e.type == 'value') {
-						if (e.value_type == 'number') {
+						if (e.is_history) {
 							['min', 'max', 'unit'].forEach((prop) => $e.attr(prop, e[prop]));
 							$e.addClass('numeric');
 							$e.addClass(e.height < 30 ? 'hvalue' : e.width < 30 ? 'vvalue' : 'bvalue');
@@ -199,7 +201,7 @@ $(function() {
 						var $e = $diagram.find('#' + e.id);
 						var $parent = $diagram.find('#' + e['parent-id']);
 
-						var link = $.extend({}, e, {
+						var link = $.extend(true, {}, e, {
 							from: {x: $parent.position().left + $parent.width() / 2, y: $parent.position().top + $parent.height() / 2},
 							to: {x: e.x, y: e.y}
 						});
@@ -268,8 +270,14 @@ $(function() {
 	
 		var hour = 1000 * 60 * 60; 
 		var file = graph.file_.filter((e) => e[0].getTime() + hour > time);
-		if (!isNaN(data.value))
-			file.push([new Date(time), data.value]);
+
+		if (data.status == 2 || data.status == 3)
+			graph.alerts[time] = data.status;
+
+		if (isNaN(data.value))
+			graph.strings[time] = data.value;
+
+		file.push([new Date(time), !isNaN(data.value) ? data.value : file[file.length - 1]]);
 
 		graph.updateOptions({file: file});
 	});
@@ -300,6 +308,13 @@ $(function() {
 				var idx = history.ids.indexOf($e.varbind_id);
 				var data = history.rows.map((row) => [new Date(row[0]), row[idx + 1]]).filter((row) => !isNaN(row[1]));
 				normalizeHistory(data);
+
+
+				var alerts = history.alerts[$e.varbind_id] || {};
+				var strings = {};
+				data.filter((row) => !$.isNumeric(row[1])).forEach((row) => strings[row[0].getTime()] = row[1] + '');
+
+
 				
 				var id = $e.attr('id');
 				if (graphs[id]) {
@@ -318,14 +333,26 @@ $(function() {
 						y :  {drawAxis : false, drawGrid: false} 
 					},
 					labels: ['time', history.columns[idx + 1]],
-					xlabel: history.columns[idx + 1],
-					valueRange: $e.range || getRange(data),
 					highlightCircleSize: 2,					
 					drawPoints: true,
+					stackedGraph: true,
 					connectSeparatedPoints: true,
+					drawPoints: true,
+					drawPointCallback: function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row) {
+						var time = g.getValue(row, 0);
+						var status = alerts[time];
+						if (status)	
+							return drawCircle(canvasContext, cx, cy, getStatusColor(status), 2);
+
+						if (strings[time])
+							return drawCircle(canvasContext, cx, cy, '#000', 2);
+						
+					},
 					legendFormatter: (data) => (data.x !== null && data.series && data.series[0].yHTML) ? data.xHTML + ': <b>' + data.series[0].yHTML + '</b>' : ''
 				};
 				graphs[id] = new Dygraph($e.get(0), data, opts);
+				graphs[id].alerts = alerts;
+				graphs[id].strings = strings;
 			});
 	});
 
@@ -352,6 +379,7 @@ $(function() {
 	});
 
 	$app.on('status-updated', function (event, packet) {
+		$app.find('#diagram').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
 		var $element_list = $elements[packet.id];
 		if (!$element_list)
 			return;
@@ -362,6 +390,7 @@ $(function() {
 	});
 
 	$app.on('values-updated', function (event, packet) {
+		$app.find('#diagram').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
 		var $element_list = $elements[packet.id];
 		if (!$element_list)
 			return;
@@ -384,14 +413,15 @@ $(function() {
 		if (!$alert_list.length || !element_list)
 			return;
 
+		var text = cast('time', alert.time) + ' ' + alert.path + ': ' + alert.description;
 		var $li = $('<li/>')
 			.attr('id', alert.id)	
 			.attr('device-id', alert.device_id)
 			.attr('status', alert.status)
 			.attr('time', alert.time)
 			.addClass('alert')	
-			.html(cast('time', alert.time) + ' ' + alert.path + ': ' + alert.description)
-			.attr('title', alert.description)
+			.html(text)
+			.attr('title', text);
 
 		if (!!alert.is_hidden)			
 			$li.attr('is-hidden', true);
@@ -506,7 +536,7 @@ $(function() {
 	});
 
 	$page.on('click', '#page-diagram-edit #diagram-save-cancel', function() {
-		$page.find('page-close').trigger('click');
+		$page.siblings('#page-close').trigger('click');
 		$diagram_list.find('li#' + $(this).attr('diagram-id')).trigger('click');	
 	});
 
@@ -527,7 +557,7 @@ $(function() {
 	$page.on('click', '#page-diagram-edit .add-element', function (event) {
 		var data = $(this).data('element');
 		data.id = new Date().getTime();
-		$editor.trigger('add-element', [$.extend({}, data), true]);
+		$editor.trigger('add-element', [$.extend(true, {}, data), true]);
 	});
 
 	$('body').on('keydown', function (event) {

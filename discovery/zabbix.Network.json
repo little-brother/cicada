@@ -1,0 +1,21 @@
+[
+	{
+		"enum": "net.if.discovery",
+		"prototypes": [
+			{
+				"name": "{{#IFNAME}} In",
+				"address": {"item" : "net.if.in[{{#IFNAME}}]"},
+				"value_type": "size",
+				"condition": "",
+				"tags": "INT;INT-IN"	
+			},
+			{
+				"name": "{{#IFNAME}} Out",
+				"address": {"item" : "net.if.out[{{#IFNAME}}]"},
+				"value_type": "size",
+				"condition": "",
+				"tags": "INT;INT-OUT"	
+			}
+		]
+	}
+]

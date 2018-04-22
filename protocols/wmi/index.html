@@ -14,6 +14,543 @@
 </div>
 
 <div id = "varbind-address">
-	<input id = "alias" type = "text" placeholder = "Alias">
-	<input id = "property" type = "text" placeholder = "Property">
+	<input id = "alias" type = "search" list = "wmi-alias-list" placeholder = "Alias">
+	<input id = "property" type = "search" placeholder = "Property">
 </div>
+
+<div id = "include">
+	<datalist id = "wmi-alias-list">
+		<option value = "baseboard" />
+		<option value = "bios" />
+		<option value = "bootconfig" />
+		<option value = "cdrom" />
+		<option value = "computersystem" />
+		<option value = "cpu" />
+		<option value = "datafile where name='c:\boot.ini'" />
+		<option value = "dcomapp" />
+		<option value = "desktop" />
+		<option value = "desktopmonitor" />
+		<option value = "diskdrive" />
+		<option value = "diskquota" />
+		<option value = "environment" />
+		<option value = "fsdir where name='c:\windows'" />
+		<option value = "group" />
+		<option value = "idecontroller" />
+		<option value = "irq" />
+		<option value = "job" />
+		<option value = "loadorder" />
+		<option value = "logicaldisk" />
+		<option value = "memcache" />
+		<option value = "memlogical" />
+		<option value = "memphysical" />
+		<option value = "netclient" />
+		<option value = "netlogin" />
+		<option value = "netprotocol" />
+		<option value = "netuse" />
+		<option value = "nic" />
+		<option value = "nicconfig" />
+		<option value = "ntdomain" />
+		<option value = "ntevent where (LogFile='system' and SourceName='W32Time')" />
+		<option value = "ntevent where (LogFile='system' and SourceName='W32Time' and Message like '%timesource%')" />
+		<option value = "ntevent where (LogFile='system' and SourceName='W32Time' and EventCode!='29')" />
+		<option value = "onboarddevice" />
+		<option value = "os" />
+		<option value = "pagefile" />
+		<option value = "pagefileset" />
+		<option value = "partition" />
+		<option value = "printer" />
+		<option value = "printjob" />
+		<option value = "process" />
+		<option value = "product" />
+		<option value = "qfe" />
+		<option value = "quotasetting" />
+		<option value = "recoveros" />
+		<option value = "Registry" />
+		<option value = "scsicontroller" />
+		<option value = "server" />
+		<option value = "service" />
+		<option value = "share" />
+		<option value = "sounddev" />
+		<option value = "startup" />
+		<option value = "sysaccount" />
+		<option value = "sysdriver" />
+		<option value = "systemenclosure" />
+		<option value = "systemslot" />
+		<option value = "tapedrive" />
+		<option value = "timezone" />
+		<option value = "useraccount" /> 
+	</datalist>
+	<datalist id = "wmi-baseboard-list">
+		<option value = "Manufacturer"/>
+		<option value = "Model"/>
+		<option value = "Name"/>
+		<option value = "PartNumber"/>
+		<option value = "SlotLayout"/>
+		<option value = "SerialNumber"/>
+		<option value = "PoweredOn"/>
+	</datalist>
+	<datalist id = "wmi-bios-list">
+		<option value = "Name"/>
+		<option value = "Version"/>
+		<option value = "Serialnumber"/>
+	</datalist>
+	<datalist id = "wmi-bootconfig-list">
+		<option value = "BootDirectory"/>
+		<option value = "Caption"/>
+		<option value = "TempDirectory"/>
+		<option value = "Lastdrive"/>
+	</datalist>
+	<datalist id = "wmi-cdrom-list">
+		<option value = "Name"/>
+		<option value = "Drive"/>
+		<option value = "VolumeName"/>
+	</datalist>
+	<datalist id = "wmi-computersystem-list">
+		<option value = "Name"/>
+		<option value = "Domain"/>
+		<option value = "Manufacturer"/>
+		<option value = "Model"/>
+		<option value = "NumberofProcessors"/>
+		<option value = "PrimaryOwnerName"/>
+		<option value = "Username"/>
+		<option value = "Roles"/>
+		<option value = "totalphysicalmemory"/>
+	</datalist>
+	<datalist id = "wmi-cpu-list">
+		<option value = "Name"/>
+		<option value = "Caption"/>
+		<option value = "MaxClockSpeed"/>
+		<option value = "DeviceID"/>
+		<option value = "status"/>
+	</datalist>
+	<datalist id = "wmi-datafile where name='c:\boot.ini'-list">
+		<option value = "Archive"/>
+		<option value = "FileSize"/>
+		<option value = "FileType"/>
+		<option value = "InstallDate"/>
+		<option value = "Readable"/>
+		<option value = "Writeable"/>
+		<option value = "System"/>
+		<option value = "Version"/>
+	</datalist>
+	<datalist id = "wmi-dcomapp-list">
+		<option value = "Name"/>
+		<option value = "AppID /format:list"/>
+	</datalist>
+	<datalist id = "wmi-desktop-list">
+		<option value = "Name"/>
+		<option value = "ScreenSaverExecutable"/>
+		<option value = "ScreenSaverActive"/>
+		<option value = "Wallpaper /format:list"/>
+	</datalist>
+	<datalist id = "wmi-desktopmonitor-list">
+		<option value = "screenheight"/>
+		<option value = "screenwidth"/>
+	</datalist>
+	<datalist id = "wmi-diskdrive-list">
+		<option value = "Name"/>
+		<option value = "Manufacturer"/>
+		<option value = "Model"/>
+		<option value = "InterfaceType"/>
+		<option value = "MediaLoaded"/>
+		<option value = "MediaType"/>
+	</datalist>
+	<datalist id = "wmi-diskquota-list">
+		<option value = "User"/>
+		<option value = "Warninglimit"/>
+		<option value = "DiskSpaceUsed"/>
+		<option value = "QuotaVolume"/>
+	</datalist>
+	<datalist id = "wmi-environment-list">
+		<option value = "Description"/>
+		<option value = "VariableValue"/>
+	</datalist>
+	<datalist id = "wmi-fsdir where name='c:\windows'-list">
+		<option value = "Archive"/>
+		<option value = "CreationDate"/>
+		<option value = "LastModified"/>
+		<option value = "Readable"/>
+		<option value = "Writeable"/>
+		<option value = "System"/>
+		<option value = "Hidden"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-group-list">
+		<option value = "Caption"/>
+		<option value = "InstallDate"/>
+		<option value = "LocalAccount"/>
+		<option value = "Domain"/>
+		<option value = "SID"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-idecontroller-list">
+		<option value = "Name"/>
+		<option value = "Manufacturer"/>
+		<option value = "DeviceID"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-irq-list">
+		<option value = "Name"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-job-list">
+		<option value = "Name"/>
+		<option value = "Owner"/>
+		<option value = "DaysOfMonth"/>
+		<option value = "DaysOfWeek"/>
+		<option value = "ElapsedTime"/>
+		<option value = "JobStatus"/>
+		<option value = "StartTime"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-loadorder-list">
+		<option value = "Name"/>
+		<option value = "DriverEnabled"/>
+		<option value = "GroupOrder"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-logicaldisk-list">
+		<option value = "Name"/>
+		<option value = "Compressed"/>
+		<option value = "Description"/>
+		<option value = "DriveType"/>
+		<option value = "FileSystem"/>
+		<option value = "FreeSpace"/>
+		<option value = "SupportsDiskQuotas"/>
+		<option value = "VolumeDirty"/>
+		<option value = "VolumeName"/>
+	</datalist>
+	<datalist id = "wmi-memcache-list">
+		<option value = "Name"/>
+		<option value = "BlockSize"/>
+		<option value = "Purpose"/>
+		<option value = "MaxCacheSize"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-memlogical-list">
+		<option value = "AvailableVirtualMemory"/>
+		<option value = "TotalPageFileSpace"/>
+		<option value = "TotalPhysicalMemory"/>
+		<option value = "TotalVirtualMemory"/>
+	</datalist>
+	<datalist id = "wmi-memphysical-list">
+		<option value = "Manufacturer"/>
+		<option value = "Model"/>
+		<option value = "SerialNumber"/>
+		<option value = "MaxCapacity"/>
+		<option value = "MemoryDevices"/>
+	</datalist>
+	<datalist id = "wmi-netclient-list">
+		<option value = "Caption"/>
+		<option value = "Name"/>
+		<option value = "Manufacturer"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-netlogin-list">
+		<option value = "Name"/>
+		<option value = "Fullname"/>
+		<option value = "ScriptPath"/>
+		<option value = "Profile"/>
+		<option value = "UserID"/>
+		<option value = "NumberOfLogons"/>
+		<option value = "PasswordAge"/>
+		<option value = "LogonServer"/>
+		<option value = "HomeDirectory"/>
+		<option value = "PrimaryGroupID"/>
+	</datalist>
+	<datalist id = "wmi-netprotocol-list">
+		<option value = "Caption"/>
+		<option value = "Description"/>
+		<option value = "GuaranteesSequencing"/>
+		<option value = "SupportsBroadcasting"/>
+		<option value = "SupportsEncryption"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-netuse-list">
+		<option value = "Caption"/>
+		<option value = "DisplayType"/>
+		<option value = "LocalName"/>
+		<option value = "Name"/>
+		<option value = "ProviderName"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-nic-list">
+		<option value = "AdapterType"/>
+		<option value = "AutoSense"/>
+		<option value = "Name"/>
+		<option value = "Installed"/>
+		<option value = "MACAddress"/>
+		<option value = "PNPDeviceID,PowerManagementSupported"/>
+		<option value = "Speed"/>
+		<option value = "StatusInfo"/>
+	</datalist>
+	<datalist id = "wmi-nicconfig-list">
+		<option value = "MACAddress"/>
+		<option value = "IPAddress"/>
+		<option value = "WINSPrimaryServer"/>
+		<option value = "WINSSecondaryServer"/>
+		<option value = "WINSEnableLMHostsLookup"/>
+		<option value = "WINSHostLookupFile"/>
+	</datalist>
+	<datalist id = "wmi-ntdomain-list">
+		<option value = "Caption"/>
+		<option value = "ClientSiteName"/>
+		<option value = "DomainControllerAddress"/>
+		<option value = "DomainControllerName"/>
+		<option value = "Roles"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-ntevent where (LogFile='system' and SourceName='W32Time')-list">
+		<option value = "Message"/>
+		<option value = "TimeGenerated"/>
+	</datalist>
+	<datalist id = "wmi-ntevent where (LogFile='system' and SourceName='W32Time' and Message like '%timesource%')-list">
+		<option value = "Message"/>
+		<option value = "TimeGenerated"/>
+	</datalist>
+	<datalist id = "wmi-ntevent where (LogFile='system' and SourceName='W32Time' and EventCode!='29')-list">
+		<option value = "TimeGenerated"/>
+		<option value = "EventCode"/>
+		<option value = "Message"/>
+	</datalist>
+	<datalist id = "wmi-onboarddevice-list">
+		<option value = "Description"/>
+		<option value = "DeviceType"/>
+		<option value = "Enabled"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-os-list">
+		<option value = "Version"/>
+		<option value = "Caption"/>
+		<option value = "CountryCode"/>
+		<option value = "CSName"/>
+		<option value = "Description"/>
+		<option value = "InstallDate"/>
+		<option value = "SerialNumber"/>
+		<option value = "ServicePackMajorVersion"/>
+		<option value = "WindowsDirectory /format:list"/>
+		<option value = "CurrentTimeZone"/>
+		<option value = "FreePhysicalMemory"/>
+		<option value = "FreeVirtualMemory"/>
+		<option value = "LastBootUpTime"/>
+		<option value = "NumberofProcesses"/>
+		<option value = "NumberofUsers"/>
+		<option value = "Organization"/>
+		<option value = "RegisteredUser"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-pagefile-list">
+		<option value = "Caption"/>
+		<option value = "CurrentUsage"/>
+		<option value = "Status"/>
+		<option value = "TempPageFile"/>
+	</datalist>
+	<datalist id = "wmi-pagefileset-list">
+		<option value = "Name"/>
+		<option value = "InitialSize"/>
+		<option value = "MaximumSize"/>
+	</datalist>
+	<datalist id = "wmi-partition-list">
+		<option value = "Caption"/>
+		<option value = "Size"/>
+		<option value = "PrimaryPartition"/>
+		<option value = "Status"/>
+		<option value = "Type"/>
+	</datalist>
+	<datalist id = "wmi-printer-list">
+		<option value = "DeviceID"/>
+		<option value = "DriverName"/>
+		<option value = "Hidden"/>
+		<option value = "Name"/>
+		<option value = "PortName"/>
+		<option value = "PowerManagementSupported"/>
+		<option value = "PrintJobDataType"/>
+		<option value = "VerticalResolution"/>
+		<option value = "Horizontalresolution"/>
+	</datalist>
+	<datalist id = "wmi-printjob-list">
+		<option value = "Description"/>
+		<option value = "Document"/>
+		<option value = "ElapsedTime"/>
+		<option value = "HostPrintQueue"/>
+		<option value = "JobID"/>
+		<option value = "JobStatus"/>
+		<option value = "Name"/>
+		<option value = "Notify"/>
+		<option value = "Owner"/>
+		<option value = "TimeSubmitted"/>
+		<option value = "TotalPages"/>
+	</datalist>
+	<datalist id = "wmi-process-list">
+		<option value = "Caption"/>
+		<option value = "CommandLine"/>
+		<option value = "Handle"/>
+		<option value = "HandleCount"/>
+		<option value = "PageFaults"/>
+		<option value = "PageFileUsage"/>
+		<option value = "PArentProcessId"/>
+		<option value = "ProcessId"/>
+		<option value = "ThreadCount"/>
+	</datalist>
+	<datalist id = "wmi-product-list">
+		<option value = "Description"/>
+		<option value = "InstallDate"/>
+		<option value = "Name"/>
+		<option value = "Vendor"/>
+		<option value = "Version"/>
+	</datalist>
+	<datalist id = "wmi-qfe-list">
+		<option value = "description"/>
+		<option value = "FixComments"/>
+		<option value = "HotFixID"/>
+		<option value = "InstalledBy"/>
+		<option value = "InstalledOn"/>
+		<option value = "ServicePackInEffect"/>
+	</datalist>
+	<datalist id = "wmi-quotasetting-list">
+		<option value = "Caption"/>
+		<option value = "DefaultLimit"/>
+		<option value = "Description"/>
+		<option value = "DefaultWarningLimit"/>
+		<option value = "SettingID"/>
+		<option value = "State"/>
+	</datalist>
+	<datalist id = "wmi-recoveros-list">
+		<option value = "AutoReboot"/>
+		<option value = "DebugFilePath"/>
+		<option value = "WriteDebugInfo"/>
+		<option value = "WriteToSystemLog"/>
+	</datalist>
+	<datalist id = "wmi-Registry-list">
+		<option value = "CurrentSize"/>
+		<option value = "MaximumSize"/>
+		<option value = "ProposedSize"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-scsicontroller-list">
+		<option value = "Caption"/>
+		<option value = "DeviceID"/>
+		<option value = "Manufacturer"/>
+		<option value = "PNPDeviceID"/>
+	</datalist>
+	<datalist id = "wmi-server-list">
+		<option value = "ErrorsAccessPermissions"/>
+		<option value = "ErrorsGrantedAccess"/>
+		<option value = "ErrorsLogon"/>
+		<option value = "ErrorsSystem"/>
+		<option value = "FilesOpen"/>
+		<option value = "FileDirectorySearches"/>
+	</datalist>
+	<datalist id = "wmi-service-list">
+		<option value = "Name"/>
+		<option value = "Caption"/>
+		<option value = "State"/>
+		<option value = "ServiceType"/>
+		<option value = "StartMode"/>
+		<option value = "pathname"/>
+	</datalist>
+	<datalist id = "wmi-share-list">
+		<option value = "name"/>
+		<option value = "path"/>
+		<option value = "status"/>
+	</datalist>
+	<datalist id = "wmi-sounddev-list">
+		<option value = "Caption"/>
+		<option value = "DeviceID"/>
+		<option value = "PNPDeviceID"/>
+		<option value = "Manufacturer"/>
+		<option value = "status"/>
+	</datalist>
+	<datalist id = "wmi-startup-list">
+		<option value = "Caption"/>
+		<option value = "Location"/>
+		<option value = "Command"/>
+	</datalist>
+	<datalist id = "wmi-sysaccount-list">
+		<option value = "Caption"/>
+		<option value = "Domain"/>
+		<option value = "Name"/>
+		<option value = "SID"/>
+		<option value = "SIDType"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-sysdriver-list">
+		<option value = "Caption"/>
+		<option value = "Name"/>
+		<option value = "PathName"/>
+		<option value = "ServiceType"/>
+		<option value = "State"/>
+		<option value = "Status"/>
+	</datalist>
+	<datalist id = "wmi-systemenclosure-list">
+		<option value = "Caption"/>
+		<option value = "Height"/>
+		<option value = "Depth"/>
+		<option value = "Manufacturer"/>
+		<option value = "Model"/>
+		<option value = "SMBIOSAssetTag"/>
+		<option value = "AudibleAlarm"/>
+		<option value = "SecurityStatus"/>
+		<option value = "SecurityBreach"/>
+		<option value = "PoweredOn"/>
+		<option value = "NumberOfPowerCords"/>
+	</datalist>
+	<datalist id = "wmi-systemslot-list">
+		<option value = "Number"/>
+		<option value = "SlotDesignation"/>
+		<option value = "Status"/>
+		<option value = "SupportsHotPlug"/>
+		<option value = "Version"/>
+		<option value = "CurrentUsage"/>
+		<option value = "ConnectorPinout"/>
+	</datalist>
+	<datalist id = "wmi-tapedrive-list">
+		<option value = "Name"/>
+		<option value = "Capabilities"/>
+		<option value = "Compression"/>
+		<option value = "Description"/>
+		<option value = "MediaType"/>
+		<option value = "NeedsCleaning"/>
+		<option value = "Status"/>
+		<option value = "StatusInfo"/>
+	</datalist>
+	<datalist id = "wmi-timezone-list">
+		<option value = "Caption"/>
+		<option value = "Bias"/>
+		<option value = "DaylightBias"/>
+		<option value = "DaylightName"/>
+		<option value = "StandardName"/>
+	</datalist>
+	<datalist id = "wmi-useraccount-list">
+		<option value = "AccountType"/>
+		<option value = "Description"/>
+		<option value = "Domain"/>
+		<option value = "Disabled"/>
+		<option value = "LocalAccount"/>
+		<option value = "Lockout"/>
+		<option value = "PasswordChangeable"/>
+		<option value = "PasswordExpires"/>
+		<option value = "PasswordRequired"/>
+		<option value = "SID"/>
+	</datalist> 
+</div>
+
+<script>
+$(function () {
+	$('#app-device').on('click', '*[protocol="wmi"] #td-address #property', function() {	
+		var $e = $(this);
+		if (!$e.attr('list'))
+			$e.attr('list', 'wmi-' + $e.siblings('#alias').val() + '-list');
+	});
+
+	$('#app-device').on('change', '*[protocol="wmi"] #td-address #alias', function() {
+		$(this).siblings('#property').attr('list', 'wmi-' + this.value + '-list').val('');
+	});	
+});
+
+</script>
+
+<style>
+#app-device *[protocol="wmi"] #td-address input {width: 105px;}
+</style>
+

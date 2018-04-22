@@ -12,8 +12,9 @@ const config = require('./config.json');
 const Alert = require('./models/alert'); 
 const Check = require('./models/check'); 
 const Device = require('./models/device');
-const Diagram = require('./models/diagram'); 
-
+const Diagram = require('./models/diagram');
+const Condition = require('./models/condition');
+ 
 const stats = require('./modules/stats');
 const network = require('./modules/network');
 
@@ -60,6 +61,7 @@ function auth(req, res) {
 		return false;
 	}
 
+	// If read-only then block full device info to protect passwords
 	if (req.session && req.session.access == 'view' && (req.method != 'GET' || /device\/([\d]+)$/g.test(req.url))) {
 		res.send(401, 'Access denied');
 		return false;
@@ -115,15 +117,14 @@ server.on('request', function (req, res) {
 		if (!d)
 			return res.send(404, 'Bad device id: ' + id);
 
-		// If read-only then remove protocol_params to protect passwords
 		if (path == `/device/${id}` && req.method == 'GET')
 			return res.json(d);	
 
 		if (path == `/device/${id}` && req.method == 'DELETE')
 			return d.delete(onDone);
 
-		if (/device\/([\d]+)\/varbind-list$/g.test(path) && req.method == 'GET')
-			return res.json(d.varbind_list.filter((v) => !v.is_temporary).map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, status: v.status || 0})));
+		if (/device\/([\d]+)\/varbind-list$/g.test(path) && req.method == 'GET') 
+			return res.json(d.varbind_list.filter((v) => !v.is_temporary).map((v) => new Object({id: v.id, name: v.name, value: v.value, value_type: v.value_type, is_history: v.is_history, status: v.status || 0})));
 
 		if ((/^\/device\/([\d]+)\/varbind-history$/).test(path) && req.method == 'GET') 
 			return d.getHistory(req.parsePeriod(query), query.only, query.downsample, onDone);
@@ -194,6 +195,31 @@ server.on('request', function (req, res) {
 		}
 	}
 
+	if (path.indexOf('/condition') == 0) {
+		if (path == '/condition' && req.method == 'GET')
+			return res.json(Condition.getList().map((c) => new Object({id: c.id, name: c.name})));
+
+		if (/condition\/([\d]*)$/g.test(path) && req.method == 'GET') {
+			let id = parseInt(path.substring(11));
+			let condition = Condition.get(id);
+			return !condition ?
+				res.send(404, 'Bad condition id: ' + id) :
+				res.json(condition);
+		}
+
+		if (path == '/condition' && req.method == 'POST') {
+			req.parseBody(function(body) {
+				let condition = (body.id) ? Condition.get(body.id, true) : new Condition();
+				if (!condition)
+					return res.send(404, 'Bad condition id: ' + body.id);
+	
+				condition.setAttributes(body);
+				condition.save(onDone);
+			})
+			return;
+		}
+	}
+
 	if (path == '/check') {
 		if (req.method == 'GET')
 			return Check.getList(onDone);
@@ -218,8 +244,8 @@ server.on('request', function (req, res) {
 		if (req.method == 'GET') 
 			return fs.readFile(template, {encoding: 'utf-8'}, onDone);
 
-		if (req.method == 'POST')
-			return req.parseBody((body) => fs.writeFile(template, body.varbind_list, {encoding: 'utf-8'}, onDone));
+		if (req.method == 'POST') 
+			return req.parseBody((body) => fs.writeFile(template, body.template, {encoding: 'utf-8'}, onDone));
 
 		if (req.method == 'DELETE')
 			return fs.unlink(template, onDone);
@@ -242,7 +268,17 @@ server.on('request', function (req, res) {
 		if (!protocols) {
 			try {
 				protocols = {};			
-				fs.readdirSync('./protocols').forEach((dir) => protocols[dir] = fs.readFileSync(`./protocols/${dir}/index.html`, {encoding: 'utf-8'}).toString());
+				fs.readdirSync('./protocols').forEach(function (dir) {
+					protocols[dir] = {
+						html: fs.readFileSync(`./protocols/${dir}/index.html`, {encoding: 'utf-8'}).toString(),
+						discovery: []
+					}	
+				});
+				fs.readdirSync('./discovery').forEach(function (file) {
+					let info = file.split('.');
+					if (protocols[info[0]])
+						protocols[info[0]].discovery.push(info[1]);
+				});
 			} catch (err) {
 				protocols = null;
 				console.error(__filename, err);
@@ -253,10 +289,10 @@ server.on('request', function (req, res) {
 		return res.json(protocols);
 	}
 
-	if (path == '/value' && req.method == 'GET') {
+	if ((path == '/value' || path == '/discovery') && req.method == 'GET') {
 		let opts;
 		try {
-			opts = JSON.parse(query.json_opts);
+			opts = JSON.parse(qs.unescape(query.json_opts));
 		} catch (err) { 
 			opts = err;
 		}
@@ -264,7 +300,9 @@ server.on('request', function (req, res) {
 		if (opts instanceof Error)
 			return res.send(500, opts.message);
 
-		return Device.getValue(opts, (err, val) => res.send(200, (err) ? err.message : val));
+		return (path == '/value') ? 
+			Device.getValue(opts, (err, val) => res.send(200, (err) ? err.message : val)) :
+			Device.discovery(opts, onDone);
 	}
 
 	if (req.url == '/upload' && req.method == 'POST') {		
@@ -277,7 +315,10 @@ server.on('request', function (req, res) {
 			var to = buffer.lastIndexOf('\r\n', buffer.length - 4);
 
 			var header = buffer.slice(0, from).toString();
-			var filename = header.match(/\bfilename="(.*?)"/i)[1];
+			var filename = (header.match(/\bfilename="(.*?)"/i) || {})[1];
+			if (!filename)
+				return res.send(500, 'Filename is required');
+
 			fs.writeFile('./public/images/' + filename, buffer.slice(from, to), (err) => (err) ? res.send(500, err.message) : res.send(200, filename));
 		});
 		return;
@@ -310,10 +351,10 @@ server.on('request', function (req, res) {
 	})
 });
 const port = config.port || 5000;
-server.listen(port, () => console.log(`Cicada running on port ${port}... at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`));	
+server.listen(port, () => console.log(`${new Date().toLocaleString([], {year: 'numeric', day: '2-digit', month: '2-digit',  hour: '2-digit', minute:'2-digit'})} Cicada running on port ${port}...`));	
 
 // Update checks, init cache and run polling
-async.series([Check.update, Device.cache, Diagram.cache, Alert.cacheAnomalies], function (err) {
+async.series([Check.update, Condition.purge, Device.cache, Diagram.cache, Alert.cacheAnomalies], function (err) {
 	if (err) {
 		console.error(__filename, err.message);
 		process.exit(1);

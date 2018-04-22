@@ -1,0 +1,15 @@
+[
+	{
+		"enum": "path Win32_OperatingSystem",
+		"prototypes": [
+			{
+				"name": "Memory usage, %",
+				"address": {"alias" : "path Win32_OperatingSystem", "property": "freephysicalmemory"},
+				"value_type": "number",
+				"divider": "1p{totalvisiblememorysize}",
+				"condition": "",
+				"tags": "MEM"	
+			}
+		]
+	}
+]

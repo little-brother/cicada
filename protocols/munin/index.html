@@ -10,6 +10,66 @@
 </div>
 
 <div id = "varbind-address">
-	<input id = "group" type = "text" placeholder = "Group">
-	<input id = "item" type = "text" placeholder = "Item">
+	<input id = "group" type = "search" placeholder = "Group">
+	<input id = "item" type = "search" placeholder = "Item">
 </div>
+
+<script>
+$(function() {
+	function addList($e, name) {
+		var $page = $e.closest('#page-content');
+		var ip = $page.find('#properties #ip').val();
+
+		if (!ip)		
+			return;
+
+		var list_id = 'munin-' + (name || 'group') + '-list-' + ip.replace(/\./g, '-');
+		(name && $e.siblings('#item') || $e).attr('list', list_id);
+		if ($page.find('#' + list_id).length)
+			return;
+
+		var $datalist = $('<datalist/>').attr('id', list_id).appendTo($page);
+
+		var data = {
+			device_id: $page.find('#properties #id').val(),
+			protocol: 'munin',
+			protocol_params: {ip},
+			address: {group: name || 'list'}
+		}
+
+		$page.find('#page-munin #protocol-params').find('input, select').each((i, param) => data.protocol_params[param.id] = param.value);
+
+		$.ajax({
+			method: 'GET',
+			url: '/value',
+			data: {
+				json_opts: JSON.stringify(data)
+			},
+			dataType: 'text',
+			success: function (res) {
+				var list = !name ? res.split(' ') : res.split('\n').map((line) => line.substring(0, line.indexOf('.value'))).filter((line) => !!line);
+				var options = '';
+				list.forEach((e) => options += '<option value = "' + e + '"/>');
+				$datalist.html(options)				;
+			},
+			error: (err) => console.log(err)
+		})		
+	}
+
+
+	$('#app-device').on('click', '*[protocol="munin"] #td-address #group', function() {	
+		var $e = $(this);
+		addList($e);
+	});
+
+	$('#app-device').on('change', '*[protocol="munin"] #td-address #group', function() {	
+		var $e = $(this);
+		addList($e, this.value);
+		$e.siblings('#item').val('');
+	});
+});
+</script>
+
+<style>
+#app-device *[protocol="munin"] #td-address input {width: 105px;}
+</style>

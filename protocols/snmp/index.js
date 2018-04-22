@@ -11,11 +11,7 @@ exports.getValues = function(opts, address_list, callback) {
 	if (address_list.some((a) => !a.oid))
 		return callback(new Error('Oid is empty!'));
 
-	let session = snmp.createSession (opts.ip, opts.community, {
-		port: opts.port, 
-		version: ver[opts.version], 
-		timeout: opts.timeout * 1000 || 3000
-	});
+	let session = openSession(opts);
 
 	function parseValue(value, type, hint) {
 		// Opaque 4 byte 
@@ -77,34 +73,67 @@ exports.getValues = function(opts, address_list, callback) {
 	}
 }
 
-// opts = {ip: 128.33.12.34, port: 162, write_community: private, version: 2c, timeout: 3 }
-// action = {oid: '1.2.3', type: 2, value: 10}
-exports.doAction = function(opts, action, callback) {
-	if (ver[opts.version] == undefined)
-		return callback('Unsupported version of snmp: ' + opts.version);
+// opts = {ip: 128.33.12.34, port: 161, community: public, version: 2c, timeout: 3}
+// rule_list = [{STATUS: 1.3.6..., DESC: 1.3.6...}]
+// rule_list = [1.3.6..., ...] ~ [{VALUE: 1.3.6...}, ...] 
+exports.discovery = function (opts, enum_list, callback) {
+	let session = openSession(opts);
 
-	let session = snmp.createSession (opts.ip, opts.community_write, {
-		port: opts.port, 
-		version: ver[opts.version], 
-		timeout: parseInt(opts.timeout) * 1000 || 3000
+	let enum_oids = {};	
+	enum_list.forEach((e, i) => enum_list[i] = (typeof(e) == 'string') ? {VALUE: e} : e);
+	enum_list.forEach(function (e) {
+		for (let prop in e) 
+			enum_oids[e[prop]] = [];
 	});
 
-	session.set ([{
-		oid: action.oid, 
-		type: (action.value_type in snmp.ObjectType) ? snmp.ObjectType[action.value_type] : 2, // 2 - Integer
-		value: action.value
-		}], 
-		function (err, res) {
-			closeSession(session);
-			callback(err && err.message || '');
-		}
-	);	
+	let enum_oid_list = Object.keys(enum_oids);
+	function enumOid (i) {
+		if (i == enum_oid_list.length) 
+			return onDone();
+
+		let oid = enum_oid_list[i];
+		session.subtree (oid,
+			(list) => list.filter((e) => !snmp.isVarbindError(e)).forEach((e) => enum_oids[oid].push({index: e.oid.substring(oid.length + 1), value: e.value})), 
+			function (err) {
+				if (err)
+					enum_oids[oid] = [];
+				enumOid(i + 1);
+			}
+		);
+	}
+	enumOid(0);
+
+	function onDone() {
+		closeSession(session);
+
+		let res = enum_list.map(function(e) {
+			let elements = {};
+			for (let prop in e) {	
+				enum_oids[e[prop]].forEach(function (e) {
+					if (!elements[e.index])
+						elements[e.index] = {INDEX: e.index};
+	
+					elements[e.index][prop] = e.value.toString();	
+				});
+			}
+			return Object.keys(elements).map(idx => elements[idx]);	
+		});
+		callback(null, res);
+	}	
+}
+
+function openSession(opts) {
+	return snmp.createSession (opts.ip, opts.community, {
+		port: opts.port, 
+		version: ver[opts.version], 
+		timeout: opts.timeout * 1000 || 3000
+	});
 }
 
 function closeSession(session) {
 	try { 
 		session.close(); 
 	} catch(err) { 
-		console.log('SNMP session close: ', err); 
+		console.log('SNMP session close: ', err.message); 
 	}
 }

@@ -3,18 +3,9 @@ const async = require('async');
 const RRStore = require('rrstore');
 
 const mixin = require('./mixin');
-Object.assign(Varbind, mixin.get('varbind'), {generateExpressionCode});
+const Condition = require('./condition');
 
-const checkCondition = {
-	'greater' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) > parseFloat(v1),
-	'equals' : (v, v1) => v == v1,
-	'not-equals' : (v, v1) => v != v1,
-	'smaller' : (v, v1) => !isNaN(v) && !isNaN(v1) && parseFloat(v) < parseFloat(v1),
-	'empty' : (v) => isNaN(v) && !v,
-	'change' : (v, prev) => prev != undefined && v != undefined && prev != v,
-	'any' : (v, v1) => true,
-	'error' : (v) => (v + '').indexOf('ERR') == 0
-}
+Object.assign(Varbind, mixin.get('varbind'), {generateExpressionCode});
 
 function Varbind (data) {
 	if (this.json_address != data.json_address)
@@ -44,20 +35,20 @@ function Varbind (data) {
 	if (!this.value_type)
 		this.value_type = 'string';
 	this.name = this.name + '';
+	this.condition_id = parseInt(this.condition_id) || 0;
 
-	for (let f of ['status_conditions', 'address']) {
-		try {
-			this[f] = JSON.parse(this['json_' + f]) || {};
-		} catch (err) {
-			this[f] = {};
-			this['json_' + f] = '{}';
-		}
-	}	
-	
+	try {
+		this.address = JSON.parse(this.json_address) || {};
+	} catch (err) {
+		this.json_address = '{}';
+		this.address = {};
+	}
+		
 	this.tag_list = !!this.tags ? this.tags.toString().split(';').map((t) => t.trim()).filter((t, idx, tags) => tags.indexOf(t) == idx) : [];
 	this.tags = this.tag_list.join(';');
 
-	Object.defineProperty(this, 'is_status', {get: () => (this.status_conditions || []).length > 0});
+	Object.defineProperty(this, 'is_history', {get: () => this.value_type == 'number' || this.value_type == 'size'});
+	Object.defineProperty(this, 'is_status', {get: () => !!this.condition_id});
 	Object.defineProperty(this, 'is_temporary', {get: () =>  this.name[0] == '$'});
 	Object.defineProperty(this, 'is_expression', {get: () => this.protocol == 'expression'});
 	if (this.is_expression)
@@ -71,19 +62,12 @@ Varbind.prototype.getParent = function() {
 }
 
 Varbind.prototype.updateStatus = function() {
-	if (!this.status_conditions.length)
+	if (!this.condition_id)
 		return; 
 
 	this.prev_status = this.status;
-	this.status = 0;
-	for (let i = 0; i < this.status_conditions.length; i++) {	
-		let cond = this.status_conditions[i];
-		let val = cond.if != 'change' ? cond.value : this.prev_value;
-		if(checkCondition[cond.if] && checkCondition[cond.if](this.value, val)) {
-			this.status = cond.status;
-			break;
-		}
-	}
+	let condition = Condition.get(this.condition_id);
+	this.status = condition ? condition.calcStatus(this.value, this.prev_value, this.status) : 0;
 }
 
 function generateExpressionCode (curr_device, expression) {
@@ -126,7 +110,7 @@ Varbind.prototype.calcExpressionValue = function () {
 RRStore.prototype.forecast = function (when) {
 	let arr = this.arr.map((e, i) => [i, e]).filter((e) => !isNaN(e[1]));
 
-	if (arr.length < 3)
+	if (arr.length == 0)
 		return null;	
 
 	let mean = (arr) => arr.reduce((sum, e) => sum + e, 0) / arr.length;

@@ -1,0 +1,24 @@
+[
+	{
+		"enum": "path Win32_PerfFormattedData_Tcpip_NetworkInterface where bytestotalpersec!=0",
+		"transform": {
+			"name": "{name}.replace(/[^\\x00-\\x7F]/g, '') || 'Ethernet'"
+		},
+		"prototypes": [
+			{
+				"name": "{name} In",
+				"address": {"alias" : "path Win32_PerfFormattedData_Tcpip_NetworkInterface where packetspersec!=0", "property": "bytesreceivedpersec@{INDEX}"},
+				"value_type": "size",
+				"condition": "",
+				"tags": "INT;INT-IN"	
+			},
+			{
+				"name": "{name} Out",
+				"address": {"alias" : "path Win32_PerfFormattedData_Tcpip_NetworkInterface where packetspersec!=0", "property": "bytessentpersec@{INDEX}"},
+				"value_type": "size",
+				"condition": "",
+				"tags": "INT;INT-OUT"	
+			}
+		]
+	}
+]

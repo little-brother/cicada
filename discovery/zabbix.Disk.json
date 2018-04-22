@@ -1,0 +1,14 @@
+[
+	{
+		"enum": "vfs.fs.discovery",
+		"prototypes": [
+			{
+				"name": "Disk {{#FSNAME}} ({{#FSTYPE}}) usage, %",
+				"address": {"item" : "vfs.fs.size[{{#FSNAME}},pused]"},
+				"value_type": "number",
+				"condition": "",
+				"tags": "DISK"	
+			}
+		]
+	}
+]

@@ -1,11 +1,14 @@
+	var graphs = {device: {}, dashboard:{}};
 $(function(){
 	var $app = $('#app-device').height(window.innerHeight);
 	var $page = $app.find('#page');
 	var $device_list = $app.find('#navigator #device-list');
 	var $dashboard = $app.find('#dashboard');
+	var $device_tag_list = $app.find('#navigator #device-tag-list');
+	var $varbind_tag_list = $app.find('#dashboard #varbind-tag-list');
 	var $components = $('#components');
 
-	var graphs = {device: {}, dashboard:{}};
+
 	var templates = {};
 
 	// INIT
@@ -15,6 +18,7 @@ $(function(){
 	if (is_admin) {
 		updateTemplates();
 		updateProtocolComponents();
+		updateConditions();
 	} else {
 		$components.find('#page-alert-list-view #alert-list #td-hide').remove();
 	}
@@ -27,7 +31,7 @@ $(function(){
 			devices.forEach(updateNavigatorDevice);
 			setHistoryPeriodSelector($dashboard);
 			updateNavigatorStatus();
-			updateDashboardTags();
+			updateTags();
 
 			var path = window.location.pathname || '';
 			if (path.indexOf('/device/') == 0) {
@@ -42,22 +46,24 @@ $(function(){
 	});
 
 	// VIEW 
-	$app.on('click', '#page-close', function() {
-		$dashboard.removeAttr('hidden');
-		$page.empty();
+	$app.on('click', '#page-close', showDashboard);
+
+	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block, #check-list-edit', function() {
+		$device_list.find('li.active').removeClass('active');
+		$app.trigger('notify', {device_id: 0});
 	});
 
 	$app.on('click', '#device-list li', function(e, data) {
-		$page.empty();
 		$dashboard.attr('hidden', true);
 
 		var $e = $(this);
-
 		if ($e.hasClass('active') && !!e.originalEvent) {
-			$dashboard.removeAttr('hidden');
+			showDashboard();
 			$app.trigger('notify', {device_id: 0});
 			return $e.removeClass('active');
 		}
+
+		$page.empty();
 
 		var device_id = parseInt($e.attr('id')) || 0;	
 		$app.trigger('notify', {device_id});
@@ -80,10 +86,20 @@ $(function(){
 					return $component.find('#page-content').html('There are no varbinds.');
 
 				$selector = setHistoryPeriodSelector($component);
-				$component.find('.history-period-block').show();
 
 				var $varbind_list = $('<table/>').attr('id', 'varbind-list').attr('device-id', device_id).data('varbind-list', varbind_list);
-				$.each(varbind_list, function (i, varbind) {
+
+				var collator = new Intl.Collator();
+				varbind_list.sort(function(a, b) {
+					if (a.is_history && !b.is_history)
+						return 1;
+					if (!a.is_history && b.is_history)
+						return -1;
+					
+					return collator.compare(a.name, b.name);
+				});
+
+				varbind_list.forEach(function (varbind, i) {
 					$('<tr/>')
 						.attr('id', varbind.id)
 						.append($('<td id = "td-name"/>').html(varbind.name))
@@ -101,8 +117,8 @@ $(function(){
 		});
 	});
 
-	$app.on('update-device-list', function() {
-		var tag_list = $dashboard.find('#device-tag-list input:checked').map((i, e) => e.id).get();
+	$app.on('filter-device-list', function() {
+		var tag_list = $device_tag_list.find('[checked]').map((i, e) => e.id).get();
 
 		$device_list.find('li').each(function (i, e) {
 			var $e = $(e);
@@ -119,19 +135,15 @@ $(function(){
 
 		var $cells = {};
 		varbind_list.forEach(function (varbind) {
-			$cells[varbind.id] = $varbind_list.find('tr#' + varbind.id + ' #td-history').empty().attr('is-number', varbind.value_type == 'number');
-			if (varbind.value_type != 'number')
+			$cells[varbind.id] = $varbind_list.find('tr#' + varbind.id + ' #td-history').empty().attr('is-history', varbind.is_history);
+			if (!varbind.is_history)
 				$('<table/>').appendTo($cells[varbind.id]);
 		});
-
-		function makeRequestData(from, to) {
-			return {from: parseInt(from), to: parseInt(to), downsample: from && to && (to - from > 2 * 60 * 60 * 1000)}
-		}
 
 		function onHistoryData(res) {
 			deleteGraph('device');
 		
-			$.each(varbind_list.filter((varbind) => varbind.value_type == 'number'), function(i, varbind) {
+			$.each(varbind_list.filter((varbind) => varbind.is_history), function(i, varbind) {
 				var idx = res.ids.indexOf(varbind.id);
 				if (idx == -1)
 					return;
@@ -148,21 +160,21 @@ $(function(){
 
 				var opts = {
 					animatedZooms: true,
-					valueRange: getRange(data),
 					labels: ['time', 'value'],
 					highlightCircleSize: 2,					
 					height: 116,
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)},
-						y: {valueFormatter: (val, opts, seriesName, g, row) => strings[g.getValue(row, 0)] || val}
+						y: {valueFormatter: (val, opts, seriesName, g, row) => strings[g.getValue(row, 0)] || cast(varbind.value_type, val)}
 					},
 					verticalCrosshair: true,
+					stackedGraph: true,
 					drawPoints: true,
 					drawPointCallback: function (g, seriesName, canvasContext, cx, cy, seriesColor, pointSize, row) {
 						var time = g.getValue(row, 0);
 						var status = alerts[time];
 						if (status)	
-							return drawCircle(canvasContext, cx, cy, getStatusColor(status), 3);
+							return drawCircle(canvasContext, cx, cy, getStatusColor(status), 2);
 
 						if (strings[time])
 							return drawCircle(canvasContext, cx, cy, '#000', 2);
@@ -192,7 +204,7 @@ $(function(){
 
 		var updateHistoryTimer;
 		function onZoom(sub, minDate, maxDate) {
-			$.each(varbind_list.filter((varbind) => varbind.value_type == 'number'), function(i, varbind) {
+			$.each(varbind_list.filter((varbind) => varbind.is_history), function(i, varbind) {
 				var idx = sub.ids.indexOf(varbind.id);
 				var g = graphs.device[varbind.id];
 				if (idx == -1 || !g)
@@ -214,8 +226,13 @@ $(function(){
 			$.ajax({
 				method: 'GET',
 				url: '/device/' + $varbind_list.attr('device-id') + '/varbind-history',
-				data: makeRequestData(from, to),	
-				success: callback
+				data: {
+					from: parseInt(from), 
+					to: parseInt(to), 
+					downsample: 'auto'
+				},	
+				success: callback,
+				complete: () => $app.find('#device-history-period').pickmeup('set_date', new Date())
 			});
 		}
 
@@ -250,68 +267,24 @@ $(function(){
 	});
 
 	// EDIT
+	$page.on('click', '.top-menu #device-edit, .top-menu #device-clone', function() {
+		var $e = $(this);	
+		$.ajax({
+			method: 'GET',
+			url: '/device/' + $e.attr('device-id'),
+			success: (device) => setDevice(device, this.id == 'device-clone')
+		});
+	});
+
 	$app.on('click', '.top-menu .device-add', function() {
-		var $e = $(this); name
+		var $e = $(this);
 		var template_name = $e.attr('name');
 
 		if (!!template_name && !templates[template_name])
 			return updateTemplateInfo(template_name, () => $e.trigger('click'));
 
-		$page.empty();
-		var $component = $components.find('#page-device-edit').clone(true, true);
-		$component.find('#properties #template').val(template_name);
-		
-		setVarbindList($page, $component,  templates[template_name] || []);				
+		setDevice(templates[template_name] || {is_pinged: 1});			
 	});
-
-	$app.on('click', '#page-close, .device-add, #device-scan, #navigator #alert-block, #check-list-edit', function() {
-		$device_list.find('li.active').removeClass('active');
-		$app.trigger('notify', {device_id: 0});
-	});
-
-	$page.on('click', '.top-menu #device-edit, .top-menu #device-clone', function() {
-		var $e = $(this);
-		$.ajax({
-			method: 'GET',
-			url: '/device/' + $e.attr('device-id'),
-			success: function (device) {
-				$page.empty();
-				var $component = $components.find('#page-device-edit').clone(true, true);
-				if ($e.attr('id') == 'device-edit') {
-					$component.find('#id').val(device.id);
-					$component.find('#name').val(device.name);
-					$component.find('#ip').val(device.ip);
-					$component.find('#mac').val(device.mac);
-					$component.find('#period').val(device.period || 60);
-					$component.find('#timeout').val(device.timeout || 3);
-					$component.find('#description').val(device.description);
-					$component.find('#is-pinged')[device.is_pinged ? 'attr' : 'removeAttr']('checked', true);
-					$component.find('#check-parent-at-failure')[!!device.parent_id ? 'attr' : 'removeAttr']('checked', true);
-					$component.find('#force-status-to').val(device.force_status_to || 3);
-					$component.find('#template').val(device.template);
-				} else {
-					$component.find('#id').attr('cloned', device.id);
-					$component.find('#name').val(device.name + ' clone');
-					$component.find('#template').val(device.template);
-				}
-				$component.find('#tags').val(device.tags);
-		
-				for (var protocol in device.protocols) {
-					$component
-						.find('#protocols #page-' + protocol)
-						.find('input, select')
-						.each((i, e) => $(e).val(device.protocols[protocol] && device.protocols[protocol][e.id]));
-				}
-				
-				setVarbindList($page, $component, device.varbind_list);
-			}
-		})	
-	});
-
-	$page.on('change', '.varbind-list #if', function() {
-		$(this).attr('if', this.value);
-	});
-
 
 	$page.on('focus', '#page-device-edit #tags', function () {
 		$(this).attr('focused', true);
@@ -327,30 +300,44 @@ $(function(){
 		$e.val() ? $e.val($e.val() + ';' + this.innerHTML) : $e.val(this.innerHTML);
 	});
 
-	$page.on('change', '#page-device-edit .varbind-list input', function() {
-		$(this).closest('table.varbind-list').attr('changed', true);
-	});
+	function setDevice(device, cloned) {
+		$page.empty();
+		var $component = $components.find('#page-device-edit').clone(true, true);
+		$component.find('#device-save-cancel').attr('back', device.id);
 
-	function buildConditionList(condition_list) {
-		var $template_row = $components.find('#partial-varbind-condition');
-		return (condition_list || []).map(function (condition) {
-			var $row = $template_row.clone().removeAttr('id');
-			$row.find('#if').val(condition.if).attr('if', condition.if);
-			$row.find('#value').val(condition.value);
-			$row.find('#status').val(condition.status);
-			return $row;
-		});
-	}
+		if (cloned) {
+			delete device.id;
+			device.name += ' clone';
+		}
 
-	function setVarbindList($page, $component, varbind_list) {
+		$component.find('#id').val(device.id);
+		$component.find('#name').val(device.name);
+		$component.find('#ip').val(device.ip);
+		$component.find('#mac').val(device.mac);
+		$component.find('#period').val(device.period || 60);
+		$component.find('#timeout').val(device.timeout || 3);
+		$component.find('#description').val(device.description);
+		$component.find('#is-pinged')[device.is_pinged ? 'attr' : 'removeAttr']('checked', true);
+		$component.find('#check-parent-at-failure')[!!device.parent_id ? 'attr' : 'removeAttr']('checked', true);
+		$component.find('#force-status-to').val(device.force_status_to || 3);
+		$component.find('#tags').val(device.tags);
+
+		for (var protocol in device.protocols || {}) {
+			$component
+				.find('#protocols #page-' + protocol)
+				.find('input, select')
+				.each((i, e) => $(e).val(device.protocols[protocol] && device.protocols[protocol][e.id]));
+		}
+		
 		var $vb_table = $components.find('#partial-varbind-list-edit .varbind-list');
-
 		$component.find('#protocols div[id^="page-"]').each(function(i, e) {
 			var $e = $(e);
 			var protocol = e.id.substring(5);
 			var $varbind_list = $e.find('.varbind-list').attr('protocol', protocol);
-			var $template_row = $varbind_list.find('#template-row');			
-			$.each(varbind_list, function(i, varbind) {
+			var $template_row = $varbind_list.find('#template-row');
+			buildConditionList($template_row.find('#td-condition'));
+			
+			(device.varbind_list || []).forEach(function (varbind, i) {
 				if (varbind.protocol != protocol)
 					return;
 
@@ -363,10 +350,8 @@ $(function(){
 				
 				$row.find('#divider').val(varbind.divider || 1);
 				$row.find('#value-type').val(varbind.value_type || 'string');
-				
-				var $condition_list = buildConditionList(varbind.status_conditions);
-				$row.find('#td-status-conditions #condition-list').append($condition_list);
-
+				var cid = varbind.condition_id || varbind.condition && $row.find('#td-condition option[name="' + varbind.condition + '"]').attr('value') || 0;
+				$row.find('#td-condition').attr('condition-id', cid).find('#condition-list').val(cid);
 				$row.find('#tags').val(varbind.tags);
 
 				if (varbind.check_id) {
@@ -377,67 +362,19 @@ $(function(){
 				$row.appendTo($varbind_list);
 			});
 		});
-
 		$component.appendTo($page);	
 
 		var $menu = $component.find('#protocol-menu');
 		$component.find('.varbind-list tbody:has(tr)').each((i, e) => $menu.find('div[protocol="' + $(e).closest('table').attr('protocol') + '"]').trigger('click'));
-		$component.find('#protocols label:Visible:first').trigger('click');
+		$component.find('#protocols label:visible:first').trigger('click');
 		updateProtocolTabsState();
 	}
 
-	function getVarbindList(templated) {
-		var varbind_list = [];
-		$page.find('.varbind-list').each(function(i, e) {
-			$varbind_list = $(e);
-			var protocol = $varbind_list.attr('protocol');
-			$varbind_list.find('tbody tr').each(function(j, row) {
-				var $row = $(row);
-				var varbind = {
-					protocol: trim(protocol),
-					id: parseInt($row.attr('id')),
-					name: trim($row.find('#name').val()),
-					divider: trim($row.find('#divider').val()),
-					value_type: $row.find('#value-type').val(),
-					tags: trim($row.find('#tags').val()),
-					check_id: $row.attr('check-id')
-				}
-				
-				var address = {};
-				var $td_address = $row.find('#td-address');
-				$.each($td_address.find('input, select, textarea'), (i, e) => address[e.id] = trim(e.value));
-				
-				var status_conditions = [];
-				$row.find('#td-status-conditions .status-condition').each(function() {
-					var $cond = $(this);	
-					status_conditions.push({
-						if: $cond.find('#if').val(),
-						value: trim($cond.find('#value').val()),
-						status: $cond.find('#status').val()
-					});
-				});
-
-				if (templated) {
-					delete varbind.id;
-					varbind.address = address;
-					varbind.status_conditions = status_conditions;
-				} else {
-					varbind.json_address = JSON.stringify(address);
-					varbind.json_status_conditions = JSON.stringify(status_conditions);
-				}
-			
-				varbind_list.push(varbind);
-			})
-		})
-
-		return varbind_list.filter((varbind) => !varbind.check_id);	// ignore group check
-	}
-
-	$page.on('click', '.top-menu #device-save', function() {
+	function getDevice() {
 		var $props = $page.find('#page-content #properties');
 		var $protocols = $page.find('#page-content #protocols'); 
 
-		var data = {
+		var device = {
 			id: parseInt($props.find('#id').val()),
 			name: trim($props.find('#name').val()),
 			description: trim($props.find('#description').val()),
@@ -449,63 +386,119 @@ $(function(){
 			is_pinged: $props.find('#is-pinged:checked').length,
 			parent_id: $props.find('#check-parent-at-failure:checked').length,
 			force_status_to:  trim($props.find('#force-status-to').val()),
-			template: trim($props.find('#template').val())
+			protocols: {},
+			varbind_list: []
 		};
 
-		if (!data.id)
-			delete data.id;	
+		if (!device.id)
+			delete device.id;	
 
-		var protocol_params = {};
 		$protocols.find('input:radio[name="tab"]')
-			.map((i, e) => e.id.substring(4)) // tab-#protocol)
+			.map((i, e) => e.id.substring(4)) // tab-{protocol}
 			.filter((i, protocol) => $protocols.find('#page-' + protocol + ' .varbind-list tbody').has('tr').length)
 			.each(function(i, protocol) {
 				var params = {};
 				$protocols.find('#page-' + protocol + ' #protocol-params')
 					.find('input, select, textarea')
 					.each((i, param) => params[param.id] = trim(param.value));
-				protocol_params[protocol] = params;
+				device.protocols[protocol] = params;
 			});
 
-		data.json_protocols = JSON.stringify(protocol_params);
-		data.json_varbind_list = JSON.stringify(getVarbindList());
+		$page.find('.varbind-list').each(function(i, e) {
+			$varbind_list = $(e);
+			var protocol = $varbind_list.attr('protocol');
+			$varbind_list.find('tbody tr').each(function(j, row) {
+				var $row = $(row);
+				if ($row.attr('check-id'))
+					return;
+
+				var varbind = {
+					protocol: trim(protocol),
+					id: parseInt($row.attr('id')),
+					name: trim($row.find('#name').val()),
+					address: {},
+					divider: trim($row.find('#divider').val()),
+					value_type: $row.find('#value-type').val(),
+					condition_id: $row.find('#condition-list').val(),
+					tags: trim($row.find('#tags').val()),
+					check_id: $row.attr('check-id')
+				}
+				$row.find('#td-address').find('input, select, textarea').each((i, e) => varbind.address[e.id] = trim(e.value));
+			
+				device.varbind_list.push(varbind);
+			})
+		})
+
+		return device;		
+	}
+
+	function jsonDevice(device) {
+		var stringify = (obj, prop) => (obj['json_' + prop] = JSON.stringify(obj[prop])) && delete obj[prop];
 		
+		if (!device.varbind_list)	
+			device.varbind_list = [];
+		device.varbind_list.forEach((varbind) => stringify(varbind, 'address'));
+		stringify(device, 'varbind_list');	
+		stringify(device, 'protocols');
+
+		return device;
+	}
+
+	$page.on('click', '.top-menu #device-save', function() {
+		var device = getDevice();
+		jsonDevice(device);
+
 		$.ajax({
 			method: 'POST',
 			url: '/device',
-			data: data,
+			data: device,
 			dataType: 'text',
 			success: function (id) {
-				data.id = id;
-				updateNavigatorDevice(data).click();
-				$app.trigger('update-device-list');
+				device.id = id;
+				updateNavigatorDevice(device).click();
+				updateNavigatorStatus(); 
+				updateTags();
+				$app.trigger('filter-device-list');
 			}
 		})
 	});
 
 	$page.on('click', '.top-menu #device-save-cancel', function() {
-		var id = $page.find('#page-content #properties #id');
-		var $e = $device_list.find('li#' + (id.val() || id.attr('cloned') || 0));
+		var id = this.getAttribute('back') || 0;
+		var $e = $device_list.find('li#' + id);
 
-		return ($e.length > 0) ? $e.click() : $page.empty() && $dashboard.removeAttr('hidden');
+		return ($e.length > 0) ? $e.click() : showDashboard();
 	});
 
 	$page.on('click', '#page-device-edit #template-save', function() {
-		var name = trim($page.find('#page-device-edit #properties #name').val());
+		var device = getDevice();
+		var name = device.name;
 		if (!name)
 			return alert('The name is empty');
 
 		if (templates[name] != undefined && !confirm('Overwrite?'))
 			return;
 
-		var varbind_list = getVarbindList(true);
+		['id', 'name', 'ip', 'mac'].forEach((prop) => delete device[prop]);
+
+		var conditions = getConditions();
+		device.varbind_list.forEach(function (varbind) {
+			varbind.condition = conditions[varbind.condition_id] || '';
+			delete varbind.id;
+			delete varbind.condition_id;		
+		});
+
 		$.ajax({
 			method: 'POST',
 			url: '/template/' + name,
 			data: {
-				varbind_list: JSON.stringify(varbind_list, 1, '\t')
+				template: JSON.stringify(device, 1, '\t')
 			},
-			success: (res) => templates[name] = varbind_list
+			success: function (res) {
+				templates[name] = false;
+				alert('Saved');
+			},
+			complete: updateTemplates
 		});
 	});
 
@@ -520,8 +513,83 @@ $(function(){
 			success: function () {
 				$e.remove();
 				delete templates[name]; 
-			}
+			},
+			complete: updateTemplates
 		});
+	});
+
+	$app.on('click', '.top-menu #template-list #import', function() {
+		$app.find('#import-upload').click();
+	});
+
+	$app.on('change', '#import-upload', function (event) {
+		var $import = $(this);
+		var device_list = [];
+		var $condition_list = $components.find('#partial-varbind-condition-list #condition-list');	
+
+		function importDevice (device_no) {
+			if (device_no == device_list.length) { 
+				$import.val('');
+				$app.trigger('filter-device-list');
+				updateNavigatorStatus(); 
+				updateTags();
+				return;
+			}
+
+			var device = device_list[device_no];
+			if (!(device instanceof Object) || !device.name) {
+				console.error('Bad import format: ' + JSON.stringify(device));
+				importDevice(device_no + 1);
+				return;	
+			}
+			
+			if (device.template && templates[device.template] === false)
+				return updateTemplateInfo(device.template, () => importDevice(device_no));
+
+			if (device.template && templates[device.template])
+				device = $.extend(true, {}, templates[device.template], device); 
+
+			delete device.id;	
+			if (!device.varbind_list)
+				device.varbind_list = [];
+
+			device.varbind_list.forEach((v) => v.condition_id = $condition_list.find('[name="' + v.condition + '"]').attr('value') || 0);
+			jsonDevice(device);
+
+			$.ajax({
+				method: 'POST',
+				url: '/device',
+				data: device,
+				success: function (id) {
+					device.id = id;
+					updateNavigatorDevice(device);
+					importDevice(device_no + 1);
+				},
+				error: function (err) {
+					console.error(device.name, err.message);
+					importDevice(device_no + 1);
+				}
+			});
+		}
+
+		function onLoad () {
+			try {
+				device_list = JSON.parse(reader.result) || [];
+			} catch (err) {
+				return alert('Error parse file: ' + err.message);
+			}
+
+			if (!(device_list instanceof Array))
+				device_list = [device_list];
+
+			importDevice(0);
+		}
+
+		var file = event.target.files[0];           
+		var reader = new FileReader();
+		reader.onload = onLoad;
+		reader.onerror = (err) => console.error(err);
+		reader.readAsText(file);
 	});
 
 	$page.on('click', '#page-device-edit .varbind-list #varbind-add', function() {
@@ -533,6 +601,48 @@ $(function(){
 		updateProtocolTabsState();
 	});
 
+	$page.on('click', '#page-device-edit #varbind-discovery .content div', function() {
+		var $tab = $(this).closest('[id^="page-"]');
+		var $varbind_list = $tab.find('table.varbind-list');
+		var data = {
+			rule: this.id,
+			protocol: $varbind_list.attr('protocol'),
+			ip: $page.find('#ip').val()
+		}
+		$tab.find('#protocol-params').find('input, select').each((i, param) => data[param.id] = param.value);
+
+		$.ajax({
+			method: 'GET',
+			url: '/discovery',
+			data: {
+				json_opts: JSON.stringify(data)
+			},
+			success: function (varbind_list) {
+				if (!varbind_list.length)
+					return alert('No matches were found');
+
+				var $template_row = $varbind_list.find('#template-row');
+				varbind_list.forEach(function (varbind) {
+					var $row = $template_row.clone(true, true).removeAttr('id');
+					$row.find('#name').val(varbind.name);
+	
+					var $td_address = $row.find('#td-address');
+					$.each(varbind.address || {}, (key, value) => $td_address.find('#' + key).val(value).attr('value', value));
+					
+					$row.find('#divider').val(varbind.divider || 1);
+					$row.find('#value-type').val(varbind.value_type || 'string');
+					$row.find('#td-value').html(cast(varbind.value_type, varbind.value));
+					var cid = varbind.condition_id || varbind.condition && $row.find('#td-condition option[name="' + varbind.condition + '"]').attr('value') || 0;
+					$row.find('#td-condition').attr('condition-id', cid).find('#condition-list').val(cid);
+					$row.find('#tags').val(varbind.tags);
+					$row.appendTo($varbind_list);
+					updateProtocolTabsState();
+				});
+			}
+		})
+	});
+
+
 	$page.on('click', '#page-device-edit .varbind-list #varbind-remove', function() {
 		$(this).closest('tr').remove();
 		updateProtocolTabsState();	
@@ -542,9 +652,106 @@ $(function(){
 		$(this).closest('tr').remove();
 	});
 
-	$page.on('click', '#page-device-edit #condition-add, #page-check-list-edit #condition-add', function() {
-		$components.find('#partial-varbind-condition').clone().removeAttr('id').appendTo($(this).parent().find('#condition-list'));
+	$page.on('change', '.varbind-list #if', function() {
+		$(this).attr('if', this.value);
+	});
+
+	$page.on('change', '#page-device-edit .varbind-list input', function() {
+		$(this).closest('table.varbind-list').attr('changed', true);
+	});
+
+	$page.on('change', '#page-device-edit #condition-list, #page-check-list-edit #condition-list', function() {
+		var $td = $(this).closest('td');	
+		$td.attr('condition-id', this.value);
+
+		if (this.value == '') { // New...
+			var $block = $components.find('#partial-varbind-condition-block').clone();
+			$td.empty().append($block.children());
+			$td.attr('edit', true);				
+		}
+	});
+
+	$page.on('click', '#page-device-edit #condition-edit, #page-check-list-edit #condition-edit', function() {
+		var $td = $(this).closest('td');
+		var $block = $components.find('#partial-varbind-condition-block').clone();
+		$td.empty().append($block.children());
+		$td.attr('edit', true);
+
+		var $list = $td.find('.condition-list');
+		var $template_row = $components.find('#partial-varbind-condition');
+		$.ajax({
+			method: 'GET',
+			url: '/condition/' + $td.attr('condition-id'),
+			dataType: 'json',
+			success: function (condition) {
+				$td.find('#name').val(condition.name);
+				$td.find('#gap').val(condition.gap || 0);
+				condition.condition_list.forEach(function (condition) {
+					var $row = $template_row.clone().removeAttr('id');
+					$row.find('#if').val(condition.if).attr('if', condition.if);
+					$row.find('#value').val(condition.value);
+					$row.find('#status').val(condition.status);
+					$row.appendTo($list);
+				})
+			}
+		});
+	});
+
+	$page.on('click', '#page-device-edit #td-condition[edit] #cancel, #page-check-list-edit #td-condition[edit] #cancel', function(event) {
+		var $td = $(this).closest('td').removeAttr('edit');
+		buildConditionList($td, $td.attr('condition-id') || 0);
 	});	
+
+	$page.on('click', '#page-device-edit #td-condition[edit] #save, #page-check-list-edit #td-condition[edit] #save', function(event) {
+		var $td = $(this).closest('td');
+		var condition_list = [];	
+		$td.find('.condition').each(function (i, e) {
+			var $cond = $(e);	
+			condition_list.push({
+				if: $cond.find('#if').val(),
+				value: trim($cond.find('#value').val()),
+				status: $cond.find('#status').val()
+			});
+		});
+
+		var data = {
+			id: $td.attr('condition-id'),
+			name: $td.find('#name').val(),
+			gap: $td.find('#gap').val(),
+			json_condition_list: JSON.stringify(condition_list)
+		}
+
+		$.ajax({
+			method: 'POST',
+			url: '/condition',
+			data,
+			dataType: 'text',
+			success: function (id) {
+				$td.attr('condition-id', id).removeAttr('edit');
+				var $condition_list = $components.find('#partial-varbind-condition-list #condition-list');
+				var $option = $condition_list.find('[value="' + id+'"]');
+				if (!$option.length || $option.length && $option.html() != data.name) {
+					$option.remove();	
+					$('<option/>').attr('value', id).html(data.name).appendTo($condition_list);
+
+					$page.find('.varbind-list #td-condition').each((i, e) => buildConditionList($(e), e.getAttribute('condition-id')));
+				} else {
+					buildConditionList($td, id);
+				}
+			}
+		})
+	});
+
+	function buildConditionList($td, id) {
+		$td.empty();
+		var $condition_block = $components.find('#partial-varbind-condition-list').clone(true, true);
+		$condition_block.find('#condition-list').val(id || 0);
+		$td.append($condition_block.children()).attr('condition-id', id || 0);
+	}
+
+	$page.on('click', '#page-device-edit #td-condition #add, #page-check-list-edit #td-condition #add', function() {
+		$components.find('#partial-varbind-condition').clone().removeAttr('id').appendTo($(this).parent().find('.condition-list'));
+	});
 
 	$page.on('click', '#page-device-edit #condition-remove, #page-check-list-edit #condition-remove', function() {
 		$(this).parent().remove();
@@ -615,13 +822,14 @@ $(function(){
 			success: function() {
 				$device_list.find('#' + id).remove();
 				$page.empty();
+				updateTags();
 			}
 		})
 	});
 
 	$app.on('click', '#check-list-edit', function () {
-		$page.empty();
 		$dashboard.attr('hidden', true);
+		$page.empty();
 			
 		var $component = $components.find('#page-check-list-edit').clone(true, true);
 		$component.appendTo($page);
@@ -645,20 +853,11 @@ $(function(){
 				protocol: $row.find('#td-protocol #protocol').val(),
 				divider: $row.find('#td-divider #divider').val(),
 				value_type: $row.find('#td-value-type #value-type').val(),
+				condition_id: $row.find('#td-condition #condition-list').val(),
 				tags: $row.find('#td-tags #tags').val()
 			}  
 			check.json_protocol_params = getValues($row.find('#td-protocol-params'), true);
 			check.json_address = getValues($row.find('#td-address'), true);
-
-			var condition_list = $row.find('#td-status-conditions .status-condition').map(function() {
-				var $e = $(this);	
-				return {
-					if: $e.find('#if').val(),
-					value: trim($e.find('#value').val()),
-					status: $e.find('#status').val()
-				};
-			}).get() || [];
-			check.json_status_conditions = JSON.stringify(condition_list);
 
 			return check;
 		}).get() || [];
@@ -669,7 +868,7 @@ $(function(){
 			data: {
 				check_list: JSON.stringify(check_list)
 			},	
-			onsuccess: () => $app.find('#page-close').trigger('click')
+			success: () => showDashboard()
 		});
 	});
 
@@ -679,13 +878,12 @@ $(function(){
 
 	$app.on('click', '#navigator #alert-block', function() {
 		if ($page.find('#alert-list').length) 
-			return $page.empty();
+			return showDashboard();
 
 		$page.empty();
 		var $component = $components.find('#page-alert-list-view').clone(true, true);	
 
 		$selector = setHistoryPeriodSelector($component);
-		$component.find('.history-period-block').show();
 		$component.appendTo($page);
 		$component.find('#alert-list').trigger('update-alerts');
 		$app.trigger('notify', {device_id: 0});		
@@ -740,7 +938,6 @@ $(function(){
 	$app.on('change', '#alert-list-filter input[type="checkbox"]', updateAlertList);
 	$app.on('keyup', '#alert-list-filter input[type="text"]', updateAlertList);
 
-
 	$app.on('click', '.top-menu #device-scan', function() {
 		$page.empty();
 		var $page_scan = $components.find('#page-device-scan').clone().appendTo($page);
@@ -787,7 +984,7 @@ $(function(){
 			dataType: 'json',
 			error: function(jqXHR, textStatus, errorThrown) {
 				toggleScanButton(false);	
-				console.log(jqXHR, textStatus, errorThrown);
+				console.error(jqXHR, textStatus, errorThrown);
 				alert(jqXHR.responseText);
 			},
 			success: function (devices) {
@@ -820,7 +1017,7 @@ $(function(){
 		if (template_name && !template)	
 			return updateTemplateInfo(template_name, () => $(this).trigger('click'));
 	
-		var data = {
+		var data = $.extend(true, {}, template || {}, {
 			name: trim($row.find('#name').val()),
 			ip: trim($row.find('#ip').val()),
 			mac: trim($row.find('#mac').val()),
@@ -830,12 +1027,12 @@ $(function(){
 			description: trim($row.find('#description').val()),
 			json_varbind_list: JSON.stringify(template),
 			template: trim(template_name)
-		}
+		});
 
 		$.ajax({
 			method: 'POST',
 			url: '/device',
-			data: data,
+			data: jsonDevice(data),
 			success: function(id) {
 				data.id = id;
 				updateNavigatorDevice(data);
@@ -870,99 +1067,148 @@ $(function(){
 			.find('#td-protocol #protocol').trigger('change');
 	});
 
-	$dashboard.on('click', '#device-tag-list input', function() {
-		var $device_tag_list = $dashboard.find('#device-tag-list');
-		var $varbind_tag_list = $dashboard.find('#varbind-tag-list');
-		var $checked_list = $device_tag_list.find('input:checked:not(#All)');
+	$device_tag_list.on('click', 'div', function(event) {
+		if (this.hasAttribute('checked'))		
+			return;
+
+		this.setAttribute('checked', true);
+
+		if (!event.ctrlKey) 
+			$device_tag_list.find('div:not("#' + this.id + '")').removeAttr('checked');
+		
+		var $checked_list = $device_tag_list.find('[checked]:not(#All)');
 
 		var $period = $dashboard.find('.history-period-block');
-		$period.hide();
 		$period.find('.history-period').val('').pickmeup('clear');
 		$period.find('.history-period-value').html('Last hour');
+
+		var prev_vt_list = $varbind_tag_list.find('input:checked').map((i, e) => e.id).get();
 
 		var time = new Date();
 		$varbind_tag_list.find('input:checked').removeAttr('checked');
 		deleteGraph('dashboard');
+
+		$(this).closest('.dropdown-click').find('.button').html(this.id != 'All' && $checked_list.map((i, e) => e.id).get().join(', ') || 'All');
 			
 		if (this.id == 'All' || $checked_list.length == 0) {
-			$device_tag_list.find('input:not(#All)').attr('checked', false).prop('checked', false);
-			$device_tag_list.find('#All').attr('checked', true).prop('checked', true);
+			$device_tag_list.find('div:not(#All)').removeAttr('checked');
+			$device_tag_list.find('#All').attr('checked', true)
+			$varbind_tag_list.find('input').each(function (i, e) {
+				if (prev_vt_list.indexOf(e.id) != -1)
+					$(e).attr('checked', true).prop('checked', true);
+			});
+
 			$varbind_tag_list.find('div').show();
-			$app.trigger('update-device-list');
-			return;
+			$dashboard.find('.history-period-block').attr('alert', true);	
+		} else {
+			$device_tag_list.find('#All').removeAttr('checked');		
+			$varbind_tag_list.find('div').hide();
+	
+			$checked_list.each(function(i, e) {
+				var tag_list = $(e).closest('div').data('tag-list') || [];
+				tag_list.forEach(function (tag, i) {
+					var id = tag.replace('/ /g', '-');
+					var $e = $varbind_tag_list.find('#' + id);
+					$e.closest('div').show();
+					if (prev_vt_list.indexOf(id) != -1)
+						$e.attr('checked', true).prop('checked', true);
+				})
+			});	
+			$dashboard.find('.history-period-block').removeAttr('alert');
 		}
 
-		$device_tag_list.find('#All').attr('checked', false).prop('checked', false);		
-		$varbind_tag_list.find('div').hide();
-		$checked_list.each(function(i, e) {
-			var tag_list = $(e).closest('div').data('tag-list') || [];
-			$.each(tag_list, function (i, tag) {
-				var id = tag.replace('/ /g', '-');
-				$varbind_tag_list.find('#' + id).closest('div').show();
-			})
-		});
+		if ($varbind_tag_list.find('input[checked]').length == 0)
+			$varbind_tag_list.children('div:visible:first').find('input').attr('checked', true).prop('checked', true);
 
-		$app.trigger('update-device-list');
+		$app.trigger('filter-device-list');
+		$dashboard.trigger('update-dashboard');
 	});
 
-	$dashboard.on('click', '#varbind-tag-list label', function(event) {
+	$varbind_tag_list.on('click', 'label', function(event) {
 		var $e = $(this).prev();
 		var tag = $e.attr('id');
 		if (!event.ctrlKey) {
-			$dashboard.find('#varbind-tag-list input:checked:not(#' + tag + ')').removeAttr('checked');
+			$varbind_tag_list.find('input:checked:not(#' + tag + ')').removeAttr('checked');
 			$e.prop('checked', false);
 		} else {
 			$e.prop('checked', !$e.prop('checked'));
 			event.preventDefault();
 		}
 
-		$dashboard.find('.history-period-block').show();
 		var period = $dashboard.find('.history-period').pickmeup('get_date') || null;
 		if (period && period.length > 0) 
 			period = [period[0].getTime(), period[1].getTime()];
+
 		setTimeout(() => $dashboard.trigger('update-dashboard', {period: period}), 10);
 	});
 
 	$dashboard.on('update-dashboard', function(event, event_data) {
+		$dashboard.removeAttr('empty');
+		event_data = event_data || {};
 		if (event_data.update)
 			deleteGraph('dashboard');
 
-		var device_tags = $dashboard.find('#device-tag-list input:checked').map((i ,e) => e.id).get().join(';');
-		var varbind_tags = $dashboard.find('#varbind-tag-list input:checked').map((i, e) => e.id).get();
+		var device_tag_list = $device_tag_list.find('[checked]').map((i ,e) => e.id).get().join(';');
+		if ($varbind_tag_list.find('input:checked').length == 0) 
+			$varbind_tag_list.children('div:visible:first').find('input').attr('checked', true).prop('checked', true);
+		
+		var varbind_tag_list = $varbind_tag_list.find('input:checked').map((i, e) => e.id).get();
+		if (varbind_tag_list.length == 0)
+			return $dashboard.attr('empty', true);
 
-		var etag = varbind_tags.filter((tag) => !graphs.dashboard[tag])[0];
+		var etag = varbind_tag_list.filter((tag) => !graphs.dashboard[tag])[0];
 
 		if (!etag) {
 			for (var tag in graphs.dashboard) {
-				if (varbind_tags.indexOf(tag) == -1)
+				if (varbind_tag_list.indexOf(tag) == -1)
 					deleteGraph('dashboard', tag);
 			}
 
-			var h = ($app.height() - $dashboard.find('#tag-list').height() - 60) / varbind_tags.length;
-			varbind_tags.forEach((tag) => $(graphs.dashboard[tag].graphDiv.parentNode).height(h));
+			var h = ($app.height() - $varbind_tag_list.height() - 80 - 20 * (varbind_tag_list.length - 1)) / varbind_tag_list.length;
+			varbind_tag_list.forEach(function (tag) {
+				
+				var $block = $(graphs.dashboard[tag].graphDiv).parent();
+				$block.height(h);
+				$block.find('#summary-block').css('max-height', h - 50)
+			});
 			
-			var $graphs = $dashboard.find('.graph').sort((a, b) => varbind_tags.indexOf(a.getAttribute('tag')) - varbind_tags.indexOf(b.getAttribute('tag')));
+			var $graphs = $dashboard.find('.graph').sort((a, b) => varbind_tag_list.indexOf(a.getAttribute('tag')) - varbind_tag_list.indexOf(b.getAttribute('tag')));
 			$graphs.detach().appendTo($dashboard.find('#graph-block'));
-
-			Dygraph.synchronize(varbind_tags.map((tag) => graphs.dashboard[tag]));
 
 			return window.dispatchEvent(new Event('resize'));
 		}
 
 		delete event_data.update;
 
-		function makeRequestData(from, to) {
-			return {from, to, downsample: from && to && (to - from > 2 * 60 * 60 * 1000), tags: device_tags}; 
-		}
-
 		function onData(res) {
 			var data = res.rows;
+			if (!res.rows.length)
+				res.rows.push(res.columns.map((e) => 0));
+
+			res.uptime = res.ids.map(function (_, idx) {
+				var downtime = 0;
+
+				var is_down = false;				
+				for (var i = 0; i < data.length - 1; i++) {
+					var e = data[i][idx + 1];
+					is_down = e == null ? is_down : !!isNaN(e);
+					downtime += (+is_down) * (data[i + 1][0] - data[i][0]);
+				}
+					
+				return 100 - Math.round(downtime / (res.period[1] - res.period[0]) * 100);
+			});
+
 			data.forEach((row) => row[0] = new Date(row[0]));
+
+			if (etag == 'latency') {
+				res.columns = res.columns.map((e) => e.substr(0, e.indexOf('/')));
+				res.ids = res.device_ids;
+			}
 
 			var alerts = res.alerts;
 			var strings = {};
 			res.ids.forEach((id) => strings[id] = {});
-			
+		
 			var length = data[0] && data[0].length || 0; 
 			for (var i = 1; i < length; i++) {
 				data.filter((row) => isNaN(row[i])).forEach((row) => strings[res.ids[i - 1]][row[0].getTime()] = row[i] + '');
@@ -974,17 +1220,17 @@ $(function(){
 
 			var opts = {
 				animatedZooms: true,
-				labels: res.columns,
-				valueRange: getRange(data),
+				labels: res.columns.slice(0, 11),
 				highlightCircleSize: 2,					
-				height: $app.height() - $dashboard.find('#tag-list').height() - 60,
-				//height: 100,
+				height: $app.height() - $varbind_tag_list.height() - 60,
+				showLabelsOnHighlight: false,
 				ylabel: etag,
+				stackedGraph: false,
 				axes: {
 					x: {valueFormatter: (ms) => cast('datetime', ms)},
 					y: {valueFormatter: function (val, opts, seriesName, g, row) {
-							var varbind_id = names[seriesName];	
-							return strings[varbind_id] && strings[varbind_id][g.getValue(row, 0)] || val;
+							var varbind_id = names[seriesName];
+							$summary.find('#' + varbind_id).find('#td-cur').html(strings[varbind_id] && strings[varbind_id][g.getValue(row, 0)] || val);
 						}
 					}
 				},
@@ -996,11 +1242,14 @@ $(function(){
 
 					var status = alerts[varbind_id] && res.alerts[varbind_id][time];
 					if (status)	
-						return drawCircle(canvasContext, cx, cy, getStatusColor(status), 3);
+						return drawCircle(canvasContext, cx, cy, getStatusColor(status), 2);
 
 					if (strings[varbind_id] && strings[varbind_id][time])
 						return drawCircle(canvasContext, cx, cy, '#000', 2);
-				}
+				},
+				highlightSeriesOpts: {strokeWidth: 2},
+				highlightCallback: (event, x, points, row, seriesName) => $summary.find('tr').removeAttr('highlight').filter('tr#' + names[seriesName]).attr('highlight', true),
+				unhighlightCallback: (event) => $summary.find('tr').removeAttr('highlight')
 			};
 
 			if (res.downsampled) {				
@@ -1012,7 +1261,12 @@ $(function(){
 					$.ajax({
 						method: 'GET',
 						url: '/tag/' + etag,
-						data: makeRequestData(minDate, maxDate),
+						data: {
+							tags: device_tag_list,
+							from: minDate,
+							to: maxDate,
+							downsample: 'auto'
+						},
 						success: function (sub) {
 							if (sub.rows.length == 0)
 								return;
@@ -1020,58 +1274,152 @@ $(function(){
 							var length = sub.rows[0].length;
 							for (var i = 1; i < length; i++)
 								normalizeHistory(sub.rows, i);
-							
-							var data = [].concat(g.rawData_.filter((r) => r[0] < minDate), sub.rows, g.rawData_.filter((r) => r[0] > maxDate));
-							data.forEach((row) => row[0] = new Date(row[0]));
-							g.updateOptions({file: data});
+
+							sub.rows.forEach((row) => row[0] = new Date(row[0]));
+
+							var min = new Date(minDate);
+							var max = new Date(maxDate);
+							g.source = [].concat(g.source.filter((r) => r[0] < min), sub.rows, g.source.filter((r) => r[0] > max));
+							updateDashboardGraph(etag);
 						}
 					});					
 				}	
 			}
 
-			graphs.dashboard[etag] = new Dygraph($('<div/>').attr('tag', etag).addClass('graph').appendTo($dashboard.find('#graph-block')).get(0), data, opts);
-			graphs.dashboard[etag].alerts = alerts;
-			graphs.dashboard[etag].strings = strings;
-			$dashboard.trigger('update-dashboard', event_data);
+			var $div = $('<div/>').attr('tag', etag).addClass('graph').appendTo($dashboard.find('#graph-block'))
+			var graph = new Dygraph($div.get(0), res.ids < 11 ? data : data.map((row) => row.slice(0, 11)), opts);
+			graph.alerts = alerts;
+			graph.strings = strings;
+			graph.source = data;
+			graphs.dashboard[etag] = graph;
+
+			var $summary_block = $components.find('#partial-dashboard-summary').clone().attr('id', 'summary-block').css('max-height', $div.height() - 50);
+			var $summary = $summary_block.find('#summary').attr('tag', etag);
+
+			var $template_row = $summary.find('#template-row');
+			var avg = (arr) => arr.reduce((sum, e) => sum + e, 0)/arr.length;
+			var rnd = (num) => +num.toFixed(2);
+			res.columns.slice(1).forEach(function(name, i) {
+				var $row = $template_row.clone().attr('id', res.ids[i]).attr('idx', i + 1).attr('name', name);
+				$row.find('#td-color').css('color', graph.colorsMap_[name]);
+				$row.find('#td-name').html(name).attr('title', name).attr('device-id', res.device_ids[i]);
+				
+				var history = res.rows.map((row) => row[i + 1]).filter((e) => !isNaN(e));
+				$row.find('#td-min').html(history.length > 0 ? rnd(Math.min.apply(Math, history)) : '-');
+				$row.find('#td-avg').html(history.length > 0 ? rnd(avg(history)) : '-');
+				$row.find('#td-max').html(history.length > 0 ? rnd(Math.max.apply(Math, history)) : '-');
+				$row.find('#td-up').html(res.uptime[i]);
+			
+				$row.appendTo($summary);
+			});
+
+			if (res.ids.length > 10)
+				$summary_block.find('#overflow').text('Shows top 10 of ' + res.ids.length);
+
+			$summary_block.appendTo($div); // Important: append after dygraph creation
+			$dashboard.trigger('update-dashboard', event_data); // ???
 		}
+
+		var now = new Date().getTime();	
+		var period = event_data && event_data.period;
 
 		$.ajax({
 			method: 'GET',
 			url: '/tag/' + etag,
-			data: makeRequestData(event_data.period && event_data.period[0], event_data.period && (event_data.period[1] + 24 * 3600 * 1000 - 1)),
+			data: {
+				tags: device_tag_list,
+				from: period && period[0] ? period[0] : now - 60 * 60 * 1000,
+				to: period && period[1] ? period[1] + 24 * 60 * 60 * 1000 - 1 : now,
+				downsample: 'auto'
+			},
 			success: onData
 		})
 	});
 
-	function deleteGraph(where, id) {
-		if (!graphs[where])
-			return console.error('deleteGraph: Bad "where" request - ' + where);
+	function updateDashboardGraph(tag) {
+		var graph = graphs.dashboard[tag];
+		if (!graph)
+			return console.log('Graph not found');
 
-		function deleteById(id) {
-			if (graphs[where][id]) {
-				try {	
-					graphs[where][id].graphDiv.parentNode.remove();
-					graphs[where][id].destroy();
-				} catch (err) {}
-				delete graphs[where][id];
-			}
-		}
-			
-		if (id != undefined)
-			return deleteById(id);	
+		var $summary = $(graph.graphDiv).closest('.graph').find('#summary');
+		if ($summary.find('tbody tr') <= 10)
+			return console.log('Rows less then 10');
 
-		for (var id in graphs[where]) 
-			deleteById(id);
+		var idxs = $summary.find('tbody tr:visible').map((i, e) => e.getAttribute('idx')).get();
+		idxs.unshift(0); // time
+		graph.updateOptions({
+			labels: ['time'].concat($summary.find('tbody tr:visible #td-name').map((i, e) => e.innerHTML).get()),
+			file: graph.source.map((row) => idxs.map((idx) => row[idx]))
+		});
 	}
 
-	function updateDashboardTags () {
-		deleteGraph('dashboard');
+	function showDashboard() {
+		$dashboard.removeAttr('hidden');
+		$page.empty();
+		$dashboard.trigger('update-dashboard');
+	}
 
+	$dashboard.on('click', '#summary th.sortable', function () {
+        var $td = $(this);
+		var $table = $td.closest('table').find('tbody');
+		var colno = $td.index(); 
+		var order = $td.attr('order') || 1;
+
+		$td.closest('tr').find('th').each((i, e) => e.removeAttribute('order'));
+		$td.attr('order', -order);
+
+		$table.children('tr')
+			.sort((a, b) => order * (+$(a).find('td').eq(colno).html() - $(b).find('td').eq(colno).html()))
+			.detach().appendTo($table);
+
+		updateDashboardGraph($table.closest('.graph').attr('tag'));	
+	});
+
+	$dashboard.on('click', '#summary #td-name', function () {	
+		$device_list.find('li#' + $(this).attr('device-id')).trigger('click');
+	});	
+
+	$dashboard.on('click', '#summary-block #export', function () {
+		var delimiter = ';';
+		var columns = ['name', 'min', 'avg', 'max', 'up'];
+		
+		var text = columns.join(delimiter) + '\n' +
+			$(this).parent().find('#summary tbody tr')
+				.map((i, e) => columns.map((c) => (e.querySelector('#td-' + c) || {}).innerHTML).join(delimiter))
+				.get().join('\n');
+			
+		var uploader = window.document.createElement('a');
+		uploader.href = URL.createObjectURL(new Blob([text], {type: 'text/csv'}));
+		uploader.download = 'summary.csv';
+		
+		document.body.appendChild(uploader);
+		uploader.click();
+		uploader.remove();
+	});
+
+	function deleteGraph(where, id) {
+		if (!graphs[where])
+			return;
+	
+		(id ? [id] : Object.keys(graphs[where])).forEach(function (id) {
+			try {
+				graphs[where][id].graphDiv.parentNode.remove();
+				graphs[where][id].destroy();
+			} catch (err) {}
+			delete graphs[where][id];
+		});
+
+		// fix if handlers are lost
+		if (where == 'dashboard' && !id)
+			$dashboard.find('#graph-block').empty(); 
+	}
+
+	function updateTags () {
+		deleteGraph('dashboard');
 		$dashboard.find('.history-period').val('').pickmeup('clear');
 		
-		
 		function addTag($target, tag, data) {
-			var id = tag.replace('/ /g', '-');
+			var id = tag.replace(/ /g, '-');
 
 			$('<div/>')
 				.attr('tags', data)
@@ -1085,17 +1433,62 @@ $(function(){
 			method: 'GET',
 			url: '/tags',
 			success: function(tags) {
-				var prev_checked_list = $dashboard.find('#device-tag-list input:checked').map((i, e) => e.id).get();
+				var prev_checked_list = $device_tag_list.find('[checked]').map((i, e) => e.id).get();
+				if (prev_checked_list.length == 0)
+					prev_checked_list = ['All'];
 
-				var $device_tag_list = $dashboard.find('#device-tag-list').empty();
-				$.each(tags, (tag, value) => addTag($device_tag_list, tag, value));				
-				$device_tag_list.find('#All').attr('checked', true).closest('div').prependTo($device_tag_list);
-	
-				var $varbind_tag_list = $dashboard.find('#varbind-tag-list').empty();
-				$.each(tags.All, (i, tag) => addTag($varbind_tag_list, tag));
+				device_counts = {'All': $device_list.find('li').length};
+				$device_list.find('li').each(function(i, e) {
+					$(e).data('tag-list').forEach((tag) => !device_counts[tag] ? device_counts[tag] = 1 : device_counts[tag]++)
+				})
+			
+				$device_tag_list.empty();
+				$.each(tags, function (tag, value) {
+					var id = tag.replace(/ /g, '-');
+					var $div = $('<div/>')
+						.attr('id', id)
+						.attr('tags', value)
+						.data('tag-list', value)
+						.html(tag + ' (' + device_counts[tag] + ')')
+						.appendTo($device_tag_list);
+				});				
+				prev_checked_list.forEach((id) => $device_tag_list.find('#' + id).attr('checked', true));
+				$device_tag_list.find('#All').prependTo($device_tag_list);
+				
+				if ($device_tag_list.find('#All[checked]').length) {
+					$dashboard.find('.history-period').val('').pickmeup('clear');
+					$dashboard.find('.history-period-block').attr('alert', true);
+				} else {
+					$dashboard.find('.history-period-block').removeAttr('alert');
+				}
+
+				prev_checked_list = $varbind_tag_list.find('input:checked').map((i, e) => e.id).get();
+				$varbind_tag_list.empty();
+				tags.All.forEach(function (tag) {
+					var id = tag.replace(/ /g, '-');
+		
+					$('<div/>')
+						.append($('<input type = "checkbox" autocomplete = "off"/>').attr('id', id))
+						.append($('<label>').attr('for', id).html(tag))
+						.appendTo($varbind_tag_list);
+				});
 				$varbind_tag_list.find('#latency').closest('div').prependTo($varbind_tag_list);
 
-				prev_checked_list.forEach((tag) => $device_tag_list.find('#' + tag).trigger('click'));
+				var vt_visible_list = [];
+				$device_tag_list.find('[checked]').each((i, e) => vt_visible_list =  vt_visible_list.concat($(e).data('tag-list')));
+				$varbind_tag_list.find('input').each((i, e) => $(e).parent().toggle(vt_visible_list.indexOf(e.id) != -1));
+
+				var caption = $device_tag_list.find('[checked]').map((i, e) => e.id).get().join(', ');
+				$device_tag_list.siblings('.button').html(caption);
+				if (!caption)
+					return $device_tag_list.find('#All').trigger('click');
+
+				if (prev_checked_list.length == 0 && vt_visible_list != 0)
+					prev_checked_list.push($varbind_tag_list.find('input:first').attr('id'));				
+
+				var event = jQuery.Event('click');
+				event.ctrlKey = true;
+				prev_checked_list.forEach((id) => $varbind_tag_list.find('#' + id).attr('checked', true).siblings('label').trigger(event));
 			}	
 		});
 
@@ -1183,9 +1576,10 @@ $(function(){
 
 	$page.on('click', '.ping-button', function() {
 		var $e = $(this);
+		var ip = $e.parent().find('#ip').val();
 		$.ajax({
 			type: 'GET',
-			url: '/ping?ip=' + $e.parent().find('#ip').val(),
+			url: '/ping?ip=' + ip,
 			success: (res) => $e.attr('status', res)
 		});
 	});
@@ -1198,19 +1592,19 @@ $(function(){
 		function onDone (check_list) {
 			var $check_list = $page.find('#check-list');
 			var $template_row = $check_list.find('#template-row');
+			buildConditionList($template_row.find('#td-condition'));
+
 			check_list.forEach(function(check) {
 				var $row = $template_row.clone(true, true).attr('id', check.id);
 				['name', 'include-tags', 'exclude-tags', 'protocol', 'divider', 'value-type', 'tags']
 					.forEach((prop) => $row.find('#' + prop).val(check[prop] || check[prop.replace('-', '_')]));
-
-				var $condition_list = buildConditionList(check.status_conditions);
-				$row.find('#td-status-conditions #condition-list').append($condition_list);
-
+				var cid = check.condition_id || check.condition && $row.find('#td-condition option[name="' + check.condition + '"]').attr('value') || 0;
+				$row.find('#td-condition').attr('condition-id', cid).find('#condition-list').val(cid);
 				$check_list.append($row);
-				
-				$row.find('#protocol').trigger('change');
 
-				$row.find('#td-protocol-params').find('input, select')
+				$row.find('#protocol').trigger('change');
+				$row.find('#td-protocol-params')
+					.find('input, select')
 					.each(function(i, e) {
 						if (check.protocol_params && check.protocol_params[e.id] !== undefined)
 							$(e).val(check.protocol_params[e.id])
@@ -1236,9 +1630,11 @@ $(function(){
 				.append('<div id = "name"/>')
 				.append('<div id = "ip"/>')
 				.appendTo($device_list);
-		
-		$e.data('tag-list', device.tag_list || (device.tags || '').split(';').map((tag) => trim(tag)));
-		$e.attr('title', device.description)
+		var tag_list = device.tag_list || (device.tags || '').split(';').map((tag) => trim(tag));
+		var tags = (device.tags || (device.tag_list || []).join(';')).replace(/;/g, ', ');
+		var title = [device.description, tags ? 'Tags: ' + tags : null].filter((e) => !!e).join('\n');
+		$e.data('tag-list', tag_list);
+		$e.attr('title', title)
 			.attr('status', device.status || 0)
 			.attr('alive', device.alive);
 		$e.find('#name').html(device.name);
@@ -1269,7 +1665,7 @@ $(function(){
 			.attr('device-id', alert.device_id)
 			.attr('varbind-id', alert.varbind_id)
 			.attr('time', alert.time)
-			.css('visibility', alert.value_type == 'number' ? 'visible' : 'hidden')
+			.css('visibility', alert.value_type == 'number' || alert.value_type == 'size' ? 'visible' : 'hidden') // is_history
 			.css('pointer-events', !!alert.varbind_id ? '' :  'none');
 
 		if (is_admin && !!alert.varbind_id && alert.status == 4) {
@@ -1288,7 +1684,8 @@ $(function(){
 			dataType: 'json',
 			error: (jqXHR, textStatus, errorThrown) => error(textStatus),
 			success: function (template_list) {
-				var $list = $app.find('#template-list').empty().append($('<div class = "device-add"/>').html('New...'));
+				var $list = $app.find('#template-list');
+				$list.children(':not([id])').remove();
 				template_list.forEach(function (name) {
 					$('<div/>')
 						.addClass('device-add')
@@ -1297,7 +1694,8 @@ $(function(){
 						.append($('<span/>').attr('id', 'template-remove').attr('title', 'Remove template').addClass('icon icon-remove'))
 						.appendTo($list);
 					templates[name] = false;
-				});	
+				});
+				$list.find('#import').appendTo($list);
 			}
 		});		
 	}
@@ -1308,11 +1706,18 @@ $(function(){
 			url: '/template/' + name,
 			dataType: 'json',
 			success: function (res) {
-				templates[name] = res || [];
-				templates[name].forEach(function(varbind) {
-					varbind.json_address = JSON.stringify(varbind.address || {});
-					varbind.json_status_conditions = JSON.stringify(varbind.status_conditions || []);					
-				})
+				if (!res)
+					res = {};
+
+				if (!res.varbind_list)
+					res.varbind_list = [];
+
+				var conditions = getConditions();
+				res.varbind_list.forEach(function (varbind) {
+					varbind.json_address = JSON.stringify(varbind.address || {})
+					varbind.condition_id = conditions[varbind.condition] || 0;
+				});					
+				templates[name] = res;
 				callback();
 			}
 		});			
@@ -1327,8 +1732,8 @@ $(function(){
 				var categories = ['native', 'external', 'collector', 'agent',  'expression'];
 				var collator = new Intl.Collator();
 
-				var protocol_list = $.map(protocols, function(html, id) {
-					var $e = $('<div/>').html(html);
+				var protocol_list = $.map(protocols, function(data, id) {
+					var $e = $('<div/>').html(data.html);
 					var $info = $e.find('#info');
 					return {
 						id: id,
@@ -1338,7 +1743,9 @@ $(function(){
 						$params: $e.find('#protocol-params').attr('protocol', id),
 						$address: $e.find('#varbind-address'),
 						$style: ($e.find('style')[0] || {}).innerHTML || '',
-						$script: ($e.find('script')[0] || {}).innerHTML || ''
+						$script: ($e.find('script')[0] || {}).innerHTML || '',
+						$include: ($e.find('#include')[0] || {}).innerHTML || '',
+						discovery: data.discovery
 					}
 				}).sort((a, b) => (a.order == b.order) ? collator.compare(a.name, b.name) : a.order - b.order);
 
@@ -1347,6 +1754,9 @@ $(function(){
 
 				var scripts = protocol_list.reduce((scripts, protocol) => scripts += protocol.$script, '');
 				$('<script/>').text(scripts).appendTo('body');
+
+				var includes = protocol_list.reduce((includes, protocol) => includes += protocol.$include, '');
+				$('<div>').attr('id', 'include').html(includes).appendTo('body');
 
 				// Device-edit page: update poller menu
 				var $tabs = $components.find('#page-device-edit #page-content #protocols');
@@ -1365,8 +1775,18 @@ $(function(){
 											
 				protocol_list.forEach(function (protocol) {
 					var $tab = $('<div/>').attr('id', 'page-' + protocol.id).addClass('hidden');
-					protocol.$params.appendTo($tab);
-					var $vl = $varbind_list.clone(true, true).appendTo($tab).find('#template-row #td-address').html(protocol.$address.html());
+
+					protocol.$params.addClass('protocol-params').appendTo($tab);
+
+					$varbind_list.clone(true, true).appendTo($tab)
+						.find('#template-row #td-address').html(protocol.$address.html());
+
+					if (protocol.discovery.length) { 
+						var $discovery = $components.find('#partial-varbind-discovery').clone().attr('id', 'varbind-discovery');
+						var $content = $discovery.find('.content');
+						protocol.discovery.forEach((e) => $('<div/>').attr('id', e).html(e).appendTo($content));	
+						$discovery.insertAfter($tab.find('#protocol-params'));
+					}
 
 					$('<details class = "help"/>')
 						.attr('url', '/protocols/' + protocol.id + '/help.html')
@@ -1395,6 +1815,31 @@ $(function(){
 				$template_row.find('#td-status-conditions').append($template_row2.find('#td-status-conditions').html());
 			}
 		})
+	}
+
+	function updateConditions() {
+		$.ajax({
+			method: 'GET',
+			url: '/condition',
+			dataType: 'json',
+			success: function (list) {
+				var $list = $components.find('#partial-varbind-condition-list #condition-list').remove('.condition');
+				list.forEach(function(condition) {
+					$('<option>')
+						.attr('value', condition.id)
+						.attr('name', condition.name)
+						.html(condition.name)
+						.addClass('condition')
+						.appendTo($list);
+				});
+			}
+		});
+	}
+
+	function getConditions() {
+		var conditions = {};
+		$components.find('#partial-varbind-condition-list #condition-list .condition').each((i, e) => conditions[e.getAttribute('value')] = e.innerHTML);
+		return conditions;
 	}
 
 	$app.on('no-anomaly-detector', function (event, packet) {
@@ -1447,7 +1892,7 @@ $(function(){
 				.attr('status', varbind.status)
 				.attr('title', value + '\nUpdated: ' + cast('datetime', packet.time));
 
-			if (varbind.value_type == 'number') {
+			if (varbind.is_history) {
 				var val = parseFloat(varbind.value);
 				var graph = graphs.device[varbind.id];
 				if (!graph)
@@ -1465,10 +1910,7 @@ $(function(){
 				if (isNaN(val))
 					graph.strings[packet.time] = varbind.value;
 
-				if (!isNaN(val) && (val < range[0] || val > range[1])) 
-					range = getRange(data);
-			
-				graph.updateOptions({file: data, valueRange: range, dateWindow: [data[0][0], data[data.length - 1][0]]});
+				graph.updateOptions({file: data, dateWindow: [data[0][0], (data.length > 1 && data[data.length - 1] || data[0] || [0])[0]]});
 				return;
 			}
 
@@ -1501,20 +1943,6 @@ $(function(){
 		});
 	});
 
-	$app.on('ajax-complete', function (event, settings) {
-		if (settings.url == '/device' && settings.method == 'POST') 
-			return updateNavigatorStatus() || updateDashboardTags();
-
-		if (settings.url.indexOf('/device/') == 0 && settings.method == 'DELETE')
-			return updateDashboardTags();
-
-		if (/^\/device\/([\d]*)\/varbind-history$/.test(settings.url)) 
-			return $app.find('#device-history-period').pickmeup('set_date', new Date());
-
-		if (settings.url.indexOf('/template/') == 0 && (settings.method == 'POST' || settings.method == 'DELETE'))	
-			return updateTemplates();		
-	});
-
 	$('body').on('keydown', function (event) {
 		if (!is_admin || !$app.is(':visible'))
 			return;
@@ -1533,17 +1961,14 @@ $(function(){
 				success: function (ids) {
 					$alert_list.find('tr')
 						.filter((i, e) => ids.indexOf(parseInt(e.id)) != -1)
-						.each(function (i, e) {
-							var $e = $(e);
-							return is_period ? $e.attr('is-hidden', 1) : $e.remove();
-						});
+						.each((i, e) => is_period ? e.setAttribute('is-hidden', 1) : e.remove());
 				}
 			});
 		}
 
 		// Ctrl + Shift + C: Show check list 
 		if (event.ctrlKey && event.altKey && event.keyCode == 67) {
-			$app.find('#check-list-edit').trigger('click');
+			$app.find('#check-list-edit').trigger('click'); // update back-button info
 			loadCheckList();
 		}
 	});

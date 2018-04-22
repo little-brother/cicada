@@ -15,7 +15,7 @@ $(function() {
 		clearTimeout(popupTimer);
 	}
 
-	$app.on('mouseenter', '.graph-hint', function (event) {
+	$app.on('mouseenter', '.graph-hint', function (event, event_data) {
 		var $e = $(this);
 		var $parent = $e.closest('.graph-hint-parent');
 
@@ -34,11 +34,12 @@ $(function() {
 			var opts = { 
 				axes : { 
 					x :  {drawAxis : false, drawGrid: false, valueFormatter: (ms) => cast('time', ms)},
+					y: {drawAxis : false, drawGrid: false}
 				},
 				labels: ['time', name],
 				height: height,
 				width: 300,
-				valueRange: getRange(data),
+				stackedGraph: true,
 				highlightCircleSize: 2,					
 				drawPoints: true,
 				connectSeparatedPoints: true,
@@ -50,18 +51,31 @@ $(function() {
 
 					var status = alerts[event_time];
 					if (status)	
-						drawCircle(canvasContext, cx, cy, getStatusColor(status), 3);
+						drawCircle(canvasContext, cx, cy, getStatusColor(status), 2);
 				},
 				legendFormatter: (data) => (data.x !== null && data.series && data.series[0].yHTML) ? data.xHTML + ': <b>' + data.series[0].yHTML + '</b>' : ''
 			};
 
-			if (height < 100)
-				opts.axes.y = {drawAxis : false, drawGrid: false};
+			var min = data[0][0];
+			var max = data[0][0];
+			data.forEach(function (e) {
+				if (isNaN(min[1]) || !isNaN(e[1]) && e[1] < min[1])
+					min = e;
+
+				if (isNaN(max[1]) || !isNaN(e[1]) && e[1] > max[1])
+					max = e;
+			})
 			
-			var graph = new Dygraph($('<div/>').attr('title', name).appendTo($e).get(0), data, opts);
+			var graph = new Dygraph($('<div/>').attr('caption', name).attr('range', min[1] + '...' + max[1]).addClass('graph-hint-row').appendTo($e).get(0), data, opts);
 			graph.alerts = alerts;
 			graph_list.push(graph);
+			
+
+			var ctx = graph.canvas_.getContext('2d');
+			drawCircle(ctx, graph.toDomXCoord(min[0]), graph.toDomYCoord(min[1]), 'purple', 2);
+			drawCircle(ctx, graph.toDomXCoord(max[0]), graph.toDomYCoord(max[1]), 'purple', 2);
 		}
+
 
 		function addHint(history) {
 			var idx = history.ids && history.ids.indexOf(varbind_id);
@@ -83,13 +97,11 @@ $(function() {
 				.css('left', position.left + 300 < $parent.width() ? position.left : position.left - 300 + $e.width())
 				.appendTo($parent);
 
+
 			if (varbind_id) 
 				addGraph($hint, history.rows.map((row) => [new Date(row[0]), row[idx + 1]]), history.alerts[varbind_id] || {}, history.columns[idx + 1], graph_height);
 			else 
 				history.ids.forEach((id, idx) => addGraph($hint, history.rows.map((row) => [new Date(row[0]), row[idx + 1]]), history.alerts[id] || {}, history.columns[idx + 1], graph_height))	
-
-			$hint.trigger('mouseleave', 2000);
-			$e.one('mousemove', () => $hint.trigger('mouseleave', 2000));
 		}
 
 		var history = time ? $e.data('history') : null;
@@ -115,5 +127,10 @@ $(function() {
 	$app.on('mouseleave', '.graph-hint-parent #graph-hint', function (event, delay) {
 		clearTimeout(popupTimer);
 		popupTimer = setTimeout(() => $(this).remove(), delay || 300);
+	});
+
+	$app.on('mouseleave', '.graph-hint-parent .graph-hint', function (event, delay) {
+		clearTimeout(popupTimer);
+		popupTimer = setTimeout(() => $(this).closest('.graph-hint-parent').find('#graph-hint').remove(), delay || 300);
 	});
 });

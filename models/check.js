@@ -2,7 +2,7 @@
 const async = require('async');
 const db = require('../modules/db');
 
-const columns = ['name', 'include_tags', 'exclude_tags', 'protocol', 'json_protocol_params', 'json_address', 'divider', 'value_type', 'json_status_conditions', 'tags', 'updated'];
+const columns = ['name', 'include_tags', 'exclude_tags', 'protocol', 'json_protocol_params', 'json_address', 'divider', 'value_type', 'condition_id', 'tags', 'updated'];
 
 function parse (json, def) {
 	def = def || {};
@@ -84,7 +84,7 @@ exports.getList = function(callback) {
 			return callback(err);
 
 		rows.forEach(function (row) {
-			['protocol_params', 'address', 'status_conditions'].forEach(function (prop) {
+			['protocol_params', 'address'].forEach(function (prop) {
 				row[prop] = parse(row['json_' + prop]);
 				delete row['json_' + prop];
 			})

@@ -1,0 +1,14 @@
+[
+	{
+		"enum": "cpu",
+		"prototypes": [
+			{
+				"name": "CPU #{INDEX} usage, %",
+				"address": {"alias" : "cpu", "property": "loadpercentage@{INDEX}"},
+				"value_type": "number",
+				"condition": "",
+				"tags": "CPU"	
+			}
+		]
+	}
+]

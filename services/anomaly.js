@@ -1,7 +1,7 @@
 'use strict'
-const net = require('net');
 const Varbind = require('../models/varbind');
 const events = require('../modules/events');
+const Client = require('../modules/netclient');
 
 function start(config) {
 	let list = config['anomaly-detector'];
@@ -16,7 +16,8 @@ function start(config) {
 		if (tag_list.length == 0)
 			return console.error(__filename, 'Tags is required');
 	
-		let detector = new netClient(opts.host, opts.port, function (packet) {
+		let detector = new Client(opts.host, opts.port);
+		detector.on('data', function (packet) {
 			let id = parseInt(packet[0]);
 			let varbind = Varbind.get(id);
 			if (!varbind)	 
@@ -49,8 +50,8 @@ function start(config) {
 
 				return;
 			}
-		});
-	
+		});	
+
 		let cache = {}; //idx is device id
 		events.on('values-updated', function (device, time) {
 			if (!cache[device.id])
@@ -62,79 +63,3 @@ function start(config) {
 }
 
 module.exports = start;
-
-
-// simple buffered net-client
-function netClient(host, port, onData) {
-	this.host = host || '127.0.0.1';
-	this.port = parseInt(port) || 8000;
-	this.queue = [];
-	this.buffer = '';	
-	this.onData = (onData) ? onData : () => null;
-
-	this.socket = this.connect();
-}
-
-netClient.prototype.connect = function () {
-	let client = this;
-	client.is_busy = false;
-	client.connected = false;
-
-	let socket = new net.Socket();
-	socket.connect(client.port, client.host, function () {
-		client.connected = true;
-		console.log(`Connected to anomaly detector (${client.host}:${client.port})`);
-		client.next();
-	});	
-
-	socket.on('data', function (data) {
-		client.buffer += data.toString();
-		if (client.buffer.indexOf('\n') == -1)
-			return;
-
-		let queue = client.buffer.split('\n');
-		client.buffer = queue.pop();
-		queue.forEach((packet) => client.onData(packet.split(';')));		
-	});
-
-	socket.on('error', (err) => null);
-
-	socket.on('close', function () {
-		if (client.connected)
-			console.log(`Disconnected from anomaly detector (${client.host}:${client.port})`);
-		client.connected = false;
-		client.socket = null;
-		socket.destroy();
-
-		setTimeout(() => client.socket = client.connect(), 2000);
-	});
-	
-	return socket;
-}
-
-netClient.prototype.send = function (packet) {
-	let queue = this.queue;	
-
-	queue.push(packet.join(';') + '\n');
-
-	if (queue.length > 10000) {
-		console.log(__filename, 'Buffer overflow detected... Trimmed to 1000 values.');
-		queue = queue.slice(queue.length - 1000);
-	}
-	
-	this.next();
-}
-
-netClient.prototype.next = function () {
-	let client = this;
-	let queue = this.queue;
-
-	if (client.is_busy)
-		return;
-
-	if (queue.length == 0 || !client.socket)
-		return (client.is_busy == false);
-
-	let packet = queue.shift();
-	client.socket.write(packet, () => client.next());
-}

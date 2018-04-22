@@ -20,6 +20,12 @@ const xmlOptions = {
 	childrenAsArray: true 	// force children into arrays
 }
 
+const mimes = {
+	json: 'application/json', 
+	xml: 'application/xml', 
+	text: 'text/plain'
+}
+
 // opts = {ip: 127.0.0.1}
 // address = {path: /get/user/15, type: html, selector: div[id=sidebar]} or
 // address = {path: [123]/get/user/15, ...} - http request on port 123
@@ -40,18 +46,23 @@ exports.getValues = function (opts, address_list, callback) {
 	let urls = {};
 	let request_list = [];
 	address_list.forEach(function (address, i) {
-		var hints = ((address.path || '').match(/\[(.*?)\]/) || ['', ''])[1].split(':');
+		if (!address.path) 
+			address.path = '';
 
-		var protocol = hints[0] == 'https' ? 'https' : 'http';
-		var port = parseInt(hints[1]) || parseInt(hints[0]) || protocol == 'https' && 443 || 80;
-		var path = address.path.replace(/.*\[.*\]/, '');
+		let hints = (address.path.match(/\[(.*?)\]/) || ['', ''])[1].split(':');
+
+		let protocol = hints[0] == 'https' ? 'https' : 'http';
+		let port = parseInt(hints[1]) || parseInt(hints[0]) || protocol == 'https' && 443 || 80;
+		let path = address.path.replace(/.*\[.*\]/, '');
+		let type = address.type;
+		
 		address.url = protocol + '://' + opts.ip + ':' + port + path;
 			
 		if (urls[address.url])
 			return;
 
 		urls[address.url] = true;
-		request_list.push({url: address.url, protocol, port, path});
+		request_list.push({url: address.url, protocol, port, path, type});
 	})
 
 
@@ -86,8 +97,8 @@ exports.getValues = function (opts, address_list, callback) {
 			if (address.type == 'json' || address.type == 'xml') {
 				try {
 					if (!response.object) 
-						response.object = (address.type == 'text') ? JSON.parse(json) : parser.parse(response.text);
-		
+						response.object = (address.type == 'json') ? JSON.parse(response.text) : parser.parse(response.text);
+	
 					value = eval('response.object' + (selector[0] != '[' ? '.' : '') + selector);
 				} catch(err) {
 					error = err;
@@ -107,14 +118,16 @@ exports.getValues = function (opts, address_list, callback) {
 		let request = request_list[i];
 		options.port = request.port;
 		options.path = request.path;
-		timer = process.hrtime(timer);
+		options.headers ={Accept: mimes[request.type] + ',*/*'};
 
+		timer = process.hrtime(timer);
 		let client = (request.protocol == 'https') ? https : http;
 		client.get(options, function (response) {
 			let data = '';
 			let size = 0;
 			let error;
 
+			response.on('error', (err) => error = err);
 			response.on('data', function (d) {
 				data += d;
 				size += Buffer.byteLength(d, 'utf-8');
@@ -122,6 +135,9 @@ exports.getValues = function (opts, address_list, callback) {
 
 			response.on('end', function() {	
 				timer = process.hrtime(timer);
+				if (!error && response.statusCode != 200)
+					error = new Error(data);
+
 				responses[request.url] = (error) ? {
 					error
 				} : {
@@ -133,8 +149,6 @@ exports.getValues = function (opts, address_list, callback) {
 
 				getValue(i + 1);
 			});
-
-			response.on('error', (err) => error = err);
 		}).on('error', function (err) {
 			responses[request.url] = {error: err};
 			getValue(i + 1);

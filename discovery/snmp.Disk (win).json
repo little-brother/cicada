@@ -1,0 +1,23 @@
+[
+	{
+		"enum": {
+			"LIST": "1.3.6.1.2.1.25.2.3.1.1",
+			"DESC": "1.3.6.1.2.1.25.2.3.1.3",
+			"TOTAL": "1.3.6.1.2.1.25.2.3.1.5"
+		},
+		"filter": "{DESC}.indexOf('Label') != -1",
+		"transform": {
+			"DESC": "{DESC}.substring(0, {DESC}.indexOf(' Label'))"
+		},
+		"prototypes": [ 
+			{
+				"name": "DISK {DESC} usage, %",
+				"address": {"oid": "1.3.6.1.2.1.25.2.3.1.6.{INDEX}"},
+				"divider": "1P{TOTAL}",
+				"value_type": "number",
+				"condition": "", 
+				"tags": "DISK"
+			}
+		]
+	}
+]

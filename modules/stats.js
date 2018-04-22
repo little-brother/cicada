@@ -45,7 +45,7 @@ module.exports = function (callback) {
 		});
 
 		let res = [];
-		res.push(['name', 'IP', 'varbinds', 'history rows', 'changes rows']);
+		res.push(['name', 'IP', 'varbinds<br>numeric/total', 'history rows', 'changes rows']);
 		res = res.concat(stat);
 		res.push([]);
 		res.push(total);
@@ -53,7 +53,7 @@ module.exports = function (callback) {
 		res.push(['main: ' + size(results[4].size), 'history: ' + size(results[5].size), 'changes: ' + size(results[6].size), 'alerts: ' + results[3][0].cnt + 'rows']);
 
 		callback(null, 
-			'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link href = "/index.css" rel="stylesheet"/></head><body>' + 
+			'<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><link href = "/index.css" rel="stylesheet"/></head><body style = "overflow: initial;">' + 
 			'<table id = "stats" cellspacing="0" cellpadding="0">' + 
 			res.map((row) => '<tr><td>' + row.join('</td><td>') + '</td></tr>').join('') + 
 			'</table></body></html>'

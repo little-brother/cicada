@@ -53,7 +53,7 @@ function start(config) {
 	}, 10000);
 	
 	events.on('values-updated', function (device, time) {
-		let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, status: v.status || 0}));
+		let values = device.varbind_list.map((v) => new Object({id: v.id, prev_value: v.prev_value, value: v.value, value_type: v.value_type, is_history: v.is_history, status: v.status || 0}));
 		let packet = {event: 'values-updated', id: device.id, status: device.status, values, latency: device.latency, time};
 		broadcast(packet, (client) => client.device_id == device.id);
 

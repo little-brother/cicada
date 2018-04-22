@@ -1,0 +1,14 @@
+[
+	{
+		"enum": "system.cpu.discovery",
+		"prototypes": [
+			{
+				"name": "CPU #{{#CPU.NUMBER}} usage",
+				"address": {"item" : "system.cpu.util[{{#CPU.NUMBER}}]"},
+				"value_type": "number",
+				"condition": "",
+				"tags": "CPU"	
+			}
+		]
+	}
+]

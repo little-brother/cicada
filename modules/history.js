@@ -34,20 +34,23 @@ let db = new sqlite3.Database('./db/history.sqlite');
 
 process.on('message', function (req) {
 	function callback (err, result) {
-		result.downsampled = false;
-		if (!err && !!req.downsample && req.downsample != 'false')
-			result.downsampled = downsampleData(result, parseInt(req.downsample) || 2000);
+		if (err)
+			console.log(err)
 		
 		process.send({err, result, id: req.id});
 	}
 
 	if (req.func == 'get')
-		return getMany(req.device_list, req.period, callback);
+		return getMany(req.device_list, req.period, req.downsample, callback);
 
 	throw new Error('Bad request: ', req);
 });
 
-function getOne(device, period, callback) {
+function dbAll(query, params, callback) {
+	db.all(query, params, (err, res) => err && err.code == 'SQLITE_BUSY' ? dbAll(query, params, callback) : callback(err, res));
+}
+
+function getOne(device, period, downsample, callback) {
 	let varbind_list = device.varbind_list || [];
 	if (varbind_list && varbind_list.length == 0 && !device.latency)
 		return callback(null, {columns:[], rows: [], alerts: {}});
@@ -59,8 +62,8 @@ function getOne(device, period, callback) {
 	varbind_list.forEach((v) => cols.push(`varbind${v.id}`) && cols.push(`varbind${v.id}_status`));
 	
 	async.series([
-		(callback) => db.all(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, callback),
-		(callback) => db.all(`select time, varbind_id from alerts where device_id = ? and status = 4 and time between ? and ?`, [device.id, period[0], period[1]], callback)
+		(callback) => dbAll(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, callback),
+		(callback) => dbAll(`select time, varbind_id from alerts where device_id = ? and status = 4 and time between ? and ?`, [device.id, period[0], period[1]], callback)
 		], function (err, results) {
 			if (err)
 				return callback(err);
@@ -83,31 +86,42 @@ function getOne(device, period, callback) {
 				.forEach((a) => alerts[a.varbind_id][a.time] = 4);
 		
 			let res = {
+				device_ids: varbind_list.map((v) => device.id),
 				ids: varbind_list.map((v) => v.id),
 				columns: varbind_list.map((v) => device.name + '/' + v.name), 
 				rows: history.map((row) => columns.map((c) => isNaN(row[c]) ? row[c] : parseFloat(row[c]))), 
-				alerts
+				alerts,
+				period
 			};
 
 			if (device.latency) {
+				res.device_ids.unshift(device.id);
 				res.ids.unshift('latency');
 				res.columns.unshift(device.name + '/' + 'latency');
 			}
 
+			res.downsampled = false;
+			if (downsample == 'auto' || !isNaN(downsample)) 
+				res.downsampled = downsampleData(res, parseInt(downsample) || 2000);
+				
 			callback(null, res);			
 		}
 	);
 }
 
-function getMany(device_list, period, callback) { 
-	async.map(device_list, (device, callback) => getOne(device, period, callback), function(err, results) {
+function getMany(device_list, period, downsample, callback) { 
+	async.map(device_list, (device, callback) => getOne(device, period, downsample, callback), function(err, results) {
 		if (err)
 			return callback(err);
 
 		if (device_list.length == 1) {
 			results[0].columns.unshift('time');
+			results[0].period = period;
 			return callback(null, results[0]);
 		}
+
+		let device_ids = [];
+		results.forEach((res) => res ? device_ids.push.apply(device_ids, res.device_ids) : null);
 
 		let ids = [];
 		results.forEach((res) => res ? ids.push.apply(ids, res.ids) : null);
@@ -141,8 +155,9 @@ function getMany(device_list, period, callback) {
 			rows.push(times[time]);
 
 		rows.sort((a, b) => a[0] - b[0]);
+		let downsampled = results.some((res) => res.downsampled);
 
-		callback(null, {ids, columns, rows, alerts});
+		callback(null, {device_ids, ids, columns, rows, alerts, period, downsampled});
 	})	
 }
 

@@ -1,6 +1,8 @@
 * {margin: 0px; padding: 0px;} 
-html,body { padding: 0; margin: 0; font: normal 14px "Helvetica Neue", Helvetica, Arial, sans-serif; overflow:hidden;}
+html, body { padding: 0; margin: 0; font: normal 14px "Helvetica Neue", Helvetica, Arial, sans-serif;}
+body {overflow: hidden;}
 input[type="text"] {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
+input[type="search"] {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 select {border: 1px solid #bbb; height: 20px;}
 textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .hidden {display: none;}
@@ -9,28 +11,28 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #template-row {display: none;}
 
 .top-menu {padding: 5px; border-bottom: 1px #eee solid; background-color: #f5f5ff; display: none; height: 21px;}
-.top-menu[admin] {display: block;}
+.app[admin] .top-menu {display: block;}
 .top-menu > div {display: inline-block; cursor: pointer; border-bottom: 1px dashed #eef; margin-left: 10px;}
 .top-menu .separator {cursor: initial; margin: 0 10px;	border-left:1px solid #eee; border-right:1px solid #bbb; border-bottom: none; height:100%;}
 .history-period {visibility: hidden; position: absolute; display: none;}
-.history-period-value {cursor: pointer;}
-.history-period-block {position: absolute; right: 20px; padding: 5px 10px; border-radius: 5px; background: #cfc; display: none;}
+.history-period-value {cursor: pointer; padding: 5px 10px; border-radius: 5px; background: #cfc;}
+.history-period-block {position: absolute; right: 30px;}
+.history-period-block #alert {display: none;}
+.history-period-block[alert] #alert {display: inline; position: relative; top: 2px;}
 
 .top-menu #template-list #template-remove {float: right; position: relative; top: -3px;}
-
+.top-menu #template-list ~ #import-upload {display: none;}
 
 .app:not(.current) {display: none}
-//.app {background: url(logo.png) center no-repeat; width: 100%}
 .app #navigator {width: 200px; height: 100%; position: relative;}
 .app #navigator[status="1"] {background: rgba(200,255,200,0.5)}
 .app #navigator[status="2"] {background: rgba(255,255,200,0.5)}
 .app #navigator[status="3"] {background: rgba(255,200,200,0.5)}
 
 .app #navigator ul {list-style: none; position: absolute; overflow-y: auto;left: 0; right: 0; top: 0;}
-.app #navigator .top-menu[admin] ~ ul {top: 31px !important} 
 .app #navigator ul li {cursor: pointer; margin: 3px 0; padding: 3px; padding-left: 10px;}
 .app #navigator ul li.active {background-color: #f5f5ff;}
-.app #navigator ul li[status]:before {float: left; width: 10px; height: 10px; border-radius: 50%; border:1px solid #eee; background: white; display: inline-block; content: ''; position: relative; top: 12px; margin-right: 3px;}
+.app #navigator ul li[status]:before {float: left; width: 10px; height: 10px; border-radius: 50%; box-shadow: 1px 1px 2px #bbb; background: white; display: inline-block; content: ''; position: relative; top: 12px; margin-right: 3px;}
 .app #navigator ul li[status="1"]:before {background: #0f0}
 .app #navigator ul li[status="2"]:before {background: gold}
 .app #navigator ul li[status="3"]:before {background: #f00}
@@ -43,7 +45,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .icon-remove::before {background-position: -16px 0;}
 .icon-ok::before {background-position: -32px 0;}
 .icon-cancel::before {background-position: -48px 0;}
-.icon-scan::before {background-position: -64px 0;}
+.icon-search::before {background-position: -64px 0;}
 .icon-chart::before {background-position: -80px 0;}
 .icon-clone::before {background-position: -96px 0;}
 .icon-edit::before {background-position: -112px 0;}
@@ -57,8 +59,19 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .icon-label-color::before {background-position: -288px 0;}
 .icon-image::before {background-position: -304px 0;}
 .icon-bgcolor::before {background-position: -320px 0;}
+.icon-discovery::before {background-position: -336px 0;}
+.icon-no-alert::before {background-position: -352px 0;}
+.icon-alert::before {background-position: -368px 0;}
+
+#app-device #navigator #device-filter {display: block; font-size: 10px;}
+#app-device #navigator #device-filter .button {background: #fff; height: 16px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 16px; text-align: center;}
+#app-device #navigator #device-tag-list {width: 100%; border-left: 0; border-right: 0; padding: 0;}
+#app-device #navigator #device-tag-list div {cursor: pointer;}
+#app-device #navigator #device-tag-list div[checked]:after {background: url(icons.png) no-repeat; content: ''; display: inline-block; width: 16px; height: 16px; position: relative; top: -2px; background-position: -32px 0; float: right;}
 
 #app-device #navigator #device-list {bottom: 42px;}
+#app-device #navigator #device-list {top: 17px;}
+#app-device[admin] #navigator .top-menu ~ #device-list {top: 48px;}
 #app-device #navigator #device-list li[is-hidden] {display: none;}
 #app-device #navigator #device-list li[is-hidden]:not(.active) {display: none;}
 #app-device #navigator #device-list li:not([alive="true"]) {color: #bbb;}
@@ -71,6 +84,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #navigator #alert-block #warning:before {background: gold;}
 #app-device #navigator #alert-block #critical:before {background: #f00;}
 
+#app-diagram[admin] #navigator .top-menu ~ #diagram-list {top: 31px;} 
 #app-diagram #navigator #diagram-list li {padding-top: 12px; padding-bottom: 12px;}
 #app-diagram #navigator #diagram-list li[status]:before {top: 3px;}
 
@@ -81,37 +95,58 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .app #page:empty ~ #page-close {display: none;}
 
 #app-device #dashboard {display: none;}
-#app-device #dashboard .tag-list {text-align: left; margin: 0 10px; padding: 10px;}
-#app-device #dashboard[hidden] {display: none;}
-#app-device #dashboard .tag-list div {display: inline;}
-#app-device #dashboard .tag-list label {margin-right:10px;padding: 5px 10px 5px 5px; cursor: pointer;}
-#app-device #dashboard .tag-list input {display: none}
-#app-device #dashboard .tag-list input:checked + label {background:#eee;}
-#app-device #dashboard #varbind-tag-list {border-top: 1px solid #eee;}
+#app-device #dashboard[hidden] {display: none !important;}
+#app-device #dashboard[empty] #varbind-tag-list::after {content: 'There are no metrics for selected tag(s)';}
+#app-device #dashboard[empty] .history-period-block {display: none !important;}
 
-#app-device #dashboard .history-period-block {margin-top: -10px;} 
+
+#app-device #dashboard #varbind-tag-list {text-align: left; margin: 0 10px; padding: 10px; word-wrap: break-word}
+#app-device #dashboard #varbind-tag-list div {display: inline-block;}
+#app-device #dashboard #varbind-tag-list label {margin-right:10px; padding: 5px 10px 5px 5px; cursor: pointer;}
+#app-device #dashboard #varbind-tag-list input {display: none}
+#app-device #dashboard #varbind-tag-list input:checked + label {background:#eee;}
+
+#app-device #dashboard .history-period-block {margin-top: -5px;} 
 #app-device #dashboard #graph-block {padding: 30px;}
-#app-device #dashboard #graph-block > .graph {display: block;}
-#app-device #dashboard #graph-block > .graph:first-child:last-child:hover {background-color: initial;} 
-#app-device #dashboard #graph-block > .graph:hover {background-color: #eff;}
+#app-device #dashboard #graph-block > .graph {display: block; position: relative}
+#app-device #dashboard #graph-block > .graph:not(:first-of-type) {margin-top: 20px;}
+#app-device #dashboard #graph-block > .graph > #summary-block {opacity: 0.9; position: absolute; top: 0; right: 0; width: 440px; font-size: 10px; overflow-y: auto; background: #fff; box-shadow: 1px 1px 10px #eee;}
+#app-device #dashboard #graph-block > .graph > #summary-block:hover {opacity: 1;}
+#app-device #dashboard #graph-block > .graph > #summary-block #overflow {display: inline-block; position: fixed; padding-top: 5px;}
+#app-device #dashboard #graph-block > .graph > #summary-block #export {display: none;}
+#app-device #dashboard #graph-block > .graph > #summary-block:hover #export {display: inline-block; position: fixed; padding-top: 5px; right: 30px; cursor: pointer;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary {width: 100%; }
+#app-device #dashboard #graph-block > .graph > #summary-block #summary tr[highlight] {background-color: #cfc !important;}
+//#app-device #dashboard #graph-block > .graph > #summary-block #summary tr:hover {background-color: #aff !important;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary tr:nth-child(2n) {background: #fafafa;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary tr:nth-child(10) ~ tr {display: none;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary #th-name {text-align: left;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary th.sortable {cursor: pointer}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary th.sortable[order="-1"]:after {content: '\25bc'; position: relative; top: 1px;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary th.sortable[order="1"]:after {content: '\25b2';}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary td {white-space: nowrap; overflow: hidden;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary #td-color {width: 5px;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary #td-color:after {content: '\2014'; font-size: 14px; font-weight: bold;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary #td-name {width: 200px; max-width: 200px; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;}
+#app-device #dashboard #graph-block > .graph > #summary-block #summary .value {min-width: 40px; width: 40px; max-width: 40px; border-left: 1px solid #eee; text-align: center;}
 
 #app-device #page-device-view .history-period-block {top: 5px; right: 30px;} 
-#app-device #page-device-view .top-menu[admin] ~ .history-period-block {top: 40px; right: 20px;} 
+#app-device[admin] #page-device-view .top-menu ~ .history-period-block {top: 40px; right: 20px;} 
 #app-device #page-device-view #varbind-list {width: 100%; margin-top: 20px;}
 #app-device #page-device-view #varbind-list td {padding: 2px 5px;}
-#app-device #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
+//#app-device #page-device-view #varbind-list tbody tr:hover {background-color: #eff;}
 #app-device #page-device-view #varbind-list #td-name {width: 1px; min-width: 130px;}
 #app-device #page-device-view #varbind-list #td-value {width: 1px; min-width: 150px; max-width: 150px; width: 150px; text-align: center; font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
 #app-device #page-device-view #varbind-list #td-value[status="1"] {background: #0f0;}
 #app-device #page-device-view #varbind-list #td-value[status="2"] {background: gold;}
 #app-device #page-device-view #varbind-list #td-value[status="3"] {background: #f00;}
 #app-device #page-device-view #varbind-list #td-history {padding: 2px 0;}
-#app-device #page-device-view #varbind-list #td-history[is-number="true"] {height: 124px;}
-#app-device #page-device-view #varbind-list #td-history[is-number="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
-#app-device #page-device-view #varbind-list #td-history[is-number="false"] table {margin-left: 15px;}
-#app-device #page-device-view #varbind-list #td-history[is-number="false"] #history-range-selector {position: fixed}
-#app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
-#app-device #page-device-view #varbind-list #td-history[is-number="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
+#app-device #page-device-view #varbind-list #td-history[is-history="true"] {height: 124px;}
+#app-device #page-device-view #varbind-list #td-history[is-history="false"] {display: block; max-height: 100px; overflow-y: auto; font-size: 10px; margin-left: 60px;}
+#app-device #page-device-view #varbind-list #td-history[is-history="false"] table {margin-left: 15px;}
+#app-device #page-device-view #varbind-list #td-history[is-history="false"] #history-range-selector {position: fixed}
+#app-device #page-device-view #varbind-list #td-history[is-history="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
+#app-device #page-device-view #varbind-list #td-history[is-history="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
 #app-device #page-device-view #varbind-list::after {content: attr(updated); display: inline-block; position: absolute; bottom: 10px; right: 20px; font-size: 10px;}
 
 #app-device #page-device-edit label.without-varbind {color: #bbb;}
@@ -139,17 +174,11 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #protocol-params table {margin-bottom: 10px;}
 #app-device #protocol-params select.small {width: 60px;}
 #app-device #protocol-params select.small ~ input {margin-left: -3px;}
+#app-device #page-device-edit .protocol-params {display: inline-block;}
+#app-device #page-device-edit .varbind-discovery {display: inline-block; float: right;}
+#app-device #page-device-edit .varbind-discovery .content {right: 0} 
+#app-device #page-device-edit .varbind-discovery .content div {cursor: pointer;} 
 
-#app-device .varbind-list #td-status-conditions {width: 280px;}
-#app-device .varbind-list #td-status-conditions .status-condition {margin-bottom: 5px;}
-#app-device .varbind-list #td-status-conditions #if {text-align: center; outline: none; width: 70px; margin-left: 5px;}
-#app-device .varbind-list #td-status-conditions #if[if="empty"] ~ #value,
-#app-device .varbind-list #td-status-conditions #if[if="change"] ~ #value,
-#app-device .varbind-list #td-status-conditions #if[if="any"] ~ #value,
-#app-device .varbind-list #td-status-conditions #if[if="error"] ~ #value {visibility: hidden;}
-#app-device .varbind-list #td-status-conditions #value {width: 60px; position: relative; top: -2px;}
-#app-device .varbind-list #td-status-conditions #status {text-align: center; outline: none;}
-#app-device .varbind-list #td-status-conditions #condition-add {font-size: 10px;}
 
 #app-device .varbind-list {width: 100%}
 #app-device .varbind-list tbody td {vertical-align: top; padding: 5px;}
@@ -161,9 +190,10 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device .varbind-list tbody tr[check-id] #td-status-conditions #condition-remove {visibility: hidden;}
 
 #app-device .varbind-list td input {height: 20px; position: relative; top: -1px;}
-#app-device .varbind-list td > input {width: 100%;}
-#app-device .varbind-list #varbind-add, 
-#app-device .varbind-list #check-add  {float: left; padding-left: 5px;}
+#app-device .varbind-list td > input {width: 100%; vertical-align: top; font-size: 10px;}
+#app-device .varbind-list td > select {position: relative; top: -1px;}
+#app-device .varbind-list #varbind-add,  
+#app-device .varbind-list #check-add {float: left; padding-left: 5px;}
 #app-device .varbind-list #td-device-tags {width: 200px;}
 #app-device .varbind-list #td-device-tags #include-tags {color: green}
 #app-device .varbind-list #td-device-tags #exclude-tags {color: red; margin-top: 2px;}
@@ -177,16 +207,41 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device .varbind-list #td-divider {width: 50px; min-width: 50px;}
 #app-device .varbind-list #td-divider input {text-align: center;}
 #app-device .varbind-list #td-value {text-align: center; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; width: 150px; min-width: 150px; max-width: 150px;}
-#app-device .varbind-list #td-value:after {content: '\27f3'; display: block;}
+#app-device .varbind-list #td-value:after {content: '\27f3'; color: #3a3;}
+#app-device .varbind-list #td-condition {width: 270px;}
+#app-device .varbind-list #td-condition #condition-list {width: 270px;}
+#app-device .varbind-list #td-condition #condition-edit {display: none;}
+#app-device .varbind-list #td-condition:not([condition-id="0"]):not([condition-id=""]) #condition-edit {display: inline-block; margin-left: 3px; cursor: pointer; position: relative; top: -3px; font-size: 10px;}
+#app-device .varbind-list #td-condition:not([condition-id="0"]):not([condition-id=""]) #condition-list {width: 245px;}
+
+#app-device .varbind-list #td-condition[edit] {border: 1px dotted #bbb; font-size: 10px;}
+#app-device .varbind-list #td-condition label {margin-right: 5px; line-height: 20px;}
+#app-device .varbind-list #td-condition .condition-list {width: 100%}
+#app-device .varbind-list #td-condition .condition {margin-bottom: 5px;}
+#app-device .varbind-list #td-condition #name {margin-bottom: 5px; margin-right: 10px; width: 180px;}
+#app-device .varbind-list #td-condition #save {margin-left: 5px;}
+#app-device .varbind-list #td-condition #if {text-align: center; outline: none; width: 60px; margin-left: 5px;}
+#app-device .varbind-list #td-condition #if[if="empty"] ~ #value,
+#app-device .varbind-list #td-condition #if[if="change"] ~ #value,
+#app-device .varbind-list #td-condition #if[if="any"] ~ #value,
+#app-device .varbind-list #td-condition #if[if="error"] ~ #value {visibility: hidden;}
+#app-device .varbind-list #td-condition #value {width: 69px; position: relative; top: -2px; text-align: center;}
+#app-device .varbind-list #td-condition #status {text-align: center; outline: none;}
+#app-device .varbind-list #td-condition #save {float: right;}
+#app-device .varbind-list #td-condition #cancel {float: right;}
+#app-device .varbind-list #td-condition #gap {width: 22px; text-align: center;}
+#app-device .varbind-list #td-tags {max-width: 300px; width: 300px;}
+#app-device .varbind-list #td-remove {width: 16px;}
+
 
 #app-device #page-device-edit .ping-button {margin-left: 5px; cursor: pointer; color: #337ab7;}
-#app-device #page-device-edit .ping-button:after {background: url(icons.png); width: 16px; height: 14px; content: ''; display: inline-block; margin-left: 2px;}
+#app-device #page-device-edit .ping-button:after {background: url(icons.png); width: 16px; height: 16px; content: ''; display: inline-block; margin-left: 2px; vertical-align: middle; position: relative; bottom: 2px;}
 #app-device #page-device-edit .ping-button:not([status]):after {display: none;}
 #app-device #page-device-edit .ping-button[status="0"]:after {background-position: -176px 0;}
 #app-device #page-device-edit .ping-button[status="1"]:after {background-position: -160px 0;}
 
 #app-device #page-device-edit #tags:not([focused]) ~ #tag-list {display: none;}
-#app-device #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;}
+#app-device #page-device-edit #tags[focused] ~ #tag-list {display: block; font-size: 10px;word-wrap: break-word;}
 #app-device #page-device-edit #tags[focused] ~ #tag-list span {margin-right: 5px;}
 
 #app-device #page-device-scan #device-scan-result {display: none;}
@@ -224,7 +279,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #page-alert-list-view #alert-list tr[status="4"] #td-status::after {background: rgb(100, 100, 255);}
 #app-device #page-alert-list-view #alert-list tr[is-hidden="1"] {color: #bbb;}
 #app-device #page-alert-list-view #alert-list tr[is-hidden="1"] #td-hide {display: none;}
-#app-device #page-alert-list-view .history-period-block {right: 30px;}
+#app-device #page-alert-list-view .history-period-block {right: 30px; top: 5px;}
 #app-device #page-alert-list-view #alert-list .reject {float: right; cursor: pointer; color: #f00}
 
 #app-device #page-alert-list-view #alert-list-filter {position: absolute; left: 60px; top: 2px; font-size: 0;}
@@ -239,16 +294,24 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 
 #app-device #page-check-list-edit #restrictions {font-weight: bold; color: red; margin-left: 10px;}
 
+#app-diagram:not([admin]) #page-wrapper #page-close {display: none;}
 #app-diagram #page-diagram-view #alert-list {position: absolute; right: 20px; list-style: none; z-index: 10;}
-#app-diagram #page-diagram-view #alert-list:empty {display:none;}
-#app-diagram #page-diagram-view #alert-list::before {content: 'Alerts 24'; display: block; text-align: center;}
-#app-diagram #page-diagram-view #alert-list .alert {max-width: 150px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 10px; cursor: default;}
+#app-diagram #page-diagram-view #alert-list:empty tr {display:none; }
+#app-diagram #page-diagram-view #alert-list:empty::before {background: url(icons.png) no-repeat; content: ''; display: inline-block; width: 16px; height: 16px; background-position: -352px 0; position: relative; top: 2px;}
+#app-diagram #page-diagram-view #alert-list:empty:hover::after {content: 'No alert in last 24 hours'; margin-left: 5px;}
+#app-diagram #page-diagram-view #alert-list:not(:empty):hover {width: 300px;}
+#app-diagram #page-diagram-view #alert-list:not(:empty):not(:hover)::before {background: url(icons.png) no-repeat; content: ''; display: inline-block; width: 16px; height: 16px; background-position: -368px 0; position: relative; top: 2px;}
+#app-diagram #page-diagram-view #alert-list:not(:empty):hover::before {content: 'Alerts in last 24 hours'; display: block; text-align: center; margin-bottom: 10px;}
+#app-diagram #page-diagram-view #alert-list:not(:empty) li {display: none;}
+#app-diagram #page-diagram-view #alert-list:not(:empty):hover li {display: inline-block;}
+#app-diagram #page-diagram-view #alert-list .alert {width: 300px; max-width: 300px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; font-size: 10px; cursor: default;}
 #app-diagram #page-diagram-view #alert-list .alert[status="2"] {background: rgba(255,255,200,0.5);}
 #app-diagram #page-diagram-view #alert-list .alert[status="3"] {background: rgba(255,200,200,0.5);}
 #app-diagram #page-diagram-view #alert-list .alert[status="4"] {background: rgba(200,200,255,0.5);}
-#app-diagram #page-diagram-view #alert-list .alert[is-hidden] {display: none;}
+#app-diagram #page-diagram-view #alert-list .alert[is-hidden] {display: none !important;}
 
 #app-diagram #page-diagram-view #diagram {position: relative;}
+#app-diagram #page-diagram-view #diagram::after {content: attr(updated); display: inline-block; position: absolute; bottom: -10px; right: 0; font-size: 10px;}
 #app-diagram #page-diagram-view #diagram .element {position: absolute; background-size: cover; z-index: 2;}
 #app-diagram #page-diagram-view #diagram .element[highlight] {outline: 1px dashed blue;}
 #app-diagram #page-diagram-view #diagram .element[device-id] {cursor: pointer;}
@@ -273,8 +336,8 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 
 #app-diagram #page-diagram-view #diagram .element[live-image].status[status] {background-position-x: 0;}
 #app-diagram #page-diagram-view #diagram .element[live-image].status[status="1"] {background-position-x: -100%;}
-#app-diagram #page-diagram-view #diagram .element[live-image].status[status="2"] {background-position-x: -67%;}
-#app-diagram #page-diagram-view #diagram .element[live-image].status[status="3"] {background-position-x: -33%;}
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status="2"] {background-position-x: -66.7%;}
+#app-diagram #page-diagram-view #diagram .element[live-image].status[status="3"] {background-position-x: -33.3%;}
 
 #app-diagram #page-diagram-view #diagram .element[type="status"][live-value]::after {content: attr(value) !important;}
 
@@ -285,12 +348,14 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-diagram #page-diagram-view #diagram .element[type="value"]::after {left: 0; font-size: initial; line-height: initial;}
 
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue:not([live-bgcolor]) {background: blue;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue[live-bgcolor][status="0"] {background: #eee;}
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue::before {content: attr(value); text-align: center;}
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].hvalue div {position: absolute; right: 0; top: 0; bottom: 0; background: #fff; z-index: -1;}
 
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue:not([live-bgcolor]) {background: blue;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue[live-bgcolor][status="0"] {background: #eee;}
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue::before {content: attr(value); position: relative; top: -20px; font-size: 10px;}
-#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue::after {left: -50%;}
+#app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue::after {}
 #app-diagram #page-diagram-view #diagram .element.numeric[type="value"].vvalue div {position: absolute; right: 0; left: 0; top: 0; background: #fff; z-index: -1;}
 
 #app-diagram #page-diagram-view #diagram .element[type="value"].no-label {font-size: 0}
@@ -301,16 +366,19 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-diagram #page-diagram-view #diagram .element[type="status"] {z-value: 4;}
 #app-diagram #page-diagram-view #diagram .element[type="value"] {z-value: 5;}
 #app-diagram #page-diagram-view #diagram .element[type="graph"] {z-value: 3;}
-#app-diagram #page-diagram-view #diagram .element[type="text"] {z-value: 10;}
+#app-diagram #page-diagram-view #diagram .element[type="text"] {z-value: 10; text-align: center;}
 
 #app-diagram #page-diagram-view #diagram .element[type="graph"] {border: 1px dotted #eee;}
-#app-diagram #page-diagram-view #diagram .element[type="graph"] .dygraph-xlabel {font-size: 10px;}
+#app-diagram #page-diagram-view #diagram .element[type="graph"]::before {content: attr(title); top: 0; left: 2px; position: absolute; font-size: 10px;}
 
 .app .graph-hint-parent {position: relative;}
 .app .graph-hint-parent #graph-hint {position: absolute; border: 1px solid #bbb; z-index: 10; background: #fff;}
-.app .graph-hint-parent #graph-hint > div:nth-child(2n) {background-color: #eee;}
+.app .graph-hint-parent #graph-hint > div:nth-child(2n) {background-color: #fefefe;}
+.app .graph-hint-parent #graph-hint .graph-hint-row {position: relative}
+.app .graph-hint-parent #graph-hint .graph-hint-row::before {content: attr(caption); top: 0; left: 2px; position: absolute; font-size: 10px;}
+.app .graph-hint-parent #graph-hint .graph-hint-row::after {content: attr(range); top: 0; right: 5px; position: absolute; font-size: 10px; color: purple;}
 
-#app-diagram #page-diagram-view #diagram .element[type="link"] {padding: 3px; border: 1px solid #bbb; background: #eee; color: #000 !important;}
+#app-diagram #page-diagram-view #diagram .element[type="link"] {padding: 3px; border: 1px solid #bbb; background: #eee; color: #000 !important; max-width: 100px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;}
 #app-diagram #page-diagram-view #diagram .element[type="link"]:empty {display: none;}
 
 #app-diagram #page-diagram-edit #grid-size {position: absolute; top: 0; right: 0; z-index: 1;}
@@ -382,11 +450,6 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .tabs > label .remove {margin-left: 10px; cursor: pointer;}
 .tabs #protocol-menu .button span {margin-left: 5px; font-size: 18px;}
 .tabs #protocol-menu #protocol-list div {cursor: pointer;}
-//.tabs .agent:before {content: ''; margin-right: 5px;}
-//.tabs .external:before {content: '\2327'; margin-right: 5px;}
-//.tabs .expression:before {content: '\3a3'; margin-right: 5px;}
-//.tabs .collector:before {content: '\203b'; margin-right: 5px;}
-.tabs .native:before {}
 
 .tabs > input.hidden {display: none !important;}
 .tabs > label.hidden {display: none !important;}
@@ -434,7 +497,8 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 /* End calendar */
 
 
-.dygraph-legend {width: initial !important; right: 0 !important; left: initial !important; font-size: 10px !important;}
+.dygraph-legend {width: initial !important; right: 0 !important; left: initial !important; font-size: 10px !important; max-width: 400px;}
+.dygraph-legend {font-size: 10px !important;}
 .dygraph-legend b {font-size: 14px;}
 .dygraph-legend > span {display: block; font-size: 14px;}
 .dygraph-ylabel {position: relative; top: -20px;}
