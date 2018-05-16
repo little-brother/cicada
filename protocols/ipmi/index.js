@@ -11,7 +11,7 @@ exports.getValues = function(opts, address_list, callback) {
 	if (!is_enable)
 		return callback(new Error('Require IPMItool package'));
 
-	if (address_list.some((a) => !a.oid))
+	if (address_list.some((a) => !a.sensor))
 		return callback(new Error('Sensor is empty!'));
 
 	let params = [

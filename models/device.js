@@ -47,7 +47,8 @@ function cacheAll (callback) {
 			device_list.forEach((r) => (new Device()).setAttributes(r).cache().updateVarbindList().updateStatus());
 			condition_list.forEach((r) => (new Condition(r)).setAttributes(r).cache())
 
-			async.eachSeries(Device.getList(), db.checkHistoryTable, callback);
+			device_list = Device.getList();
+			async.eachSeries(device_list, db.checkHistoryTable, callback);
 		}
 	)
 }
@@ -106,7 +107,7 @@ function getTagLists() {
 	}
 }
 
-function getHistoryByTag(tag, device_tags, period, downsample, callback) {
+function getHistoryByTag(tag, device_tags, opts, callback) {
 	let device_list = Device.getList();
 	let device_tag_list = (device_tags || '').split(';');
 
@@ -121,14 +122,14 @@ function getHistoryByTag(tag, device_tags, period, downsample, callback) {
 		return callback(new Error('Device list is empty')); 
 
 	if (tag == 'latency')
-		return history.get(device_list.filter((d) => d.is_pinged).map((d) => new Object({id: d.id, name: d.name, latency: true})), period, downsample, callback);
+		return history.get(device_list.filter((d) => d.is_pinged).map((d) => new Object({id: d.id, name: d.name, latency: true})), opts, callback);
 
 	let dl = device_list.map(function (d) {
 		let varbind_list = d.varbind_list.filter((v) => v.tag_list.indexOf(tag) != -1 && v.is_history && !v.is_temporary).map((v) => new Object({id: v.id, name: v.name})); 
 		return {id: d.id, name: d.name, latency: false, varbind_list};
 	});
 
-	history.get(dl, period, downsample, callback);
+	history.get(dl, opts, callback);
 }
 
 function getValue(opts, callback) {
@@ -253,7 +254,8 @@ function Device() {
 	this.varbind_list = [];
 	this.status = 0;
 	this.latency = null;
-	Object.defineProperty(this, 'is_status', {get: () => this.varbind_list.some((v) => v.is_status)});
+	Object.defineProperty(this, 'is_status', {get: () => this.varbind_list.length && this.varbind_list.some((v) => v.is_status)});
+	Object.defineProperty(this, 'is_history', {get: () => this.varbind_list.length && this.varbind_list.some((v) => v.is_history)});
 	Object.defineProperty(this, 'alive', {get: () => this.is_pinged && +this.latency == this.latency || !this.is_pinged});
 }
 
@@ -305,11 +307,11 @@ Device.prototype.updateVarbindList = function () {
 	return this;
 }
 
-Device.prototype.getHistory = function (period, only_varbind_id, downsample, callback) {
+Device.prototype.getHistory = function (opts, callback) {
 	let varbind_list = this.varbind_list
-		.filter((v) => v.is_history && !v.is_temporary && (!only_varbind_id || v.id == only_varbind_id))
+		.filter((v) => v.is_history && !v.is_temporary && (!opts.only_varbind_id || v.id == opts.only_varbind_id))
 		.map((v) => new Object({id: v.id, name: v.name}));
-	history.get([{id: this.id, name: this.name, latency: false, varbind_list}], period, downsample, callback);
+	history.get([{id: this.id, name: this.name, latency: false, varbind_list}], opts, callback);
 }
 
 Device.prototype.getChanges = function (period, callback) {
@@ -482,9 +484,6 @@ Device.prototype.polling = function (delay) {
 					device.status = 1;
 			}
 
-			events.emit('status-updated', device, time);
-			events.emit('values-updated', device, time);
-
 			if (device.prev_status != device.status) 
 				events.emit('status-changed', device, time, isError ? 'ERR: ' + errors.map((e) => e.message).join('; ') : null);
 
@@ -495,6 +494,9 @@ Device.prototype.polling = function (delay) {
 
 Device.prototype.saveValues = function (time, callback) {
 	let device = this;
+
+	events.emit('status-updated', device, time);
+	events.emit('values-updated', device, time);
 
 	let query_list = [];
 	let params_list = [];
@@ -515,10 +517,8 @@ Device.prototype.saveValues = function (time, callback) {
 	let columns = (device.is_pinged) ? ['time', 'latency'] : ['time'];
 	let params = (device.is_pinged) ? [time, device.latency] : [time];
 
-	let varbind_list = device.varbind_list.filter((v) => !v.is_temporary && v.is_history);
-
-	varbind_list
-		.filter((v) => v.value != undefined)
+	device.varbind_list
+		.filter((v) => !v.is_temporary && v.is_history && v.value != undefined)
 		.forEach(function(v) {			
 			columns.push(`varbind${v.id}`);
 			params.push(v.value);
@@ -531,7 +531,7 @@ Device.prototype.saveValues = function (time, callback) {
 		});
 
 	db.push(`insert into history.device${device.id} (${columns.join(',')}) values (${'?, '.repeat(columns.length - 1) + '?'})`, params);
-
+	
 	// Other types
 	device.varbind_list
 		.filter((v) => !v.is_temporary && !v.is_history && v.prev_value != v.value)
@@ -684,7 +684,7 @@ function applyDivider (value, divider) {
 			return value;
 
 		// Don't change any text with spaces
-		if (value.indexOf(' '))
+		if (value.indexOf(' ') != -1)
 			return value;
 
 		// Force to number

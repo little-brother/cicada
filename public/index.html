@@ -94,12 +94,12 @@
 		</div>		
 		<table id = "alert-list">
 		<thead>
-			<tr id = "template-row">
+			<tr id = "template-row" status = "{{status}}" time = "{{time}}" device-id = "{{device-id}}">
 				<td id = "td-status"></td>
-				<td id = "td-datetime"></td>
-				<td id = "td-path"></td>
-				<td id = "td-description"></td>
-				<td id = "td-hint" class = "graph-hint icon icon-chart"></td>
+				<td id = "td-datetime">{{datetime}}</td>
+				<td id = "td-path">{{path}}</td>
+				<td id = "td-description">{{description}}</td>
+				<td id = "td-hint" device-id = "{{device-id}}" varbind-id = "{{varbind-id}}" time = "{{time}}" style = "{{style}}" class = "graph-hint icon icon-chart"></td>
 				<td id = "td-hide" title = "Hide alert from list">Hide</td>
 			</tr>	
 		</thead>

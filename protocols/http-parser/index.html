@@ -23,7 +23,16 @@
 		<option value = "json">json</option>
 		<option value = "xml">xml</option>
 	</select>
-	<input id = "selector" type = "text" placeholder = "Selector">
+	<input id = "selector" type = "search" list = "http-item-list" placeholder = "Selector">
+</div>
+
+<div id = "include">
+	<datalist id = "http-item-list">
+		<option value = "@time" />
+		<option value = "@code" />
+		<option value = "@size" />
+		<option value = "@expires" />
+	</<datalist>
 </div>
 
 <style>

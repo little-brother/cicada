@@ -1,0 +1,26 @@
+<div id = "info" name = "FTP" category = "native"></div>
+
+<div id = "protocol-params">
+	<table>
+	<tr>
+		<td>User</td>
+		<td><input type = "text" id = "user"></td>
+	</tr>
+	<tr>
+		<td>Password</td>
+		<td><input type = "text" id = "password"></td>
+	</tr>
+	<tr>
+		<td>Port</td>
+		<td><input type = "text" id = "port" value = "21"></td>
+	</tr>
+	</table>
+</div>
+
+<div id = "varbind-address">	
+	<input id = "filename" type = "text" placeholder = "file">
+</div>
+
+<style>
+#app-device *[protocol="ftp"] #td-address #filename {width: 100%;}
+</style>

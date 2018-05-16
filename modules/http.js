@@ -1,11 +1,29 @@
 'use strict'
 const qs = require('querystring');
+const url = require('url');
 const zlib = require('zlib');
 
-function parseBody(callback) {
+function parse (req, callback) {
+	req.xhr = req.headers['x-requested-with'] == 'XMLHttpRequest';
+	req.path = qs.unescape(url.parse(req.url).pathname) || '';
+	req.cookies = parseCookies(req.headers.cookie);
+	req.query = qs.parse(req.url.replace(/^.*\?/, '')) || {};
+	req.period = parsePeriod(req.query);
+
+	return (req.method == 'GET') ? callback() : parseBody(req, callback);
+}
+
+function parseBody(req, callback) {
 	let body = '';
-	this.on('data', (data) => body += data);
-	this.on('end', () => callback(qs.parse(body)))
+	req.on('data', (data) => body += data);
+	req.on('end', function () {
+		try {
+			req.body = JSON.parse(body);
+		} catch (err) {
+			req.body = qs.parse(body); 
+		}	 
+		callback();
+	});
 }
 
 // req.headers.cookie
@@ -48,4 +66,4 @@ function json (obj) {
 	this.send(200, JSON.stringify(obj), 'json')
 }
 
-module.exports = {parseBody, parsePeriod,  parseCookies, send, json};
+module.exports = {parse, send, json};

@@ -1,4 +1,3 @@
-	var graphs = {device: {}, dashboard:{}};
 $(function(){
 	var $app = $('#app-device').height(window.innerHeight);
 	var $page = $app.find('#page');
@@ -8,7 +7,7 @@ $(function(){
 	var $varbind_tag_list = $app.find('#dashboard #varbind-tag-list');
 	var $components = $('#components');
 
-
+	var graphs = {device: {}, dashboard:{}};
 	var templates = {};
 
 	// INIT
@@ -33,15 +32,21 @@ $(function(){
 			updateNavigatorStatus();
 			updateTags();
 
-			var path = window.location.pathname || '';
-			if (path.indexOf('/device/') == 0) {
-				var device_id = parseInt(path.substring(8));
-				$device_list.find('#' + device_id).trigger('click');
-			}
-			if (path == '/alert')
-				$app.find('#navigator #alert-block').trigger('click');
+			var redirect = getCookie('redirect') || '';
 
+			if (redirect.indexOf('/device/') == 0) {
+				var device_id = parseInt(redirect.substring(8));
+				$device_list.find('#' + device_id).trigger('click');
+				deleteCookie('redirect');
+			}
+
+			if (redirect == '/alert') {
+				$app.find('#navigator #alert-block').trigger('click');
+				deleteCookie('redirect');
+			}
+		
 			window.history.replaceState(null, null, '/');
+
 		}
 	});
 
@@ -165,7 +170,7 @@ $(function(){
 					height: 116,
 					axes: {
 						x: {valueFormatter: (ms) => cast('datetime', ms)},
-						y: {valueFormatter: (val, opts, seriesName, g, row) => strings[g.getValue(row, 0)] || cast(varbind.value_type, val)}
+						y: {valueFormatter: (val, opts, seriesName, g, row) => strings[g.getValue(row, 0)] || cast(varbind.value_type, round2(val))}
 					},
 					verticalCrosshair: true,
 					stackedGraph: true,
@@ -889,7 +894,7 @@ $(function(){
 		$app.trigger('notify', {device_id: 0});		
 	});
 
-	$page.on('update-alerts', '#alert-list', function(event, data) {		
+	$page.on('update-alerts', '#alert-list', function(event, data) {
 		var $e = $(this);
 		var from = data && data.period && data.period[0]; 
 		var to = data && data.period && (data.period[1] + 24 * 3600 * 1000 - 1);
@@ -899,10 +904,12 @@ $(function(){
 			url: '/alert',
 			data: from && to ? {from, to} : undefined,
 			dataType: 'json',
-			success: function (alerts) {
-				$e.find('tbody').empty();
-				$.each(alerts, (i, alert) => addAlertListTableRow($e, alert));
-				updateAlertList();
+			success: function (alert_list) {
+				var template = $e.find('#template-row').get(0).outerHTML;
+				var html = '';
+				alert_list.sort((a, b) => a.time - b.time);
+				alert_list.forEach((alert) => html += buildAlertListTableRow(template, alert));			
+				$e.find('tbody').html(html);
 			}
 		})
 	});
@@ -1184,20 +1191,6 @@ $(function(){
 			var data = res.rows;
 			if (!res.rows.length)
 				res.rows.push(res.columns.map((e) => 0));
-
-			res.uptime = res.ids.map(function (_, idx) {
-				var downtime = 0;
-
-				var is_down = false;				
-				for (var i = 0; i < data.length - 1; i++) {
-					var e = data[i][idx + 1];
-					is_down = e == null ? is_down : !!isNaN(e);
-					downtime += (+is_down) * (data[i + 1][0] - data[i][0]);
-				}
-					
-				return 100 - Math.round(downtime / (res.period[1] - res.period[0]) * 100);
-			});
-
 			data.forEach((row) => row[0] = new Date(row[0]));
 
 			if (etag == 'latency') {
@@ -1230,7 +1223,7 @@ $(function(){
 					x: {valueFormatter: (ms) => cast('datetime', ms)},
 					y: {valueFormatter: function (val, opts, seriesName, g, row) {
 							var varbind_id = names[seriesName];
-							$summary.find('#' + varbind_id).find('#td-cur').html(strings[varbind_id] && strings[varbind_id][g.getValue(row, 0)] || val);
+							$summary.find('#' + varbind_id).find('#td-cur').html(strings[varbind_id] && strings[varbind_id][g.getValue(row, 0)] || round2(val));
 						}
 					}
 				},
@@ -1297,19 +1290,18 @@ $(function(){
 			var $summary = $summary_block.find('#summary').attr('tag', etag);
 
 			var $template_row = $summary.find('#template-row');
-			var avg = (arr) => arr.reduce((sum, e) => sum + e, 0)/arr.length;
-			var rnd = (num) => +num.toFixed(2);
+
 			res.columns.slice(1).forEach(function(name, i) {
 				var $row = $template_row.clone().attr('id', res.ids[i]).attr('idx', i + 1).attr('name', name);
 				$row.find('#td-color').css('color', graph.colorsMap_[name]);
 				$row.find('#td-name').html(name).attr('title', name).attr('device-id', res.device_ids[i]);
-				
-				var history = res.rows.map((row) => row[i + 1]).filter((e) => !isNaN(e));
-				$row.find('#td-min').html(history.length > 0 ? rnd(Math.min.apply(Math, history)) : '-');
-				$row.find('#td-avg').html(history.length > 0 ? rnd(avg(history)) : '-');
-				$row.find('#td-max').html(history.length > 0 ? rnd(Math.max.apply(Math, history)) : '-');
-				$row.find('#td-up').html(res.uptime[i]);
-			
+
+				var summary = res.summary && res.summary[res.ids[i]] || res.summary && res.summary[res.columns[i + 1] + '/latency'] || {}; 
+				$row.find('#td-min').html(round2(summary.min) || '-');
+				$row.find('#td-avg').html(round2(summary.avg) || '-');
+				$row.find('#td-max').html(round2(summary.max) || '-');
+				$row.find('#td-up').html(round2(summary.up) || '?');
+		
 				$row.appendTo($summary);
 			});
 
@@ -1330,7 +1322,8 @@ $(function(){
 				tags: device_tag_list,
 				from: period && period[0] ? period[0] : now - 60 * 60 * 1000,
 				to: period && period[1] ? period[1] + 24 * 60 * 60 * 1000 - 1 : now,
-				downsample: 'auto'
+				downsample: 'auto',
+				summary: true	
 			},
 			success: onData
 		})
@@ -1655,25 +1648,23 @@ $(function(){
 		$app.find('#navigator').attr('status', Math.max.apply(null, $device_list.find('li').map((i, e) => e.getAttribute('status') || 0))); 
 	}
 
-	function addAlertListTableRow($table, alert) {
-		$row = $table.find('#template-row').clone();
-		$row.attr('id', alert.id).attr('status', alert.status).attr('time', alert.time).attr('device-id', alert.device_id).attr('is-hidden', alert.is_hidden);
-		$row.find('#td-datetime').html(cast('datetime', alert.time));
-		$row.find('#td-path').html(alert.path).attr('title', alert.path);
-		$row.find('#td-description').html(alert.description);
-		$row.find('#td-hint')
-			.attr('device-id', alert.device_id)
-			.attr('varbind-id', alert.varbind_id)
-			.attr('time', alert.time)
-			.css('visibility', alert.value_type == 'number' || alert.value_type == 'size' ? 'visible' : 'hidden') // is_history
-			.css('pointer-events', !!alert.varbind_id ? '' :  'none');
+	// Optimized for performance 
+	function buildAlertListTableRow(template, alert) {
+		var html = template;
 
-		if (is_admin && !!alert.varbind_id && alert.status == 4) {
-			var $reject = $('<div/>').addClass('reject icon icon-remove').attr('title', 'Reject. This is not an anomaly.');
-			$row.find('#td-description').append($reject);
-		}
+		html = html.replace(/template-row/g, alert.id);
+		html = html.replace(/{{status}}/g, alert.status);
+		html = html.replace(/{{time}}/g, alert.time);
+		html = html.replace(/{{datetime}}/g, cast('datetime', alert.time));
+		html = html.replace(/{{path}}/g, alert.path);
+		html = html.replace(/{{description}}/g, alert.description);
+		html = html.replace(/{{device-id}}/g, alert.device_id);
+		html = html.replace(/{{varbind-id}}/g, alert.varbind_id);
 
-		$row.prependTo($table);
+		var style = 'visibility: ' + (alert.value_type == 'number' || alert.value_type == 'size' ? 'visible' : 'hidden') + (!alert.varbind_id ? '; pointer-events: none;' : '');
+		html = html.replace(/{{style}}/g, style);		
+
+		return html;
 	}
 
 	function updateTemplates() {
@@ -1868,7 +1859,8 @@ $(function(){
 		if (!$table.length)
 			return;
 
-		addAlertListTableRow($table, packet);	
+		var template = $table.find('#template-row').get(0).outerHTML;	
+		$table.find('tbody').prependTo(buildAlertListTableRow(template, packet));
 		updateAlertList();
 	});
 
@@ -1877,7 +1869,7 @@ $(function(){
 		if (!$varbind_list.length || $varbind_list[0].hasAttribute('period'))
 			return;
 
-		$varbind_list.attr('updated', 'Updated: ' + cast('datetime', packet.time));
+		$page.find('#page-content').attr('updated', 'Updated: ' + cast('datetime', packet.time));
 
 		var time = new Date(packet.time);
 		var hour = 1000 * 60 * 60;

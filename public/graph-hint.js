@@ -34,7 +34,7 @@ $(function() {
 			var opts = { 
 				axes : { 
 					x :  {drawAxis : false, drawGrid: false, valueFormatter: (ms) => cast('time', ms)},
-					y: {drawAxis : false, drawGrid: false}
+					y: {drawAxis : false, drawGrid: false, valueFormatter: (val) => round2(val)}
 				},
 				labels: ['time', name],
 				height: height,
@@ -66,7 +66,7 @@ $(function() {
 					max = e;
 			})
 			
-			var graph = new Dygraph($('<div/>').attr('caption', name).attr('range', min[1] + '...' + max[1]).addClass('graph-hint-row').appendTo($e).get(0), data, opts);
+			var graph = new Dygraph($('<div/>').attr('caption', name).attr('range', round2(min[1]) + '...' + round2(max[1])).addClass('graph-hint-row').appendTo($e).get(0), data, opts);
 			graph.alerts = alerts;
 			graph_list.push(graph);
 			

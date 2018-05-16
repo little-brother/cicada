@@ -17,12 +17,13 @@ if (module.parent) {
 
 	worker.do = function(req, callback) {
 		req.id = crypto.randomBytes(16).toString('hex');
-		worker.callbacks[req.id] = callback;
+		if (callback)
+			worker.callbacks[req.id] = callback;
 		worker.send(req);
 	}
 
 	return module.exports = {
-		get: (device_list, period, downsample, callback) => worker.do({func: 'get', device_list, period, downsample}, callback)
+		get: (device_list, opts, callback) => worker.do({func: 'get', device_list, opts}, callback)
 	};
 }
 
@@ -41,7 +42,7 @@ process.on('message', function (req) {
 	}
 
 	if (req.func == 'get')
-		return getMany(req.device_list, req.period, req.downsample, callback);
+		return getMany(req.device_list, req.opts || {}, callback);
 
 	throw new Error('Bad request: ', req);
 });
@@ -50,7 +51,10 @@ function dbAll(query, params, callback) {
 	db.all(query, params, (err, res) => err && err.code == 'SQLITE_BUSY' ? dbAll(query, params, callback) : callback(err, res));
 }
 
-function getOne(device, period, downsample, callback) {
+function getOne(device, opts, callback) {
+	let period = opts.period || [];
+	let downsample = opts.downsample;
+
 	let varbind_list = device.varbind_list || [];
 	if (varbind_list && varbind_list.length == 0 && !device.latency)
 		return callback(null, {columns:[], rows: [], alerts: {}});
@@ -62,8 +66,15 @@ function getOne(device, period, downsample, callback) {
 	varbind_list.forEach((v) => cols.push(`varbind${v.id}`) && cols.push(`varbind${v.id}_status`));
 	
 	async.series([
-		(callback) => dbAll(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, callback),
-		(callback) => dbAll(`select time, varbind_id from alerts where device_id = ? and status = 4 and time between ? and ?`, [device.id, period[0], period[1]], callback)
+			function (callback) {
+				dbAll(`select ${cols.join(',')} from device${device.id} where time between ? and ? order by "time"`, period, callback);
+			},
+			function (callback) {
+				if (opts.onlyrows == 'true')
+					return callback(null, []);
+
+				dbAll(`select time, varbind_id from alerts where device_id = ? and status = 4 and time between ? and ?`, [device.id, period[0], period[1]], callback)
+			}
 		], function (err, results) {
 			if (err)
 				return callback(err);
@@ -94,10 +105,38 @@ function getOne(device, period, downsample, callback) {
 				period
 			};
 
+			if (opts.summary) {
+				let summary = {};
+				let ids = varbind_list.map((v) => v.id);
+				if (device.latency) 
+					ids.push(device.name + '/latency');
+				ids.forEach((id) => summary[id] = {min: NaN, summa: 0, max: NaN, count: 0});
+				history.forEach(function (row, row_no) {
+					ids.forEach(function (id) {
+						let value = !isNaN(id) ? row['varbind' + id] : row['latency'];
+						if (isNaN(value) || value == '') 
+							return;
+
+						summary[id].min = isNaN(summary[id].min) || summary[id].min > value ? value : summary[id].min;
+						summary[id].max = isNaN(summary[id].max) || summary[id].max < value ? value : summary[id].max;
+						summary[id].summa += value;
+						summary[id].count++;
+					})
+				});	
+
+				ids.forEach(function (id) {
+					summary[id].avg = summary[id].summa / summary[id].count;
+					summary[id].up = 100 * summary[id].count / history.length;
+					delete summary[id].summa;
+					delete summary[id].count;
+				});
+				res.summary = summary;
+			}
+
 			if (device.latency) {
 				res.device_ids.unshift(device.id);
 				res.ids.unshift('latency');
-				res.columns.unshift(device.name + '/' + 'latency');
+				res.columns.unshift(device.name + '/latency');
 			}
 
 			res.downsampled = false;
@@ -109,8 +148,11 @@ function getOne(device, period, downsample, callback) {
 	);
 }
 
-function getMany(device_list, period, downsample, callback) { 
-	async.map(device_list, (device, callback) => getOne(device, period, downsample, callback), function(err, results) {
+function getMany(device_list, opts, callback) {
+	let period = opts.period || [];
+	let downsample = opts.downsample;
+ 
+	async.map(device_list, (device, callback) => getOne(device, opts, callback), function(err, results) {
 		if (err)
 			return callback(err);
 
@@ -157,7 +199,13 @@ function getMany(device_list, period, downsample, callback) {
 		rows.sort((a, b) => a[0] - b[0]);
 		let downsampled = results.some((res) => res.downsampled);
 
-		callback(null, {device_ids, ids, columns, rows, alerts, period, downsampled});
+		let result = {device_ids, ids, columns, rows, alerts, period, downsampled}
+		if (opts.summary) {
+			result.summary = {};
+			results.forEach((res) => Object.assign(result.summary, res && res.summary || {}));
+		}
+
+		callback(null, result);
 	})	
 }
 

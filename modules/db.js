@@ -22,6 +22,8 @@ db.serialize(function() {
 	db.run('create table if not exists history.alerts (id integer primary key autoincrement not null unique, \"time\" integer, status integer, path text, device_id integer, varbind_id integer, description text, is_hidden integer)');
 	db.run('create index if not exists history.idx_alerts on alerts (is_hidden)');
 
+	db.run('create table if not exists history.statistics ("date" integer, varbind_id integer not null, "min" real, "avg" real, "max" real, up real, primary key ("date", varbind_id)) without rowid');
+
 	// migration 0.8 => 0.9
 	db.run('alter table devices add column timeout integer', (err) => null);
 	db.run('alter table varbinds add column prev_value text', (err) => null);
@@ -59,8 +61,10 @@ db.serialize(function() {
 						if (typeof(args[1]) != 'function')
 							err.params = args[1];
 					} 
-		
-					return err && err instanceof Error && err.code == 'SQLITE_BUSY' ? _f.apply(ctx, args) : arg.apply(this, arguments);
+					
+					return err && err instanceof Error && (err.code == 'SQLITE_BUSY' || err.code == 'SQLITE_ERROR' && err.message.indexOf('cannot start a transaction') != -1) ? 
+						_f.apply(ctx, args) : 
+						arg.apply(this, arguments);
 				}
 				break;
 			}

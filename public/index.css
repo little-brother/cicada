@@ -63,6 +63,8 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 .icon-no-alert::before {background-position: -352px 0;}
 .icon-alert::before {background-position: -368px 0;}
 
+#page-content::after {content: attr(updated); display: inline-block; font-size: 10px; float: right;}
+
 #app-device #navigator #device-filter {display: block; font-size: 10px;}
 #app-device #navigator #device-filter .button {background: #fff; height: 16px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 16px; text-align: center;}
 #app-device #navigator #device-tag-list {width: 100%; border-left: 0; border-right: 0; padding: 0;}
@@ -147,7 +149,6 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-device #page-device-view #varbind-list #td-history[is-history="false"] #history-range-selector {position: fixed}
 #app-device #page-device-view #varbind-list #td-history[is-history="false"] table tr[status="2"] {background: rgba(255,255,200,0.5)}
 #app-device #page-device-view #varbind-list #td-history[is-history="false"] table tr[status="3"] {background: rgba(255,200,200,0.5)}
-#app-device #page-device-view #varbind-list::after {content: attr(updated); display: inline-block; position: absolute; bottom: 10px; right: 20px; font-size: 10px;}
 
 #app-device #page-device-edit label.without-varbind {color: #bbb;}
 #app-device #page-device-edit #template-save img {height: 12px;}
@@ -311,7 +312,7 @@ textarea {border: 1px solid #bbb; padding: 2px 5px; box-sizing: border-box;}
 #app-diagram #page-diagram-view #alert-list .alert[is-hidden] {display: none !important;}
 
 #app-diagram #page-diagram-view #diagram {position: relative;}
-#app-diagram #page-diagram-view #diagram::after {content: attr(updated); display: inline-block; position: absolute; bottom: -10px; right: 0; font-size: 10px;}
+//#app-diagram #page-diagram-view #diagram::after {content: attr(updated); display: inline-block; position: absolute; bottom: -10px; right: 0; font-size: 10px;}
 #app-diagram #page-diagram-view #diagram .element {position: absolute; background-size: cover; z-index: 2;}
 #app-diagram #page-diagram-view #diagram .element[highlight] {outline: 1px dashed blue;}
 #app-diagram #page-diagram-view #diagram .element[device-id] {cursor: pointer;}

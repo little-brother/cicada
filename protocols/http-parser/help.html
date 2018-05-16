@@ -8,6 +8,17 @@ Use square brackets to specify protocol (http or https) and port eg
 </ul>
 </p>
 <br>
+<p>
+
+<b>Special selectors</b>
+<ul>
+	<li><code>@time</code> - response time, ns</li>
+	<li><code>@code</code> - http status code</li>
+	<li><code>@size</code> - content size </li>
+	<li><code>@expires</code> (https only) - the number of days before the SSL certificate expires.</li>
+</ul>
+</p>
+<br>
 
 <p>
 When type is <code>text</code> then selector is regular expression.<br>
@@ -42,8 +53,3 @@ d.filter((e) => e.num == 124).name => BBB
 <p>
 When type is <code>xml</code> then receiving xml converted to json-object via <a href = "https://github.com/NaturalIntelligence/fast-xml-parser">fast-xml-parser</a>. Selector is js-expression.
 </div>
-<br>
-<br>
-<p>
-You can use <code>@time</code>, <code>@code</code> and <code>@size</code> as selector to get response time (ns), http status-code or body size.
-</p>

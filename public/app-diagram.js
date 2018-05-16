@@ -17,6 +17,14 @@ $(function() {
 		success: function (diagrams) {
 			diagrams.forEach(updateNavigatorDiagram);
 			$diagram_list.trigger('update-status');
+
+			var redirect = getCookie('redirect') || '';
+			if (redirect.indexOf('/diagram/') == 0) {
+				$(window).trigger('toggle-app');	
+				var diagram_id = parseInt(redirect.substring(9));
+				$diagram_list.find('#' + diagram_id).trigger('click');
+				deleteCookie('redirect');
+			}
 		}
 	});
 	setInterval(() => $app.trigger('clear-alert-list'), 60 * 60 * 1000); // 1 hour
@@ -379,7 +387,7 @@ $(function() {
 	});
 
 	$app.on('status-updated', function (event, packet) {
-		$app.find('#diagram').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
+		$app.find('#page-content').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
 		var $element_list = $elements[packet.id];
 		if (!$element_list)
 			return;
@@ -390,7 +398,7 @@ $(function() {
 	});
 
 	$app.on('values-updated', function (event, packet) {
-		$app.find('#diagram').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
+		$app.find('#page-content').find('#diagram').attr('updated', 'Updated: ' + cast('datetime', packet.time || new Date().getTime()));
 		var $element_list = $elements[packet.id];
 		if (!$element_list)
 			return;

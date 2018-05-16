@@ -2,7 +2,7 @@
 
 Cicada (started as Chupacabra) is a lightweight Node.js application with web browser interface for discovery and monitoring network devices.
 
-Supported protocols: ICMP (ping), SNMP v1/2c/3, WMI, Modbus TCP, IPMI and http/s (plain-text, json, xml).<br>
+Supported protocols: ICMP (ping), SNMP v1/2c/3, WMI, Modbus TCP, IPMI, http/s (plain-text, json, xml) and ftp.<br>
 Also you can polling [Zabbix](http://www.zabbix.com/download), [Check-mk](https://mathias-kettner.de/checkmk_linuxagent.html) and [Munin](https://github.com/munin-monitoring/munin-c) agents and check TCP ports.
 
 Cross-platform, open source, extendable, free.<br>
@@ -22,8 +22,8 @@ Cross-platform, open source, extendable, free.<br>
 * Historization of non-numeric values
 * Flexible mechanism of alert messages
 * Alert management
+* [Grafana integration](https://github.com/little-brother/cicada-grafana-datasource)
 * Database monitoring
-* Anomaly detection
 * and MORE!
 
 ## Roadmap
@@ -42,7 +42,6 @@ Optional
 * Protocol SNMPv3: [Net-SNMP](http://www.net-snmp.org/)
 * Protocol IPMI: [IPMItool](https://sourceforge.net/projects/ipmitool/)
 * DB monitoring: [httpsql](https://github.com/little-brother/httpsql)
-* Anomaly detection: [Watchtower](https://github.com/little-brother/watchtower)
 
 ## Installation
 1. [Download and unpack](https://github.com/little-brother/cicada/archive/master.zip) or run
@@ -73,10 +72,12 @@ Optional
 <summary><b>How to update a previous installation</b></summary>
 <ul>
 <li> Stop application</li>
+<li> Backup <code>config.json</code></li> 
 <li> Create <code>/db</code>-folder backup</li>
 <li> Clear application folder</li> 
 <li> Install the application again</li> 
 <li> Transfer the backup to <code>/db</code></li>
+<li> Restore <code>config.json</code></li>
 <li> Run application</li>
 </ul>
 </details>

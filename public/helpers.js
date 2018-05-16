@@ -114,7 +114,7 @@ function getStatusColor (status) {
 }
 
 function isNumeric(val) {
-	return !isNaN(parseFloat(val)) && isFinite(val);
+	return !isNaN(val) && isFinite(val);
 }
 
 // set non-numeric element to one of nearest
@@ -135,12 +135,6 @@ function normalizeHistory(data, col) {
 			data[no + 1] != undefined && isNumeric(data[no + 1][col]) ? data[no + 1][col] :
 			first_number;
 	});
-
-
-	// round to 2 digit
-	if (data.length > 1 && !isNaN(data[0][col]) && !isNaN(data[data.length - 1][col]) && Math.abs(data[0][1] - data[data.length - 1][col]) > 0.01) {
-		data.forEach((e) => e[col] = !isNaN(e[col]) ? Math.round(e[col] * 100) / 100 : e[col]); 
-	}
 }
 
 function trim(x) {
@@ -156,6 +150,10 @@ function round(x, n) {
 	return Math.ceil(x / n) * n;
 }
 
+function round2 (num) {
+	return !isNaN(num) && num != null && num != '' ? +num.toFixed(2) : num;
+}
+
 function roundTime(time) {
 	var date = time && new Date(parseInt(time)) || new Date();
 	date.setHours(0);
@@ -169,6 +167,39 @@ function getCookie(cookie) {
 	var cookies = {};
 	(document.cookie || '').split(';').map((pair) => pair.split('=')).forEach((e) => cookies[trim(e[0])] = trim(e[1]));
 	return cookies[cookie];
+}
+
+function setCookie(name, value, options) {
+	options = options || {};
+	
+	var expires = options.expires;
+	
+	if (typeof expires == "number" && expires) {
+		var d = new Date();
+		d.setTime(d.getTime() + expires * 1000);
+		expires = options.expires = d;
+	}
+
+	if (expires && expires.toUTCString) {
+		options.expires = expires.toUTCString();
+	}
+	
+	value = encodeURIComponent(value);
+	var updatedCookie = name + "=" + value;
+	
+	for (var propName in options) {
+		updatedCookie += "; " + propName;
+		var propValue = options[propName];
+		if (propValue !== true) {
+			updatedCookie += "=" + propValue;
+		}
+	}
+	
+	document.cookie = updatedCookie;
+}
+
+function deleteCookie(name) {
+	setCookie(name, "", {expires: -1});
 }
 
 function cast(type, value, hint) {
